@@ -59,7 +59,7 @@ export default function TripCard({ trip }: TripCardProps) {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="glass-card group flex flex-col h-full hover:border-primary-500/40 hover:bg-white/[0.04] transition-all duration-500 rounded-3xl overflow-hidden relative shadow-xl hover:shadow-primary-500/5"
+      className="glass-card group flex flex-col h-full bg-white border border-slate-100 hover:border-primary-500/20 hover:bg-white transition-all duration-500 rounded-3xl overflow-hidden relative shadow-lg hover:shadow-2xl hover:shadow-slate-200/50"
     >
       {/* Image Section */}
       <div className="relative h-64 overflow-hidden">
@@ -72,27 +72,27 @@ export default function TripCard({ trip }: TripCardProps) {
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-108"
           />
         ) : (
-          <div className="w-full h-full bg-white/[0.03] flex items-center justify-center text-white/20">No Cover Image</div>
+          <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">No Cover Image</div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#030014] via-transparent to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent opacity-90" />
         
         {/* Category Badge */}
-        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary-600/80 to-purple-600/80 backdrop-blur-md border border-white/[0.1] text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md">
+        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary-600 to-purple-600 backdrop-blur-md border border-white/[0.1] text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md">
           {trip.category}
         </div>
 
         {/* Countdown */}
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
           <div className="flex gap-1.5">
-            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-[#030014]/60 backdrop-blur-md border border-white/[0.08]">
+            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
               <span className="text-[11px] font-black leading-none text-white">{timeLeft.days}</span>
               <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Days</span>
             </div>
-            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-[#030014]/60 backdrop-blur-md border border-white/[0.08]">
+            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
               <span className="text-[11px] font-black leading-none text-white">{timeLeft.hours}</span>
               <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Hrs</span>
             </div>
-            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-[#030014]/60 backdrop-blur-md border border-white/[0.08]">
+            <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
               <span className="text-[11px] font-black leading-none text-white">{timeLeft.minutes}</span>
               <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Min</span>
             </div>
@@ -106,40 +106,40 @@ export default function TripCard({ trip }: TripCardProps) {
       </div>
 
       {/* Content Section */}
-      <div className="p-6 flex flex-col flex-1 relative z-10">
+      <div className="p-6 flex flex-col flex-1 relative z-10 bg-white">
         <div className="flex items-center gap-1.5 text-accent-cyan text-[10px] font-bold uppercase tracking-widest mb-2.5">
-          <HiOutlineLocationMarker className="w-3.5 h-3.5" />
+          <HiOutlineLocationMarker className="w-3.5 h-3.5 text-accent-cyan" />
           {trip.destination}
         </div>
         
-        <h3 className="text-xl font-bold font-outfit text-white group-hover:text-primary-300 transition-colors duration-300 mb-3.5 line-clamp-1 leading-tight">
+        <h3 className="text-xl font-bold font-outfit text-slate-900 group-hover:text-primary-600 transition-colors duration-300 mb-3.5 line-clamp-1 leading-tight">
           {trip.title}
         </h3>
 
-        <div className="grid grid-cols-2 gap-4 mb-6 pt-1 border-t border-white/[0.04]">
-          <div className="flex items-center gap-2 text-white/60 text-xs font-outfit">
-            <HiOutlineCalendar className="w-4 h-4 text-primary-400" />
+        <div className="grid grid-cols-2 gap-4 mb-6 pt-1 border-t border-slate-100">
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-outfit">
+            <HiOutlineCalendar className="w-4 h-4 text-primary-600" />
             {new Date(trip.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
           </div>
-          <div className="flex items-center gap-2 text-white/60 text-xs font-outfit">
-            <HiOutlineUserGroup className="w-4 h-4 text-primary-400" />
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-outfit">
+            <HiOutlineUserGroup className="w-4 h-4 text-primary-600" />
             {trip.availableSeats} / {trip.totalSeats} Seats
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.04]">
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
           <div>
-            <div className="text-[10px] text-white/40 line-through">₹{trip.originalPrice || (trip.price * 1.2).toFixed(0)}</div>
-            <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-accent-cyan font-outfit">₹{trip.price}</div>
+            <div className="text-[10px] text-slate-400 line-through">₹{trip.originalPrice || (trip.price * 1.2).toFixed(0)}</div>
+            <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-purple-600 to-accent-cyan font-outfit">₹{trip.price}</div>
           </div>
           
           <Link href={`/trips/${trip.id}`}>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center hover:bg-gradient-to-br hover:from-primary-500 hover:to-accent-cyan hover:border-transparent text-white/80 hover:text-white shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.4)] transition-all duration-300"
+              className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-gradient-to-br hover:from-primary-600 hover:to-accent-cyan hover:border-transparent text-slate-500 hover:text-white shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all duration-300"
             >
-              <HiOutlineArrowRight className="w-5 h-5" />
+              <HiOutlineArrowRight className="w-5 h-5 animate-pulse" />
             </motion.button>
           </Link>
         </div>

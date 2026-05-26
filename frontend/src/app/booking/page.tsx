@@ -35,8 +35,8 @@ declare global { interface Window { Razorpay: any; } }
 export default function BookingPage() {
   return (
     <Suspense fallback={
-      <div className="pt-24 pb-20 bg-zinc-950 min-h-screen px-4 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen px-4 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <BookingContent />
@@ -148,20 +148,22 @@ function BookingContent() {
   if (!trip) return null;
 
   return (
-    <div className="pt-24 pb-20 bg-zinc-950 min-h-screen px-4">
+    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen px-4 text-slate-900">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-12 relative">
-          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/5 -translate-y-1/2 z-0" />
+          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
           {[
             { n: 1, label: 'Details', icon: HiOutlineUser },
             { n: 2, label: 'Confirm', icon: HiOutlineIdentification },
             { n: 3, label: 'Success', icon: HiOutlineCheckCircle }
           ].map((s) => (
             <div key={s.n} className="relative z-10 flex flex-col items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
-                step >= s.n ? 'bg-primary-600 shadow-glow text-white' : 'bg-zinc-900 text-white/20 border border-white/5'
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 border ${
+                step >= s.n 
+                  ? 'bg-gradient-to-r from-primary-600 to-purple-600 border-primary-600 text-white shadow-md' 
+                  : 'bg-white text-slate-400 border-slate-200'
               }`}><s.icon className="w-6 h-6" /></div>
-              <span className={`text-[10px] uppercase font-bold tracking-widest mt-2 ${step >= s.n ? 'text-white' : 'text-white/20'}`}>{s.label}</span>
+              <span className={`text-[10px] uppercase font-bold tracking-widest mt-2 ${step >= s.n ? 'text-slate-800' : 'text-slate-400'}`}>{s.label}</span>
             </div>
           ))}
         </div>
@@ -172,17 +174,17 @@ function BookingContent() {
               <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
-                    <div className="glass-card p-8">
-                      <h2 className="text-2xl font-bold mb-6">Traveler Information</h2>
+                    <div className="glass-card bg-white border border-slate-200/60 shadow-lg p-8">
+                      <h2 className="text-2xl font-bold text-slate-900 mb-6 font-outfit">Traveler Information</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-white/40">Full Name</label>
-                          <input {...register('travelerName')} className="input-field" placeholder="John Doe" />
+                          <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Full Name</label>
+                          <input {...register('travelerName')} className="input-field bg-white border border-slate-200" placeholder="John Doe" />
                           {errors.travelerName && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.travelerName.message}</p>}
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-white/40">Pickup Point</label>
-                          <select {...register('pickupPoint')} className="input-field">
+                          <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Pickup Point</label>
+                          <select {...register('pickupPoint')} className="input-field bg-white border border-slate-200 font-semibold text-slate-700">
                             <option value="">Select Boarding Point</option>
                             {trip.pickupPoints?.map((pt: string) => (
                               <option key={pt} value={pt}>{pt}</option>
@@ -191,77 +193,77 @@ function BookingContent() {
                           {errors.pickupPoint && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.pickupPoint.message}</p>}
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-white/40">Email</label>
-                          <input {...register('email')} className="input-field" />
+                          <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Email</label>
+                          <input {...register('email')} className="input-field bg-white border border-slate-200" />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-white/40">Phone</label>
-                          <input {...register('phone')} className="input-field" />
+                          <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Phone</label>
+                          <input {...register('phone')} className="input-field bg-white border border-slate-200" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2"><label className="text-xs font-bold uppercase tracking-widest text-white/40">Age</label><input type="number" {...register('age', { valueAsNumber: true })} className="input-field" /></div>
-                          <div className="space-y-2"><label className="text-xs font-bold uppercase tracking-widest text-white/40">Gender</label><select {...register('gender')} className="input-field"><option>Male</option><option>Female</option></select></div>
+                          <div className="space-y-2"><label className="text-xs font-bold uppercase tracking-widest text-slate-400">Age</label><input type="number" {...register('age', { valueAsNumber: true })} className="input-field bg-white border border-slate-200" /></div>
+                          <div className="space-y-2"><label className="text-xs font-bold uppercase tracking-widest text-slate-400">Gender</label><select {...register('gender')} className="input-field bg-white border border-slate-200 font-semibold text-slate-700"><option>Male</option><option>Female</option></select></div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="glass-card p-8">
-                      <h2 className="text-2xl font-bold mb-6">Emergency Contact</h2>
+                    <div className="glass-card bg-white border border-slate-200/60 shadow-lg p-8">
+                      <h2 className="text-2xl font-bold text-slate-900 mb-6 font-outfit">Emergency Contact</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <input {...register('emergencyName')} className="input-field" placeholder="Contact Name" />
-                        <input {...register('emergencyPhone')} className="input-field" placeholder="Contact Phone" />
+                        <input {...register('emergencyName')} className="input-field bg-white border border-slate-200" placeholder="Contact Name" />
+                        <input {...register('emergencyPhone')} className="input-field bg-white border border-slate-200" placeholder="Contact Phone" />
                       </div>
                     </div>
 
-                    <button type="submit" className="btn-primary w-full py-4 text-lg">Review & Pay</button>
+                    <button type="submit" className="btn-primary w-full py-4 text-lg cursor-pointer">Review & Pay</button>
                   </motion.div>
                 )}
 
                 {step === 2 && (
                   <motion.div key="step2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
-                    <div className="glass-card p-8">
-                      <h2 className="text-2xl font-bold mb-6">Confirm Details</h2>
-                      <div className="space-y-4 text-sm">
-                        <div className="flex justify-between p-4 bg-white/5 rounded-xl">
-                          <div className="flex items-center gap-3"><HiOutlineLocationMarker className="text-primary-500 w-5 h-5" /><span>Boarding Point</span></div>
-                          <span className="font-bold text-primary-400">{watch('pickupPoint')}</span>
+                    <div className="glass-card bg-white border border-slate-200/60 shadow-lg p-8">
+                      <h2 className="text-2xl font-bold text-slate-900 mb-6 font-outfit">Confirm Details</h2>
+                      <div className="space-y-4 text-sm text-slate-700">
+                        <div className="flex justify-between p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                          <div className="flex items-center gap-3"><HiOutlineLocationMarker className="text-primary-600 w-5 h-5" /><span>Boarding Point</span></div>
+                          <span className="font-bold text-primary-600">{watch('pickupPoint')}</span>
                         </div>
-                        <div className="flex justify-between border-b border-white/5 pb-4"><span className="text-white/40">Trip</span><span className="font-bold">{trip.title}</span></div>
-                        <div className="flex justify-between border-b border-white/5 pb-4"><span className="text-white/40">Total</span><span className="font-black text-xl gradient-text">₹{pricing.total}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-4"><span className="text-slate-500">Trip</span><span className="font-bold text-slate-900">{trip.title}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-4"><span className="text-slate-500">Total</span><span className="font-black text-xl gradient-text">₹{pricing.total}</span></div>
                       </div>
                     </div>
                     
-                    <div className="glass-card p-8">
-                      <h2 className="text-2xl font-bold mb-6">Select Payment Method</h2>
+                    <div className="glass-card bg-white border border-slate-200/60 shadow-lg p-8">
+                      <h2 className="text-2xl font-bold text-slate-900 mb-6 font-outfit">Select Payment Method</h2>
                       <div className="grid grid-cols-2 gap-4">
-                        <button type="button" onClick={() => setPaymentMethod('razorpay')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 ${paymentMethod === 'razorpay' ? 'border-primary-500 bg-primary-500/10' : 'border-white/5 bg-white/5'}`}><HiOutlineCreditCard className="w-8 h-8" /><span className="font-bold text-sm">Online Pay</span></button>
-                        <button type="button" onClick={() => setPaymentMethod('qr')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 ${paymentMethod === 'qr' ? 'border-primary-500 bg-primary-500/10' : 'border-white/5 bg-white/5'}`}><HiOutlineQrcode className="w-8 h-8" /><span className="font-bold text-sm">Scan QR Code</span></button>
+                        <button type="button" onClick={() => setPaymentMethod('razorpay')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all cursor-pointer ${paymentMethod === 'razorpay' ? 'border-primary-600 bg-primary-50 text-primary-600' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><HiOutlineCreditCard className="w-8 h-8" /><span className="font-bold text-sm">Online Pay</span></button>
+                        <button type="button" onClick={() => setPaymentMethod('qr')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all cursor-pointer ${paymentMethod === 'qr' ? 'border-primary-600 bg-primary-50 text-primary-600' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><HiOutlineQrcode className="w-8 h-8" /><span className="font-bold text-sm">Scan QR Code</span></button>
                       </div>
 
                       {paymentMethod === 'qr' && (
                         <div className="mt-8 space-y-6">
-                          <div className="flex flex-col items-center p-6 bg-white rounded-2xl"><Image src="/qr-payment.jpeg" alt="QR" width={180} height={180} /><p className="text-black font-black mt-4">Scan & Pay ₹{pricing.total}</p></div>
+                          <div className="flex flex-col items-center p-6 bg-slate-50 border border-slate-200/60 rounded-2xl"><Image src="/qr-payment.jpeg" alt="QR" width={180} height={180} className="border border-slate-100 rounded-xl" /><p className="text-slate-900 font-black mt-4">Scan & Pay ₹{pricing.total}</p></div>
                           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                          <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer">
-                            {previewUrl ? <Image src={previewUrl} alt="Preview" width={200} height={100} className="mx-auto rounded-lg" /> : <p className="opacity-40">Click to upload screenshot</p>}
+                          <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-200 hover:border-primary-500/30 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 hover:bg-white transition-all">
+                            {previewUrl ? <Image src={previewUrl} alt="Preview" width={200} height={100} className="mx-auto rounded-lg shadow-sm" /> : <p className="text-slate-400 font-medium">Click to upload screenshot</p>}
                           </div>
                         </div>
                       )}
                     </div>
 
                     <div className="flex gap-4">
-                      <button type="button" onClick={() => setStep(1)} className="btn-secondary py-4 px-8">Back</button>
-                      <button type="submit" className="btn-primary flex-1 py-4" disabled={loading}>{loading ? 'Processing...' : (paymentMethod === 'qr' ? 'Submit Screenshot' : `Pay ₹${pricing.total}`)}</button>
+                      <button type="button" onClick={() => setStep(1)} className="py-4 px-8 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm rounded-xl cursor-pointer font-bold transition-colors">Back</button>
+                      <button type="submit" className="btn-primary flex-1 py-4 cursor-pointer" disabled={loading}>{loading ? 'Processing...' : (paymentMethod === 'qr' ? 'Submit Screenshot' : `Pay ₹${pricing.total}`)}</button>
                     </div>
                   </motion.div>
                 )}
 
                 {step === 3 && (
                   <motion.div key="step3" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-12">
-                    <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-8"><HiOutlineCheckCircle className="w-16 h-16 text-green-500" /></div>
-                    <h2 className="text-4xl font-black mb-4">{paymentMethod === 'qr' ? 'Submitted!' : 'Confirmed!'}</h2>
-                    <p className="text-white/60 mb-8 max-w-sm mx-auto">{paymentMethod === 'qr' ? 'Verification in progress...' : 'Welcome to the adventure!'}</p>
-                    <button type="button" onClick={() => router.push('/')} className="btn-primary px-12">Return Home</button>
+                    <div className="w-24 h-24 rounded-full bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-8"><HiOutlineCheckCircle className="w-16 h-16 text-green-600" /></div>
+                    <h2 className="text-4xl font-black text-slate-900 mb-4 font-outfit">{paymentMethod === 'qr' ? 'Submitted!' : 'Confirmed!'}</h2>
+                    <p className="text-slate-500 mb-8 max-w-sm mx-auto">{paymentMethod === 'qr' ? 'Verification in progress...' : 'Welcome to the adventure!'}</p>
+                    <button type="button" onClick={() => router.push('/')} className="btn-primary px-12 cursor-pointer">Return Home</button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -270,12 +272,12 @@ function BookingContent() {
           
           {step < 3 && (
             <div className="lg:col-span-1">
-              <div className="glass-card p-6 sticky top-28 border-primary-500/20">
-                <h3 className="text-lg font-bold mb-6">Booking Details</h3>
+              <div className="glass-card bg-white border border-slate-200/60 shadow-lg p-6 sticky top-28">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 font-outfit">Booking Details</h3>
                 <div className="relative h-40 rounded-xl overflow-hidden mb-6"><Image src={trip.coverImage} alt="Trip" fill className="object-cover" /></div>
                 <div className="space-y-4">
-                  <div className="flex justify-between text-sm"><span className="text-white/40">Travelers</span><span className="font-bold">{seatCount}</span></div>
-                  <div className="flex justify-between font-black text-xl gradient-text pt-2 border-t border-white/10"><span>Total</span><span>₹{pricing.total}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-slate-500">Travelers</span><span className="font-bold text-slate-900">{seatCount}</span></div>
+                  <div className="flex justify-between font-black text-xl gradient-text pt-2 border-t border-slate-100"><span>Total</span><span>₹{pricing.total}</span></div>
                 </div>
               </div>
             </div>

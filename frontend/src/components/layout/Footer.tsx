@@ -40,7 +40,7 @@ export default function Footer() {
   const siteName = settings.siteName || 'MYSURU TRAVEL CLUB';
 
   return (
-    <footer className="bg-[#030014] border-t border-white/[0.06] pt-24 pb-12 relative overflow-hidden">
+    <footer className="bg-white border-t border-slate-200/60 pt-24 pb-12 relative overflow-hidden">
       {/* Glow Effects */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-600/5 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent-cyan/5 rounded-full blur-[130px] pointer-events-none" />
@@ -54,22 +54,22 @@ export default function Footer() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-purple-500 to-accent-cyan flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.3)]">
                 <span className="text-white font-outfit font-black text-xl">{siteName.charAt(0)}</span>
               </div>
-              <span className="text-xl font-outfit font-black tracking-tight text-white group-hover:text-primary-300 transition-colors">{siteName}</span>
+              <span className="text-xl font-outfit font-black tracking-tight text-slate-900 group-hover:text-primary-600 transition-colors">{siteName}</span>
             </Link>
-            <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm font-outfit">
+            <p className="text-slate-500 text-sm leading-relaxed mb-6 max-w-sm font-outfit">
               {settings.footerDescription || `AI-powered travel experiences that transform ordinary trips into extraordinary adventures. Discover, book, and explore with ${siteName}.`}
             </p>
             <div className="space-y-3.5">
-              <a href={`mailto:${email}`} className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors duration-300">
-                <HiOutlineMail className="w-4 h-4 text-primary-400" />
+              <a href={`mailto:${email}`} className="flex items-center gap-2.5 text-sm text-slate-500 hover:text-slate-900 transition-colors duration-300">
+                <HiOutlineMail className="w-4 h-4 text-primary-500" />
                 {email}
               </a>
-              <a href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors duration-300">
-                <HiOutlinePhone className="w-4 h-4 text-primary-400" />
+              <a href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-2.5 text-sm text-slate-500 hover:text-slate-900 transition-colors duration-300">
+                <HiOutlinePhone className="w-4 h-4 text-primary-500" />
                 {phone}
               </a>
-              <p className="flex items-center gap-2.5 text-sm text-white/50">
-                <HiOutlineLocationMarker className="w-4 h-4 text-primary-400" />
+              <p className="flex items-center gap-2.5 text-sm text-slate-500">
+                <HiOutlineLocationMarker className="w-4 h-4 text-primary-500" />
                 {address}
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-xs font-outfit font-black text-white uppercase tracking-[0.2em] mb-6">
+              <h4 className="text-xs font-outfit font-black text-slate-900 uppercase tracking-[0.2em] mb-6">
                 {title}
               </h4>
               <ul className="space-y-3.5">
@@ -86,7 +86,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link 
                       href={link.href} 
-                      className="text-sm text-white/50 hover:text-primary-300 transition-all duration-300 hover:translate-x-1.5 inline-block font-outfit"
+                      className="text-sm text-slate-500 hover:text-primary-600 transition-all duration-300 hover:translate-x-1.5 inline-block font-outfit"
                     >
                       {link.label}
                     </Link>
@@ -98,18 +98,18 @@ export default function Footer() {
         </div>
 
         {/* Divider & Copyright */}
-        <div className="border-t border-white/[0.06] pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-xs md:text-sm text-white/30 font-outfit">
+        <div className="border-t border-slate-100 pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-xs md:text-sm text-slate-400 font-outfit">
             © {new Date().getFullYear()} {siteName}. All rights reserved. Made with ❤️ in India.
           </p>
           
           {/* Social Icons with colorful glows on hover */}
           <div className="flex items-center gap-3">
             {[
-              { icon: RiInstagramLine, href: settings.socialInstagram || 'https://instagram.com', label: 'Instagram', hoverGlow: 'hover:bg-gradient-to-tr hover:from-purple-500 hover:to-pink-500 hover:border-transparent' },
-              { icon: RiTwitterXLine, href: settings.socialTwitter || 'https://twitter.com', label: 'Twitter', hoverGlow: 'hover:bg-white hover:text-black hover:border-transparent' },
-              { icon: RiFacebookCircleLine, href: settings.socialFacebook || 'https://facebook.com', label: 'Facebook', hoverGlow: 'hover:bg-blue-600 hover:border-transparent' },
-              { icon: RiYoutubeLine, href: settings.socialYoutube || 'https://youtube.com', label: 'Youtube', hoverGlow: 'hover:bg-red-600 hover:border-transparent' }
+              { icon: RiInstagramLine, href: settings.socialInstagram || 'https://instagram.com', label: 'Instagram', hoverGlow: 'hover:bg-gradient-to-tr hover:from-purple-500 hover:to-pink-500 hover:border-transparent hover:text-white' },
+              { icon: RiTwitterXLine, href: settings.socialTwitter || 'https://twitter.com', label: 'Twitter', hoverGlow: 'hover:bg-black hover:text-white hover:border-transparent' },
+              { icon: RiFacebookCircleLine, href: settings.socialFacebook || 'https://facebook.com', label: 'Facebook', hoverGlow: 'hover:bg-blue-600 hover:text-white hover:border-transparent' },
+              { icon: RiYoutubeLine, href: settings.socialYoutube || 'https://youtube.com', label: 'Youtube', hoverGlow: 'hover:bg-red-600 hover:text-white hover:border-transparent' }
             ].map((social, idx) => (
               <a
                 key={idx}
@@ -117,7 +117,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                className={`w-10 h-10 rounded-xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-center text-white/50 hover:text-white transition-all duration-300 active:scale-95 ${social.hoverGlow}`}
+                className={`w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 hover:shadow-md transition-all duration-300 active:scale-95 ${social.hoverGlow}`}
               >
                 <social.icon className="w-5 h-5" />
               </a>

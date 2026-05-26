@@ -96,15 +96,15 @@ export default function TripsPage() {
   }, [search, activeCategory, trips]);
 
   return (
-    <div className="pt-24 pb-20 bg-zinc-950 min-h-screen">
+    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-8">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4">
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit">
               Explore Our <span className="gradient-text">Trips</span>
             </h1>
-            <p className="text-white/60 max-w-xl">
+            <p className="text-slate-500 max-w-xl font-inter">
               From the highest peaks to the deepest oceans, find your next unforgettable journey here.
             </p>
           </div>
@@ -112,21 +112,23 @@ export default function TripsPage() {
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             {/* Search Bar */}
             <div className="relative w-full sm:w-80">
-              <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 w-5 h-5" />
+              <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search destinations..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="input-field pl-12 h-12"
+                className="input-field pl-12 h-12 bg-white border border-slate-200"
               />
             </div>
             
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-6 h-12 rounded-xl border transition-all ${
-                showFilters ? 'bg-primary-600 border-primary-500' : 'bg-white/5 border-white/10 hover:bg-white/10'
+              className={`flex items-center gap-2 px-6 h-12 rounded-xl border font-bold transition-all cursor-pointer ${
+                showFilters 
+                  ? 'bg-primary-600 border-primary-500 text-white shadow-md' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
               }`}
             >
               <HiOutlineFilter className="w-5 h-5" />
@@ -144,16 +146,16 @@ export default function TripsPage() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden mb-12"
             >
-              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-wrap gap-4">
-                <span className="text-sm font-bold text-white/40 uppercase tracking-widest w-full mb-2">Category</span>
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-lg flex flex-wrap gap-4">
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest w-full mb-2">Category</span>
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                       activeCategory === cat 
-                        ? 'bg-primary-500 text-white shadow-glow' 
-                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        ? 'bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-glow' 
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100/50'
                     }`}
                   >
                     {cat}
@@ -168,7 +170,7 @@ export default function TripsPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-[500px] rounded-2xl bg-white/5 animate-pulse" />
+              <div key={i} className="h-[500px] rounded-2xl bg-slate-100 animate-pulse" />
             ))}
           </div>
         ) : filteredTrips.length > 0 ? (
@@ -186,11 +188,11 @@ export default function TripsPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-              <HiX className="w-10 h-10 text-white/20" />
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+              <HiX className="w-10 h-10 text-slate-300" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">No trips found</h3>
-            <p className="text-white/40">Try adjusting your filters or search terms.</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">No trips found</h3>
+            <p className="text-slate-500">Try adjusting your filters or search terms.</p>
           </div>
         )}
       </div>

@@ -43,7 +43,7 @@ export default function VotingSection() {
   if (!loading && destinations.length === 0) return null;
 
   return (
-    <section className="section-padding bg-[#050816] relative overflow-hidden">
+    <section className="section-padding bg-white relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/5 rounded-full blur-[100px]" />
       
       <div className="max-w-7xl mx-auto px-4 relative z-10">
@@ -52,7 +52,7 @@ export default function VotingSection() {
             <motion.span
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              className="text-primary-500 font-bold tracking-[0.3em] uppercase text-xs mb-4 block"
+              className="text-primary-600 font-bold tracking-[0.3em] uppercase text-xs mb-4 block"
             >
               Community Choice
             </motion.span>
@@ -67,7 +67,7 @@ export default function VotingSection() {
               onChange={(e) => setEmail(e.target.value)}
               className="input-field w-full sm:w-64 h-12"
             />
-            <Link href="/vote" className="text-primary-400 hover:text-primary-300 font-bold text-sm flex items-center gap-2 transition-colors">
+            <Link href="/vote" className="text-primary-600 hover:text-primary-500 font-bold text-sm flex items-center gap-2 transition-colors">
               View All <HiOutlineArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -80,21 +80,21 @@ export default function VotingSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="glass-card p-8 border-white/5 group hover:border-primary-500/30 transition-all"
+              className="glass-card p-8 bg-slate-50/50 border border-slate-100 hover:border-primary-500/30 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all"
             >
               <div className="flex justify-between items-start mb-6">
                 <div className="text-3xl font-black gradient-text">{dest.voteCount}</div>
-                <div className="text-[10px] uppercase font-bold tracking-widest text-white/40">Votes</div>
+                <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Votes</div>
               </div>
               
-              <h3 className="text-2xl font-bold mb-3">{dest.name}</h3>
-              <p className="text-white/40 text-sm mb-8 line-clamp-2">{dest.description}</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-3">{dest.name}</h3>
+              <p className="text-slate-500 text-sm mb-8 line-clamp-2">{dest.description}</p>
               
               <button 
                 onClick={() => handleVote(dest.id)}
-                className="w-full py-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2 font-bold hover:bg-primary-600 hover:border-primary-600 transition-all group"
+                className="w-full py-4 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center gap-2 font-bold hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all group shadow-sm hover:shadow-md"
               >
-                <HiOutlineThumbUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <HiOutlineThumbUp className="w-5 h-5 text-primary-500 group-hover:text-white group-hover:scale-110 transition-all" />
                 Vote Now
               </button>
             </motion.div>

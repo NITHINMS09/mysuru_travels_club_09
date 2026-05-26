@@ -26,7 +26,7 @@ const blogs = [
 
 export default function BlogPreview() {
   return (
-    <section className="section-padding bg-zinc-950">
+    <section className="section-padding bg-[#f8fafc]">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div>
@@ -46,10 +46,10 @@ export default function BlogPreview() {
           <Link href="/blogs">
             <motion.button
               whileHover={{ x: 5 }}
-              className="flex items-center gap-2 text-white/80 hover:text-white font-semibold transition-colors"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-semibold transition-colors"
             >
               View All Posts
-              <HiOutlineArrowRight className="w-5 h-5 text-primary-500" />
+              <HiOutlineArrowRight className="w-5 h-5 text-primary-600" />
             </motion.button>
           </Link>
         </div>
@@ -62,7 +62,7 @@ export default function BlogPreview() {
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
               viewport={{ once: true }}
-              className="glass-card flex flex-col lg:flex-row group"
+              className="glass-card flex flex-col lg:flex-row group bg-white border border-slate-100 hover:border-primary-500/20"
             >
               <div className="relative w-full lg:w-2/5 h-64 lg:h-auto overflow-hidden">
                 <Image
@@ -74,22 +74,22 @@ export default function BlogPreview() {
               </div>
               
               <div className="p-8 lg:w-3/5 flex flex-col">
-                <div className="flex items-center gap-4 mb-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-                  <span className="flex items-center gap-1">
-                    <HiOutlineCalendar className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-4 mb-4 text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <HiOutlineCalendar className="w-3.5 h-3.5 text-primary-500" />
                     {blog.date}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <HiOutlineEye className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1.5">
+                    <HiOutlineEye className="w-3.5 h-3.5 text-primary-500" />
                     {blog.views}
                   </span>
                 </div>
                 
-                <h3 className="text-xl font-bold mb-4 group-hover:text-primary-400 transition-colors">
+                <h3 className="text-xl font-bold text-slate-900 mb-4 group-hover:text-primary-600 transition-colors">
                   {blog.title}
                 </h3>
                 
-                <p className="text-white/60 text-sm mb-6 line-clamp-2">
+                <p className="text-slate-500 text-sm mb-6 line-clamp-2">
                   {blog.excerpt}
                 </p>
                 

@@ -30,9 +30,9 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 h-[500px] w-[500px] -translate-y-1/2 translate-x-1/2 rounded-full bg-primary-600/10 blur-[100px]" />
-      <div className="absolute bottom-0 left-0 h-[500px] w-[500px] translate-y-1/2 -translate-x-1/2 rounded-full bg-accent-cyan/5 blur-[100px]" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute top-0 right-0 h-[500px] w-[500px] -translate-y-1/2 translate-x-1/2 rounded-full bg-violet-500/10 blur-[100px]" />
+      <div className="absolute bottom-0 left-0 h-[500px] w-[500px] translate-y-1/2 -translate-x-1/2 rounded-full bg-cyan-500/5 blur-[100px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -40,40 +40,40 @@ export default function AdminLogin() {
         className="relative z-10 w-full max-w-md"
       >
         <div className="mb-10 text-center">
-          <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-accent-cyan shadow-glow">
+          <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 shadow-lg shadow-violet-500/20">
             <span className="font-outfit text-2xl font-bold text-white">T</span>
           </div>
-          <h1 className="mb-2 text-3xl font-black">Admin Portal</h1>
-          <p className="text-sm text-white/40">Secure access for TripNova administrators</p>
+          <h1 className="mb-2 text-3xl font-black text-slate-900">Admin Portal</h1>
+          <p className="text-sm text-slate-500">Secure access for TripNova administrators</p>
         </div>
 
-        <div className="glass-card bg-white/[0.03] p-8">
+        <div className="glass-card p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Email Address</label>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</label>
               <div className="relative">
-                <HiOutlineMail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/20" />
+                <HiOutlineMail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-12"
+                  className="input-field pl-12 border border-slate-200/80 bg-white/80 focus:bg-white text-slate-900"
                   placeholder="admin@tripnova.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Password</label>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Password</label>
               <div className="relative">
-                <HiOutlineLockClosed className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/20" />
+                <HiOutlineLockClosed className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-12"
+                  className="input-field pl-12 border border-slate-200/80 bg-white/80 focus:bg-white text-slate-900"
                   placeholder="........"
                 />
               </div>
@@ -93,7 +93,7 @@ export default function AdminLogin() {
         <div className="mt-8 text-center">
           <button
             onClick={() => router.push('/')}
-            className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 transition-colors hover:text-white/60"
+            className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-slate-900"
           >
             Return to Website
           </button>

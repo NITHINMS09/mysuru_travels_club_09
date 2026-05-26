@@ -221,26 +221,26 @@ export default function TripChat() {
   if (!trip || !user) return null;
 
   return (
-    <div className="pt-24 h-screen bg-[#050816] flex flex-col overflow-hidden relative">
+    <div className="pt-24 h-screen bg-slate-50 flex flex-col overflow-hidden relative">
       
       {/* Chat Header */}
-      <div className="px-8 py-4 border-b border-white/5 bg-[#0a0e27]/80 backdrop-blur-xl flex items-center justify-between z-20">
+      <div className="px-8 py-4 border-b border-slate-200 bg-white/85 backdrop-blur-xl flex items-center justify-between z-20">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center font-bold overflow-hidden relative">
+          <div className="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center font-bold overflow-hidden relative">
             <img src={trip.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-50" />
             <span className="relative z-10 text-white">T</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold">{trip.title}</h1>
+            <h1 className="text-lg font-bold text-slate-900">{trip.title}</h1>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-xs text-white/40 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 {onlineUsers.length} online
               </p>
             </div>
           </div>
         </div>
-        <button className="p-2 text-white/40 hover:text-white transition-colors">
+        <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors">
           <HiOutlineDotsVertical className="w-6 h-6" />
         </button>
       </div>
@@ -263,27 +263,27 @@ export default function TripChat() {
                 {/* Reply Action */}
                 <button 
                   onClick={() => setReplyingTo(msg)}
-                  className={`absolute top-2 ${isMe ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-white`}
+                  className={`absolute top-2 ${isMe ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-slate-800`}
                 >
                   <HiOutlineReply />
                 </button>
 
-                {!isMe && <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-2">{msg.senderName}</span>}
+                {!isMe && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-2">{msg.senderName}</span>}
                 
-                <div className={`p-1 rounded-2xl ${isMe ? 'bg-primary-600 rounded-tr-none' : 'bg-white/5 border border-white/10 rounded-tl-none'}`}>
+                <div className={`p-1 rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-violet-600 to-blue-600 rounded-tr-none' : 'bg-white border border-slate-200/80 rounded-tl-none'}`}>
                   
                   {/* Threaded Reply Reference */}
                   {repliedMsg && (
-                    <div className={`p-2 mb-2 rounded-lg text-xs border-l-2 ${isMe ? 'bg-black/20 border-white/40 text-white/80' : 'bg-black/40 border-primary-500 text-white/60'}`}>
-                      <span className="font-bold opacity-70 block mb-1">{repliedMsg.senderName}</span>
+                    <div className={`p-2 mb-2 rounded-lg text-xs border-l-2 ${isMe ? 'bg-black/10 border-white/30 text-white/90' : 'bg-slate-50 border-violet-500 text-slate-600'}`}>
+                      <span className="font-bold opacity-75 block mb-1">{repliedMsg.senderName}</span>
                       <span className="truncate block max-w-[200px]">{repliedMsg.content}</span>
                     </div>
                   )}
 
                   {/* Message Content */}
-                  <div className="px-3 py-2 text-sm leading-relaxed text-white relative">
+                  <div className={`px-3 py-2 text-sm leading-relaxed relative ${isMe ? 'text-white' : 'text-slate-800'}`}>
                     {msg.deleted ? (
-                      <span className="italic opacity-50 text-xs">🚫 {msg.content}</span>
+                      <span className="italic opacity-55 text-xs">🚫 {msg.content}</span>
                     ) : (
                       <>
                         {msg.type === 'IMAGE' && msg.fileUrl && (
@@ -295,8 +295,8 @@ export default function TripChat() {
                           </audio>
                         )}
                         {msg.type === 'DOCUMENT' && msg.fileUrl && (
-                          <a href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-black/20 p-3 rounded-lg mb-2 hover:bg-black/40 transition">
-                            <HiOutlinePaperClip className="w-5 h-5 text-accent-gold" />
+                          <a href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl} target="_blank" rel="noreferrer" className={`flex items-center gap-2 p-3 rounded-lg mb-2 transition ${isMe ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-50 border border-slate-100 hover:bg-slate-100'}`}>
+                            <HiOutlinePaperClip className={`w-5 h-5 ${isMe ? 'text-white' : 'text-violet-600'}`} />
                             <span className="truncate max-w-[150px] text-xs font-bold">{msg.fileName}</span>
                           </a>
                         )}
@@ -307,10 +307,10 @@ export default function TripChat() {
                 </div>
                 
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[9px] text-white/30 uppercase font-bold tracking-tighter">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">
                     {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  {msg.isEdited && <span className="text-[9px] text-white/20 italic">Edited</span>}
+                  {msg.isEdited && <span className="text-[9px] text-slate-400 italic">Edited</span>}
                 </div>
               </div>
             </motion.div>
@@ -321,12 +321,12 @@ export default function TripChat() {
         <AnimatePresence>
           {typingUsers.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex justify-start">
-              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
-                <span className="text-xs text-white/60 font-medium">{typingUsers.join(', ')} typing</span>
+              <div className="bg-white border border-slate-200/80 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 shadow-sm">
+                <span className="text-xs text-slate-500 font-medium">{typingUsers.join(', ')} typing</span>
                 <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </motion.div>
@@ -340,34 +340,34 @@ export default function TripChat() {
       <AnimatePresence>
         {replyingTo && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-[90px] left-0 right-0 px-8 z-20">
-            <div className="max-w-4xl mx-auto bg-black border-t-2 border-primary-500 p-3 flex justify-between items-center rounded-t-xl shadow-glow">
+            <div className="max-w-4xl mx-auto bg-white border border-slate-200 border-t-2 border-t-violet-600 p-3 flex justify-between items-center rounded-t-xl shadow-lg">
               <div>
-                <span className="text-xs text-primary-400 font-bold block mb-1">Replying to {replyingTo.senderName}</span>
-                <p className="text-sm text-white/60 truncate max-w-[300px]">{replyingTo.content}</p>
+                <span className="text-xs text-violet-600 font-bold block mb-1">Replying to {replyingTo.senderName}</span>
+                <p className="text-sm text-slate-600 truncate max-w-[300px]">{replyingTo.content}</p>
               </div>
-              <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-white/5 rounded-full"><HiOutlineX /></button>
+              <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-800"><HiOutlineX /></button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Input Area */}
-      <div className="p-4 md:p-8 bg-[#0a0e27]/80 backdrop-blur-xl border-t border-white/5 z-20 relative">
+      <div className="p-4 md:p-8 bg-white/80 backdrop-blur-xl border-t border-slate-200 z-20 relative">
         <div className="max-w-4xl mx-auto flex gap-3 items-center">
           
-          <div className="flex gap-2 text-white/40">
+          <div className="flex gap-2 text-slate-400">
             <div className="relative">
-              <button onClick={() => setShowEmojis(!showEmojis)} className="p-3 hover:text-white hover:bg-white/5 rounded-xl transition">
+              <button onClick={() => setShowEmojis(!showEmojis)} className="p-3 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition">
                 <HiOutlineEmojiHappy className="w-6 h-6" />
               </button>
               {showEmojis && (
-                <div className="absolute bottom-16 left-0 shadow-glow-lg z-50">
-                  <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={"dark" as any} />
+                <div className="absolute bottom-16 left-0 shadow-xl z-50">
+                  <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={"light" as any} />
                 </div>
               )}
             </div>
 
-            <button onClick={() => fileInputRef.current?.click()} className="p-3 hover:text-white hover:bg-white/5 rounded-xl transition">
+            <button onClick={() => fileInputRef.current?.click()} className="p-3 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition">
               <HiOutlinePhotograph className="w-6 h-6" />
             </button>
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*,application/pdf" />
@@ -379,12 +379,12 @@ export default function TripChat() {
               value={newMessage}
               onChange={handleTyping}
               placeholder="Type a message..."
-              className="w-full bg-black/50 border border-white/10 rounded-2xl h-14 px-5 text-white outline-none focus:border-primary-500 transition-colors"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-slate-900 outline-none focus:border-violet-500 focus:bg-white transition-colors"
             />
           </form>
 
           {newMessage.trim() ? (
-            <button onClick={handleSendText} className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-glow hover:bg-primary-500 transition-all scale-in">
+            <button onClick={handleSendText} className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-white shadow-md hover:shadow-lg transition-all scale-in">
               <HiOutlinePaperAirplane className="w-6 h-6 rotate-90 translate-y-[2px] -translate-x-[2px]" />
             </button>
           ) : (
@@ -393,7 +393,7 @@ export default function TripChat() {
               onMouseUp={stopVoiceRecording}
               onTouchStart={startVoiceRecording}
               onTouchEnd={stopVoiceRecording}
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all ${isRecording ? 'bg-red-500 shadow-glow-lg scale-110' : 'bg-white/10 hover:bg-white/20'}`}
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white shadow-lg scale-110' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}
             >
               {isRecording ? <HiOutlineStop className="w-6 h-6 animate-pulse" /> : <HiOutlineMicrophone className="w-6 h-6" />}
             </button>

@@ -45,14 +45,14 @@ export default function FeaturedDestinations() {
   if (!loading && destinations.length === 0) return null;
 
   return (
-    <section className="section-padding bg-zinc-950">
+    <section className="section-padding bg-white">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <motion.span
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-primary-500 font-bold tracking-[0.3em] uppercase text-xs mb-4 block"
+            className="text-primary-600 font-bold tracking-[0.3em] uppercase text-xs mb-4 block"
           >
             Curated For You
           </motion.span>
@@ -60,7 +60,7 @@ export default function FeaturedDestinations() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="section-title"
+            className="section-title animate-fade-in"
           >
             Featured <span className="gradient-text">Destinations</span>
           </motion.h2>

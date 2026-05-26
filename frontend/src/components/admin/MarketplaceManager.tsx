@@ -63,25 +63,25 @@ export default function MarketplaceManager() {
     }
   };
 
-  if (loading) return <div className="text-white/50 text-center py-20 animate-pulse">Loading Marketplace...</div>;
+  if (loading) return <div className="text-slate-500 text-center py-20 animate-pulse">Loading Marketplace...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Premium Marketplace</h2>
-          <p className="text-white/50">Manage dynamic categories like Resorts, Car Rentals, Villas, and more.</p>
+          <h2 className="text-2xl font-bold text-slate-800">Premium Marketplace</h2>
+          <p className="text-slate-500">Manage dynamic categories like Resorts, Car Rentals, Villas, and more.</p>
         </div>
         <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center gap-2">
           <HiOutlinePlus /> Add Listing
         </button>
       </div>
 
-      <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/10 bg-white/5 text-white/50 text-sm">
+              <tr className="border-b border-slate-200/80 bg-slate-50 text-slate-500 text-sm">
                 <th className="p-4 font-medium">Category</th>
                 <th className="p-4 font-medium">Title</th>
                 <th className="p-4 font-medium">Location</th>
@@ -91,23 +91,23 @@ export default function MarketplaceManager() {
             </thead>
             <tbody>
               {listings.map((l) => (
-                <tr key={l.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                <tr key={l.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-slate-700">
                   <td className="p-4">
-                    <span className="px-3 py-1 bg-primary-600/20 text-primary-400 rounded-full text-xs font-bold uppercase">
+                    <span className="px-3 py-1 bg-violet-50 text-violet-600 border border-violet-100 rounded-full text-xs font-bold uppercase">
                       {l.category.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="p-4 font-bold">{l.title}</td>
-                  <td className="p-4 text-white/50 flex items-center gap-1"><HiOutlineLocationMarker /> {l.location}</td>
-                  <td className="p-4 text-accent-gold font-mono">₹{l.price}/{l.priceUnit}</td>
+                  <td className="p-4 font-bold text-slate-800">{l.title}</td>
+                  <td className="p-4 text-slate-500 flex items-center gap-1"><HiOutlineLocationMarker /> {l.location}</td>
+                  <td className="p-4 text-amber-700 font-mono font-bold">₹{l.price}/{l.priceUnit}</td>
                   <td className="p-4 text-right">
-                    <button className="p-2 text-white/50 hover:text-white transition-colors"><HiOutlinePencil /></button>
-                    <button onClick={() => handleDelete(l.id)} className="p-2 text-red-500/50 hover:text-red-500 transition-colors"><HiOutlineTrash /></button>
+                    <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors"><HiOutlinePencil /></button>
+                    <button onClick={() => handleDelete(l.id)} className="p-2 text-red-500/70 hover:text-red-600 transition-colors"><HiOutlineTrash /></button>
                   </td>
                 </tr>
               ))}
               {listings.length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-white/30">No listings found. Add one above.</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-slate-400">No listings found. Add one above.</td></tr>
               )}
             </tbody>
           </table>
@@ -115,14 +115,14 @@ export default function MarketplaceManager() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-dark-400 border border-white/10 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-6">Create Marketplace Listing</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-slate-200/80 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-slate-800">
+            <h3 className="text-xl font-bold mb-6 text-slate-800">Create Marketplace Listing</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-white/50 mb-2">Category</label>
-                  <select name="category" className="input-field" required>
+                  <label className="block text-sm text-slate-500 mb-2">Category</label>
+                  <select name="category" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required>
                     <option value="RESORT">Resort</option>
                     <option value="CAR_RENTAL">Car Rental</option>
                     <option value="HOTEL">Hotel</option>
@@ -138,27 +138,27 @@ export default function MarketplaceManager() {
                     <option value="EVENT">Event</option>
                   </select>
                 </div>
-                <div><label className="block text-sm text-white/50 mb-2">Title</label><input name="title" className="input-field" required /></div>
-                <div><label className="block text-sm text-white/50 mb-2">Price (₹)</label><input name="price" type="number" className="input-field" required /></div>
+                <div><label className="block text-sm text-slate-500 mb-2">Title</label><input name="title" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required /></div>
+                <div><label className="block text-sm text-slate-500 mb-2">Price (₹)</label><input name="price" type="number" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required /></div>
                 <div>
-                  <label className="block text-sm text-white/50 mb-2">Price Unit</label>
-                  <select name="priceUnit" className="input-field" required>
+                  <label className="block text-sm text-slate-500 mb-2">Price Unit</label>
+                  <select name="priceUnit" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required>
                     <option value="per night">Per Night</option>
                     <option value="per day">Per Day</option>
                     <option value="per person">Per Person</option>
                     <option value="total">Total</option>
                   </select>
                 </div>
-                <div className="col-span-2"><label className="block text-sm text-white/50 mb-2">Location</label><input name="location" className="input-field" required /></div>
-                <div className="col-span-2"><label className="block text-sm text-white/50 mb-2">Description</label><textarea name="description" className="input-field" rows={3} required /></div>
-                <div className="col-span-2"><label className="block text-sm text-white/50 mb-2">Cover Image URL</label><input name="coverImage" className="input-field" placeholder="https://..." required /></div>
+                <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Location</label><input name="location" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required /></div>
+                <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Description</label><textarea name="description" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" rows={3} required /></div>
+                <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Cover Image URL</label><input name="coverImage" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://..." required /></div>
                 <div className="col-span-2 flex items-center gap-2">
-                  <input type="checkbox" name="isAvailable" id="isAvailable" defaultChecked className="w-4 h-4 rounded bg-dark-500 border-white/20 text-primary-500" />
-                  <label htmlFor="isAvailable" className="text-sm">Available for Booking</label>
+                  <input type="checkbox" name="isAvailable" id="isAvailable" defaultChecked className="w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                  <label htmlFor="isAvailable" className="text-sm text-slate-700">Available for Booking</label>
                 </div>
               </div>
               <div className="flex gap-4 mt-8">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors font-medium">Cancel</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition-colors font-medium text-slate-700">Cancel</button>
                 <button type="submit" className="flex-1 btn-primary">Create Listing</button>
               </div>
             </form>
