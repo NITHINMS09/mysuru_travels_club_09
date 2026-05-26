@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<any>(null);
   const [isAddingTrip, setIsAddingTrip] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     const token = localStorage.getItem('tripnova_admin_token');
@@ -164,6 +165,7 @@ export default function AdminDashboard() {
 
         <div className="p-8">
           {isAddingTrip && <CreateTripModal onClose={() => setIsAddingTrip(false)} onSuccess={() => { setIsAddingTrip(false); fetchData(); }} />}
+          {editingTrip && <CreateTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} onSuccess={() => { setEditingTrip(null); fetchData(); }} />}
           <AnimatePresence mode="wait">
             {activeTab === 'Overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
@@ -209,7 +211,7 @@ export default function AdminDashboard() {
                           }}
                           className={`p-2 rounded-lg transition-all ${trip.isLiveTracking ? 'bg-green-500/20 text-green-400' : 'hover:bg-white/5 text-white/40'}`}
                         ><HiOutlineLocationMarker className="w-5 h-5" /></button>
-                        <button className="p-2 hover:bg-white/5 rounded-lg"><HiOutlinePencil className="w-5 h-5 text-white/40" /></button>
+                        <button onClick={() => setEditingTrip(trip)} className="p-2 hover:bg-white/5 rounded-lg"><HiOutlinePencil className="w-5 h-5 text-white/40" /></button>
                         <button onClick={() => deleteTrip(trip.id)} className="p-2 hover:bg-red-500/10 rounded-lg"><HiOutlineTrash className="w-5 h-5 text-red-400" /></button>
                       </div>
                     </div>
@@ -269,7 +271,8 @@ export default function AdminDashboard() {
                             role: formData.get('role'),
                             image: formData.get('image'),
                             contact: formData.get('contact'),
-                            instagram: formData.get('instagram')
+                            instagram: formData.get('instagram'),
+                            description: formData.get('description')
                           }, token);
                           setCrew([res, ...crew]);
                           toast.success('Crew member added');
@@ -281,6 +284,7 @@ export default function AdminDashboard() {
                         <input name="image" required placeholder="Image URL" className="input-field" />
                         <input name="contact" placeholder="Contact Info (Optional)" className="input-field" />
                         <input name="instagram" placeholder="Instagram Username (Optional)" className="input-field" />
+                        <textarea name="description" required placeholder="Short Description / Bio (Required)" className="input-field py-2" rows={2} />
                         <button type="submit" className="btn-primary w-full py-3">Add Member</button>
                       </form>
                     </div>

@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 // CREATE crew member (admin)
 router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { name, role, image, contact, instagram } = req.body;
+    const { name, role, image, contact, instagram, description } = req.body;
     
     if (!name || !role || !image) {
       return res.status(400).json({ error: 'Name, role, and image are required' });
@@ -33,7 +33,8 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
         role,
         image,
         contact,
-        instagram
+        instagram,
+        description
       }
     });
     

@@ -137,27 +137,102 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
 });
 
 // UPDATE trip (admin)
-router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+const updateTripHandler = async (req: AuthRequest, res: any) => {
   try {
-    const data = req.body;
-    const updateData: any = { ...data };
+    const {
+      id,
+      createdAt,
+      updatedAt,
+      bookings,
+      reviews,
+      _count,
+      avgRating,
+      ...allowedData
+    } = req.body;
 
-    if (data.itinerary) updateData.itinerary = typeof data.itinerary === 'object' ? JSON.stringify(data.itinerary) : data.itinerary;
-    if (data.pickupPoints) updateData.pickupPoints = typeof data.pickupPoints === 'object' ? JSON.stringify(data.pickupPoints) : data.pickupPoints;
-    if (data.included) updateData.included = Array.isArray(data.included) ? data.included.join(',') : data.included;
-    if (data.excluded) updateData.excluded = Array.isArray(data.excluded) ? data.excluded.join(',') : data.excluded;
-    if (data.images) updateData.images = Array.isArray(data.images) ? data.images.join(',') : data.images;
+    // Validate fields if provided
+    if (allowedData.title !== undefined && (!allowedData.title || !allowedData.title.trim())) {
+      return res.status(400).json({ error: 'Title cannot be empty' });
+    }
+    if (allowedData.destination !== undefined && (!allowedData.destination || !allowedData.destination.trim())) {
+      return res.status(400).json({ error: 'Destination cannot be empty' });
+    }
+    if (allowedData.price !== undefined) {
+      const priceNum = parseFloat(allowedData.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        return res.status(400).json({ error: 'Price must be a valid number greater than 0' });
+      }
+      allowedData.price = priceNum;
+    }
+    if (allowedData.totalSeats !== undefined) {
+      const seatsNum = parseInt(allowedData.totalSeats);
+      if (isNaN(seatsNum) || seatsNum <= 0) {
+        return res.status(400).json({ error: 'Total seats must be a valid number greater than 0' });
+      }
+      allowedData.totalSeats = seatsNum;
+    }
+    if (allowedData.startDate !== undefined) {
+      const start = new Date(allowedData.startDate);
+      if (isNaN(start.getTime())) {
+        return res.status(400).json({ error: 'Invalid start date' });
+      }
+      allowedData.startDate = start;
+    }
+    if (allowedData.endDate !== undefined) {
+      const end = new Date(allowedData.endDate);
+      if (isNaN(end.getTime())) {
+        return res.status(400).json({ error: 'Invalid end date' });
+      }
+      allowedData.endDate = end;
+    }
+    if (allowedData.startDate && allowedData.endDate && new Date(allowedData.endDate) < new Date(allowedData.startDate)) {
+      return res.status(400).json({ error: 'End date cannot be before start date' });
+    }
+    if (allowedData.coverImage !== undefined && (!allowedData.coverImage || !allowedData.coverImage.trim())) {
+      return res.status(400).json({ error: 'Cover image URL cannot be empty' });
+    }
+
+    if (allowedData.latitude !== undefined && allowedData.latitude !== null) {
+      allowedData.latitude = parseFloat(allowedData.latitude);
+      if (isNaN(allowedData.latitude)) allowedData.latitude = null;
+    }
+    if (allowedData.longitude !== undefined && allowedData.longitude !== null) {
+      allowedData.longitude = parseFloat(allowedData.longitude);
+      if (isNaN(allowedData.longitude)) allowedData.longitude = null;
+    }
+
+    if (allowedData.itinerary !== undefined) {
+      allowedData.itinerary = typeof allowedData.itinerary === 'object' ? JSON.stringify(allowedData.itinerary) : allowedData.itinerary;
+    }
+    if (allowedData.pickupPoints !== undefined) {
+      allowedData.pickupPoints = typeof allowedData.pickupPoints === 'object' ? JSON.stringify(allowedData.pickupPoints) : allowedData.pickupPoints;
+    }
+    if (allowedData.included !== undefined) {
+      allowedData.included = Array.isArray(allowedData.included) ? allowedData.included.join(',') : allowedData.included;
+    }
+    if (allowedData.excluded !== undefined) {
+      allowedData.excluded = Array.isArray(allowedData.excluded) ? allowedData.excluded.join(',') : allowedData.excluded;
+    }
+    if (allowedData.images !== undefined) {
+      allowedData.images = Array.isArray(allowedData.images) ? allowedData.images.join(',') : allowedData.images;
+    }
 
     const trip = await prisma.trip.update({
       where: { id: req.params.id },
-      data: updateData,
+      data: allowedData,
     });
     res.json(trip);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update trip error:', error);
-    res.status(500).json({ error: 'Server error' });
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
-});
+};
+
+router.put('/:id', authenticateAdmin, updateTripHandler);
+router.patch('/:id', authenticateAdmin, updateTripHandler);
 
 // DELETE trip (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
