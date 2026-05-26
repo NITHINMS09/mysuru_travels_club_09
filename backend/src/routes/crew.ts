@@ -45,6 +45,37 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
   }
 });
 
+// UPDATE crew member (admin)
+router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { name, role, image, contact, instagram, description } = req.body;
+
+    if (!name || !role || !image || !description) {
+      return res.status(400).json({ error: 'Name, role, image, and description are required' });
+    }
+
+    const updatedMember = await prisma.crewMember.update({
+      where: { id: req.params.id },
+      data: {
+        name,
+        role,
+        image,
+        contact,
+        instagram,
+        description
+      }
+    });
+
+    res.json(updatedMember);
+  } catch (error: any) {
+    console.error('Update crew error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Crew member not found' });
+    }
+    res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+});
+
 // DELETE crew member (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {

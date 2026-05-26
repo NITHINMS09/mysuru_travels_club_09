@@ -32,6 +32,38 @@ export default function AdminDashboard() {
   const [isAddingTrip, setIsAddingTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
 
+  const [editingCrew, setEditingCrew] = useState<any>(null);
+  const [crewForm, setCrewForm] = useState({
+    name: '',
+    role: '',
+    image: '',
+    contact: '',
+    instagram: '',
+    description: ''
+  });
+
+  useEffect(() => {
+    if (editingCrew) {
+      setCrewForm({
+        name: editingCrew.name || '',
+        role: editingCrew.role || '',
+        image: editingCrew.image || '',
+        contact: editingCrew.contact || '',
+        instagram: editingCrew.instagram || '',
+        description: editingCrew.description || ''
+      });
+    } else {
+      setCrewForm({
+        name: '',
+        role: '',
+        image: '',
+        contact: '',
+        instagram: '',
+        description: ''
+      });
+    }
+  }, [editingCrew]);
+
   const fetchData = useCallback(async () => {
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
@@ -259,33 +291,44 @@ export default function AdminDashboard() {
                   {/* Add Crew Form */}
                   <div className="lg:col-span-1">
                     <div className="glass-card p-6 border-white/5">
-                      <h4 className="font-bold text-lg mb-4">Add New Member</h4>
+                      <h4 className="font-bold text-lg mb-4">{editingCrew ? `Edit Member: ${editingCrew.name}` : 'Add New Member'}</h4>
                       <form onSubmit={async (e) => {
                         e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
                         const token = localStorage.getItem('tripnova_admin_token');
                         if (!token) return;
                         try {
-                          const res = await api.crew.create({
-                            name: formData.get('name'),
-                            role: formData.get('role'),
-                            image: formData.get('image'),
-                            contact: formData.get('contact'),
-                            instagram: formData.get('instagram'),
-                            description: formData.get('description')
-                          }, token);
-                          setCrew([res, ...crew]);
-                          toast.success('Crew member added');
-                          (e.target as HTMLFormElement).reset();
-                        } catch (err) { toast.error('Failed to add crew member'); }
+                          if (editingCrew) {
+                            const res = await api.crew.update(editingCrew.id, crewForm, token);
+                            setCrew(crew.map(c => c.id === editingCrew.id ? res : c));
+                            toast.success('Crew member updated successfully');
+                            setEditingCrew(null);
+                          } else {
+                            const res = await api.crew.create(crewForm, token);
+                            setCrew([res, ...crew]);
+                            toast.success('Crew member added successfully');
+                          }
+                          setCrewForm({
+                            name: '',
+                            role: '',
+                            image: '',
+                            contact: '',
+                            instagram: '',
+                            description: ''
+                          });
+                        } catch (err) {
+                          toast.error(editingCrew ? 'Failed to update crew member' : 'Failed to add crew member');
+                        }
                       }} className="space-y-4">
-                        <input name="name" required placeholder="Full Name" className="input-field" />
-                        <input name="role" required placeholder="Role (e.g. Lead Guide)" className="input-field" />
-                        <input name="image" required placeholder="Image URL" className="input-field" />
-                        <input name="contact" placeholder="Contact Info (Optional)" className="input-field" />
-                        <input name="instagram" placeholder="Instagram Username (Optional)" className="input-field" />
-                        <textarea name="description" required placeholder="Short Description / Bio (Required)" className="input-field py-2" rows={2} />
-                        <button type="submit" className="btn-primary w-full py-3">Add Member</button>
+                        <input name="name" required placeholder="Full Name" className="input-field" value={crewForm.name} onChange={e => setCrewForm({...crewForm, name: e.target.value})} />
+                        <input name="role" required placeholder="Role (e.g. Lead Guide)" className="input-field" value={crewForm.role} onChange={e => setCrewForm({...crewForm, role: e.target.value})} />
+                        <input name="image" required placeholder="Image URL" className="input-field" value={crewForm.image} onChange={e => setCrewForm({...crewForm, image: e.target.value})} />
+                        <input name="contact" placeholder="Contact Info (Optional)" className="input-field" value={crewForm.contact} onChange={e => setCrewForm({...crewForm, contact: e.target.value})} />
+                        <input name="instagram" placeholder="Instagram Username (Optional)" className="input-field" value={crewForm.instagram} onChange={e => setCrewForm({...crewForm, instagram: e.target.value})} />
+                        <textarea name="description" required placeholder="Short Description / Bio (Required)" className="input-field py-2" rows={2} value={crewForm.description} onChange={e => setCrewForm({...crewForm, description: e.target.value})} />
+                        <button type="submit" className="btn-primary w-full py-3">{editingCrew ? 'Save Changes' : 'Add Member'}</button>
+                        {editingCrew && (
+                          <button type="button" onClick={() => setEditingCrew(null)} className="w-full py-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-sm font-medium">Cancel Edit</button>
+                        )}
                       </form>
                     </div>
                   </div>
@@ -305,6 +348,7 @@ export default function AdminDashboard() {
                             <p className="text-white/40 text-sm uppercase tracking-widest font-bold">{member.role}</p>
                           </div>
                           <div className="flex gap-2">
+                            <button onClick={() => setEditingCrew(member)} className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white" title="Edit member"><HiOutlinePencil className="w-5 h-5" /></button>
                             <button onClick={() => deleteCrew(member.id)} className="p-2 hover:bg-red-500/10 rounded-lg"><HiOutlineTrash className="w-5 h-5 text-red-400" /></button>
                           </div>
                         </div>

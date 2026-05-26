@@ -83,6 +83,7 @@ export const api = {
   crew: {
     getAll: () => fetchAPI('/crew'),
     create: (data: any, token: string) => fetchAPI('/crew', { method: 'POST', body: JSON.stringify(data), token }),
+    update: (id: string, data: any, token: string) => fetchAPI(`/crew/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
     delete: (id: string, token: string) => fetchAPI(`/crew/${id}`, { method: 'DELETE', token }),
   },
 
