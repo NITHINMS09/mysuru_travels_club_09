@@ -34,19 +34,19 @@ export default function UpcomingTrips() {
   }, []);
 
   return (
-    <section className="pt-8 pb-20 md:pb-32 bg-[#050816] relative overflow-hidden">
+    <section className="pt-12 pb-24 md:pb-36 bg-[#030014] relative overflow-hidden">
       {/* Background Orbs */}
-      <div className="floating-orb w-96 h-96 bg-primary-600/20 top-0 -left-20" />
-      <div className="floating-orb w-96 h-96 bg-accent-cyan/10 bottom-0 -right-20" />
+      <div className="absolute top-0 -left-20 w-[450px] h-[450px] bg-primary-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 -right-20 w-[450px] h-[450px] bg-accent-cyan/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div>
             <motion.span
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="text-accent-gold font-bold tracking-[0.3em] uppercase text-xs mb-4 block"
+              className="text-accent-gold font-bold tracking-[0.25em] uppercase text-xs mb-4 block"
             >
               Don't Miss Out
             </motion.span>
@@ -54,18 +54,18 @@ export default function UpcomingTrips() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="section-title mb-0"
+              className="text-4xl md:text-5xl lg:text-6xl font-black mb-0 font-outfit"
             >
-              Upcoming <span className="gradient-text">Adventures</span>
+              Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-pink-500">Adventures</span>
             </motion.h2>
           </div>
 
           <div className="flex gap-4">
-            <button className="swiper-prev w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all">
-              <HiOutlineArrowLeft className="w-6 h-6" />
+            <button className="swiper-prev w-12 h-12 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.06] hover:border-white/[0.15] active:scale-95 transition-all duration-300">
+              <HiOutlineArrowLeft className="w-5 h-5" />
             </button>
-            <button className="swiper-next w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center hover:bg-primary-500 shadow-glow transition-all">
-              <HiOutlineArrowRight className="w-6 h-6" />
+            <button className="swiper-next w-12 h-12 rounded-2xl bg-gradient-to-r from-primary-500 to-accent-cyan flex items-center justify-center text-white hover:from-primary-600 hover:to-accent-cyan/90 shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] active:scale-95 transition-all duration-300">
+              <HiOutlineArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -73,12 +73,12 @@ export default function UpcomingTrips() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-96 rounded-2xl bg-white/5 animate-pulse" />
+              <div key={i} className="h-96 rounded-3xl bg-white/[0.02] border border-white/[0.06] shimmer" />
             ))}
           </div>
         ) : trips.length === 0 ? (
-          <div className="text-center py-20 bg-white/5 rounded-3xl border-2 border-dashed border-white/5">
-            <p className="text-white/20 font-bold uppercase tracking-widest">No upcoming adventures found</p>
+          <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/[0.06]">
+            <p className="text-white/20 font-bold uppercase tracking-widest text-sm">No upcoming adventures found</p>
           </div>
         ) : (
           <Swiper
@@ -97,21 +97,18 @@ export default function UpcomingTrips() {
               640: { slidesPerView: 2 },
               1024: { slidesPerView: 3 },
             }}
-            className="pb-16 pt-8 px-4 -mx-4"
+            className="pb-16 pt-4 px-4 -mx-4 overflow-visible"
           >
             {trips.map((trip, i) => (
-              <SwiperSlide key={trip.id}>
+              <SwiperSlide key={trip.id} className="h-auto">
                 <motion.div
-                  initial={{ opacity: 0, y: 50, rotateX: 20 }}
-                  whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.6, delay: i * 0.1, ease: "easeOut" }}
-                  whileHover={{ scale: 1.02, y: -10 }}
-                  className="perspective-[1000px] h-full"
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
+                  className="h-full"
                 >
-                  <div className="shadow-card hover:shadow-card-hover transition-shadow duration-500 rounded-3xl h-full">
-                    <TripCard trip={trip} />
-                  </div>
+                  <TripCard trip={trip} />
                 </motion.div>
               </SwiperSlide>
             ))}

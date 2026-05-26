@@ -5,10 +5,10 @@ import { useRef, useState, useEffect } from 'react';
 import { HiOutlineUserGroup, HiOutlineGlobe, HiOutlineStar, HiOutlinePhotograph } from 'react-icons/hi';
 
 const stats = [
-  { label: 'Happy Travelers', value: 15000, suffix: '+', icon: HiOutlineUserGroup, color: 'text-purple-500' },
-  { label: 'Destinations', value: 120, suffix: '+', icon: HiOutlineGlobe, color: 'text-cyan-500' },
-  { label: 'Positive Reviews', value: 98, suffix: '%', icon: HiOutlineStar, color: 'text-gold-500' },
-  { label: 'Photos Shared', value: 50, suffix: 'K+', icon: HiOutlinePhotograph, color: 'text-pink-500' },
+  { label: 'Happy Travelers', value: 15000, suffix: '+', icon: HiOutlineUserGroup, color: 'text-purple-400', border: 'hover:border-purple-500/30', glow: 'from-purple-600 to-indigo-600' },
+  { label: 'Destinations', value: 120, suffix: '+', icon: HiOutlineGlobe, color: 'text-cyan-400', border: 'hover:border-cyan-500/30', glow: 'from-cyan-500 to-blue-600' },
+  { label: 'Positive Reviews', value: 98, suffix: '%', icon: HiOutlineStar, color: 'text-amber-400', border: 'hover:border-amber-500/30', glow: 'from-amber-500 to-yellow-500' },
+  { label: 'Photos Shared', value: 50, suffix: 'K+', icon: HiOutlinePhotograph, color: 'text-pink-400', border: 'hover:border-pink-500/30', glow: 'from-pink-500 to-rose-500' },
 ];
 
 function Counter({ value, suffix }: { value: number; suffix: string }) {
@@ -37,43 +37,51 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
     }
   }, [isInView, value]);
 
-  return <span ref={ref}>{count}{suffix}</span>;
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
 export default function Stats() {
   return (
-    <section className="section-padding bg-black relative overflow-hidden">
+    <section className="py-24 bg-[#030014] relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent-gold/5 rounded-full blur-[100px] mix-blend-screen animate-float pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary-600/10 rounded-full blur-[100px] mix-blend-screen animate-float-slow pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[450px] h-[450px] bg-accent-gold/5 rounded-full blur-[100px] pointer-events-none animate-float" />
+      <div className="absolute bottom-0 right-1/4 w-[450px] h-[450px] bg-primary-600/5 rounded-full blur-[100px] pointer-events-none animate-float-slow" />
       
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.08, duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center group"
+              className={`glass-card p-8 flex flex-col items-center hover:bg-white/[0.03] transition-all duration-300 shadow-xl ${stat.border}`}
             >
-              <div className="mb-4 flex justify-center">
-                <div className={`w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${stat.color}`}>
-                  <stat.icon className="w-7 h-7" />
+              {/* Icon Container */}
+              <div className="mb-5 flex justify-center">
+                <div className={`w-14 h-14 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-center group-hover:scale-115 transition-transform duration-300 ${stat.color}`}>
+                  <stat.icon className="w-6.5 h-6.5" />
                 </div>
               </div>
+
+              {/* Counter Number */}
               <motion.div 
-                initial={{ scale: 0.5, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 10, delay: index * 0.1 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-black mb-2 font-outfit"
+                transition={{ type: "spring", stiffness: 180, damping: 12, delay: index * 0.08 }}
+                className="text-4xl md:text-5xl font-black mb-3 font-outfit text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40"
               >
                 <Counter value={stat.value} suffix={stat.suffix} />
               </motion.div>
-              <div className="text-sm md:text-base text-white/50 font-medium uppercase tracking-wider">
+
+              {/* Label */}
+              <div className="text-xs md:text-sm text-white/50 font-bold uppercase tracking-widest font-outfit">
                 {stat.label}
               </div>
+
+              {/* Colorful gradient indicator at the bottom */}
+              <div className={`absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r ${stat.glow} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center`} />
             </motion.div>
           ))}
         </div>
