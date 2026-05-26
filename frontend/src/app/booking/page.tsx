@@ -355,8 +355,8 @@ function BookingContent() {
                     </div>
 
                     <div className="flex flex-col items-center p-8 bg-slate-50/80 border border-slate-200 rounded-[2rem] mx-auto max-w-sm shadow-inner">
-                      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6">
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}&margin=10`} alt="UPI QR Code" className="w-48 h-48 rounded-xl mix-blend-multiply" />
+                      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6 flex justify-center">
+                        <img src="https://cdn.corenexis.com/files/c/2563753720.jpg" alt="UPI QR Code" className="w-48 h-48 rounded-xl mix-blend-multiply object-contain" />
                       </div>
                       
                       <div className="text-center mb-6">
