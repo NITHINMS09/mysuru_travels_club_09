@@ -47,7 +47,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3.5 group">
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-purple-500 to-accent-cyan flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] group-hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] group-hover:scale-105 transition-all duration-300">
-              <span className="text-white font-outfit font-black text-xl">T</span>
+              <span className="text-white font-outfit font-black text-xl">M</span>
               <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent-gold rounded-full border border-white/20 animate-pulse" />
             </div>
             <span className="text-lg md:text-xl font-outfit font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-800 to-primary-600 group-hover:to-accent-cyan transition-all duration-300">
