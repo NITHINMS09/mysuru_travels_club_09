@@ -92,18 +92,17 @@ function BookingContent() {
   };
 
   const processManualPayment = async (bookingId: string) => {
-    if (!screenshot) { toast.error('Please upload screenshot'); setLoading(false); return; }
     try {
       const formData = new FormData();
-      formData.append('screenshot', screenshot);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/bookings/${bookingId}/screenshot`, {
-        method: 'PATCH', body: formData,
-      });
-      if (!res.ok) throw new Error('Upload failed');
+      formData.append('screenshot', screenshot!);
+      await api.bookings.uploadScreenshot(bookingId, formData);
       setStep(3);
       toast.success('Submitted for approval!');
-    } catch (err) { toast.error('Submission failed'); }
-    finally { setLoading(false); }
+    } catch (err: any) { 
+      toast.error(err.message || 'Submission failed'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const processRazorpayPayment = async (bookingId: string, amount: number) => {
@@ -134,15 +133,28 @@ function BookingContent() {
 
   const onSubmit = async (data: BookingFormData) => {
     if (step === 1) { setStep(2); return; }
+    
+    if (paymentMethod === 'qr' && !screenshot) {
+      toast.error('Please upload a payment screenshot to proceed');
+      return;
+    }
+    
     setLoading(true);
     try {
       const bookingData = { ...data, tripId, totalAmount: pricing.total, isManualPayment: paymentMethod === 'qr' };
       const res = await api.bookings.create(bookingData);
       if (!res || !res.booking) throw new Error('Booking failed');
       setBookingRes(res.booking);
-      if (paymentMethod === 'qr') await processManualPayment(res.booking.id);
-      else await processRazorpayPayment(res.booking.id, pricing.total);
-    } catch (error: any) { toast.error(error.message); setLoading(false); }
+      
+      if (paymentMethod === 'qr') {
+        await processManualPayment(res.booking.id);
+      } else {
+        await processRazorpayPayment(res.booking.id, pricing.total);
+      }
+    } catch (error: any) { 
+      toast.error(error.message || 'Booking submission failed'); 
+      setLoading(false); 
+    }
   };
 
   if (!trip) return null;
@@ -186,8 +198,8 @@ function BookingContent() {
                           <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Pickup Point</label>
                           <select {...register('pickupPoint')} className="input-field bg-white border border-slate-200 font-semibold text-slate-700">
                             <option value="">Select Boarding Point</option>
-                            {trip.pickupPoints?.map((pt: string) => (
-                              <option key={pt} value={pt}>{pt}</option>
+                            {trip.pickupPoints?.map((pt: any, i: number) => (
+                              <option key={i} value={pt.location}>{pt.location} - {pt.time}</option>
                             ))}
                           </select>
                           {errors.pickupPoint && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.pickupPoint.message}</p>}

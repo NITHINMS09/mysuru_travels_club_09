@@ -39,6 +39,17 @@ export const api = {
     },
     getByRef: (ref: string) => fetchAPI(`/bookings/ref/${ref}`),
     updateStatus: (id: string, status: string, token: string) => fetchAPI(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }), token }),
+    uploadScreenshot: async (id: string, formData: FormData) => {
+      const res = await fetch(`${API_BASE}/bookings/${id}/screenshot`, {
+        method: 'PATCH',
+        body: formData,
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Screenshot upload failed');
+      }
+      return res.json();
+    },
   },
 
   payments: {
