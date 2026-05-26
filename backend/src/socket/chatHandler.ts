@@ -41,6 +41,15 @@ export function initializeSocket(io: SocketServer) {
       replyToId?: string;
     }) => {
       try {
+        // Check if user email is suspended/banned
+        const bannedSetting = await prisma.siteSetting.findUnique({ where: { key: 'banned_emails' } });
+        if (bannedSetting) {
+          const bannedEmails = JSON.parse(bannedSetting.value);
+          if (Array.isArray(bannedEmails) && bannedEmails.includes(data.senderEmail.toLowerCase().trim())) {
+            socket.emit('error', { message: 'Your account has been suspended by the administrator.' });
+            return;
+          }
+        }
         const message = await prisma.chatMessage.create({
           data: {
             tripId: data.tripId,

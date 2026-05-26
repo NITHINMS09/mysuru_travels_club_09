@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import prisma from '../config/database';
 import { config } from '../config';
-import { authenticateAdmin } from '../middleware/auth';
+import { authenticateAdmin, requireSuperAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -89,6 +89,220 @@ router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
     });
   } catch (error) {
     console.error('Dashboard error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET all users (travelers)
+router.get('/users', authenticateAdmin, async (req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const usersMap: any = {};
+    bookings.forEach(b => {
+      const emailLower = b.email.toLowerCase().trim();
+      if (!usersMap[emailLower]) {
+        usersMap[emailLower] = {
+          email: b.email,
+          name: b.travelerName,
+          phone: b.phone,
+          age: b.age,
+          gender: b.gender,
+          emergencyName: b.emergencyName,
+          emergencyPhone: b.emergencyPhone,
+          bookingsCount: 0,
+          totalSpent: 0,
+          lastBookingDate: b.createdAt,
+          status: 'Active'
+        };
+      }
+      usersMap[emailLower].bookingsCount += 1;
+      usersMap[emailLower].totalSpent += b.totalAmount;
+      if (new Date(b.createdAt) > new Date(usersMap[emailLower].lastBookingDate)) {
+        usersMap[emailLower].lastBookingDate = b.createdAt;
+      }
+    });
+
+    // Check banned users
+    const bannedSetting = await prisma.siteSetting.findUnique({ where: { key: 'banned_emails' } });
+    if (bannedSetting) {
+      const bannedEmails = JSON.parse(bannedSetting.value);
+      if (Array.isArray(bannedEmails)) {
+        bannedEmails.forEach((email: string) => {
+          const emailLower = email.toLowerCase().trim();
+          if (usersMap[emailLower]) {
+            usersMap[emailLower].status = 'Banned';
+          } else {
+            // Add banned user shell if they have no bookings yet
+            usersMap[emailLower] = {
+              email,
+              name: 'Suspended Explorer',
+              phone: 'N/A',
+              age: 0,
+              gender: 'N/A',
+              emergencyName: 'N/A',
+              emergencyPhone: 'N/A',
+              bookingsCount: 0,
+              totalSpent: 0,
+              lastBookingDate: new Date(),
+              status: 'Banned'
+            };
+          }
+        });
+      }
+    }
+
+    const users = Object.values(usersMap);
+    res.json({ users });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// UPDATE user details (across all their bookings)
+router.put('/users/:email', authenticateAdmin, async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { name, phone, age, gender, emergencyName, emergencyPhone } = req.body;
+
+    await prisma.booking.updateMany({
+      where: { email: { equals: email } },
+      data: {
+        travelerName: name,
+        phone,
+        age: age ? parseInt(age) : undefined,
+        gender,
+        emergencyName,
+        emergencyPhone
+      }
+    });
+
+    res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE user (and all bookings)
+router.delete('/users/:email', authenticateAdmin, async (req, res) => {
+  try {
+    const { email } = req.params;
+    await prisma.booking.deleteMany({
+      where: { email: { equals: email } }
+    });
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET all administrators (Super admin only)
+router.get('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+  try {
+    const admins = await prisma.admin.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        createdAt: true
+      }
+    });
+    res.json({ admins });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// CREATE administrator (Super admin only)
+router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+  try {
+    const { name, email, password, role = 'MODERATOR' } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const existing = await prisma.admin.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Admin email already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newAdmin = await prisma.admin.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role
+      }
+    });
+
+    res.status(201).json({
+      admin: {
+        id: newAdmin.id,
+        name: newAdmin.name,
+        email: newAdmin.email,
+        role: newAdmin.role
+      }
+    });
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// UPDATE administrator (Super admin only)
+router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, role, password } = req.body;
+    
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (role) updateData.role = role;
+    if (password) {
+      updateData.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const updated = await prisma.admin.update({
+      where: { id },
+      data: updateData
+    });
+
+    res.json({
+      admin: {
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        role: updated.role
+      }
+    });
+  } catch (error) {
+    console.error('Update admin error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE administrator (Super admin only)
+router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent self-deletion
+    if (id === (req as any).admin?.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+
+    await prisma.admin.delete({ where: { id } });
+    res.json({ message: 'Administrator account removed successfully' });
+  } catch (error) {
+    console.error('Delete admin error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

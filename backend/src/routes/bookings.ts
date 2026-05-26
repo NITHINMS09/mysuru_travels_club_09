@@ -40,6 +40,16 @@ router.post('/', async (req, res) => {
       totalAmount, isManualPayment = false, pickupPoint
     } = req.body;
 
+    // Enforce email suspension check
+    const bannedSetting = await prisma.siteSetting.findUnique({ where: { key: 'banned_emails' } });
+    if (bannedSetting) {
+      const bannedEmails = JSON.parse(bannedSetting.value);
+      if (Array.isArray(bannedEmails) && bannedEmails.includes(email.toLowerCase().trim())) {
+        res.status(400).json({ error: 'Access Denied: This email account has been suspended by the administrator.' });
+        return;
+      }
+    }
+
     // Validate trip exists and has seats
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) {

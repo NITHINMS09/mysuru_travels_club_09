@@ -129,6 +129,13 @@ export const api = {
     login: (email: string, password: string) => fetchAPI('/auth/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     verify: (token: string) => fetchAPI('/auth/admin/verify', { token }),
     dashboard: (token: string) => fetchAPI('/auth/admin/dashboard', { token }),
+    getUsers: (token: string) => fetchAPI('/auth/admin/users', { token }),
+    updateUser: (email: string, data: any, token: string) => fetchAPI(`/auth/admin/users/${email}`, { method: 'PUT', body: JSON.stringify(data), token }),
+    deleteUser: (email: string, token: string) => fetchAPI(`/auth/admin/users/${email}`, { method: 'DELETE', token }),
+    getAdmins: (token: string) => fetchAPI('/auth/admin/admins', { token }),
+    createAdmin: (data: any, token: string) => fetchAPI('/auth/admin/admins', { method: 'POST', body: JSON.stringify(data), token }),
+    updateAdmin: (id: string, data: any, token: string) => fetchAPI(`/auth/admin/admins/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+    deleteAdmin: (id: string, token: string) => fetchAPI(`/auth/admin/admins/${id}`, { method: 'DELETE', token }),
   },
 
   notifications: {
