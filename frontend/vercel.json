@@ -1,4 +1,8 @@
 {
   "version": 2,
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://mysuru-travels-club-09.onrender.com/api/v1",
+    "NEXT_PUBLIC_SOCKET_URL": "https://mysuru-travels-club-09.onrender.com"
+  }
 }
