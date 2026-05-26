@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_API_URL: 'https://mysuru-travels-club-09.onrender.com/api/v1',
+    NEXT_PUBLIC_SOCKET_URL: 'https://mysuru-travels-club-09.onrender.com',
+  },
   images: {
     remotePatterns: [
       {
@@ -22,6 +26,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.corenexis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'mysuru-travels-club-09.onrender.com',
       },
     ],
   },
