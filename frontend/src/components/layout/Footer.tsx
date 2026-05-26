@@ -27,13 +27,6 @@ const footerLinks = {
   ],
 };
 
-const defaultSocials = [
-  { icon: RiInstagramLine, href: '#' },
-  { icon: RiTwitterXLine, href: '#' },
-  { icon: RiFacebookCircleLine, href: '#' },
-  { icon: RiYoutubeLine, href: '#' },
-];
-
 export default function Footer() {
   const [settings, setSettings] = useState<any>({});
 
@@ -47,34 +40,35 @@ export default function Footer() {
   const siteName = settings.siteName || 'MYSURU TRAVEL CLUB';
 
   return (
-    <footer className="bg-black border-t border-white/[0.06] pt-20 pb-8 relative overflow-hidden">
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-600/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent-cyan/5 rounded-full blur-[120px] pointer-events-none" />
+    <footer className="bg-[#030014] border-t border-white/[0.06] pt-24 pb-12 relative overflow-hidden">
+      {/* Glow Effects */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-600/5 rounded-full blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent-cyan/5 rounded-full blur-[130px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-20">
           
           {/* Brand Info */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-6 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center">
-                <span className="text-white font-outfit font-bold text-lg">{siteName.charAt(0)}</span>
+            <Link href="/" className="flex items-center gap-3 mb-6 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-purple-500 to-accent-cyan flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                <span className="text-white font-outfit font-black text-xl">{siteName.charAt(0)}</span>
               </div>
-              <span className="text-xl font-outfit font-bold">{siteName}</span>
+              <span className="text-xl font-outfit font-black tracking-tight text-white group-hover:text-primary-300 transition-colors">{siteName}</span>
             </Link>
-            <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
+            <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm font-outfit">
               {settings.footerDescription || `AI-powered travel experiences that transform ordinary trips into extraordinary adventures. Discover, book, and explore with ${siteName}.`}
             </p>
-            <div className="space-y-2.5">
-              <a href={`mailto:${email}`} className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors">
+            <div className="space-y-3.5">
+              <a href={`mailto:${email}`} className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors duration-300">
                 <HiOutlineMail className="w-4 h-4 text-primary-400" />
                 {email}
               </a>
-              <a href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors">
+              <a href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors duration-300">
                 <HiOutlinePhone className="w-4 h-4 text-primary-400" />
                 {phone}
               </a>
-              <p className="flex items-center gap-2 text-sm text-white/50">
+              <p className="flex items-center gap-2.5 text-sm text-white/50">
                 <HiOutlineLocationMarker className="w-4 h-4 text-primary-400" />
                 {address}
               </p>
@@ -84,13 +78,16 @@ export default function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-sm font-outfit font-semibold text-white uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-outfit font-black text-white uppercase tracking-[0.2em] mb-6">
                 {title}
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-3.5">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="text-sm text-white/50 hover:text-white transition-colors duration-200 hover:translate-x-1 inline-block">
+                    <Link 
+                      href={link.href} 
+                      className="text-sm text-white/50 hover:text-primary-300 transition-all duration-300 hover:translate-x-1.5 inline-block font-outfit"
+                    >
                       {link.label}
                     </Link>
                   </li>
@@ -100,24 +97,29 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/[0.06] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/40">
+        {/* Divider & Copyright */}
+        <div className="border-t border-white/[0.06] pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-xs md:text-sm text-white/30 font-outfit">
             © {new Date().getFullYear()} {siteName}. All rights reserved. Made with ❤️ in India.
           </p>
+          
+          {/* Social Icons with colorful glows on hover */}
           <div className="flex items-center gap-3">
             {[
-              { icon: RiInstagramLine, href: settings.socialInstagram || '#', label: 'Instagram' },
-              { icon: RiTwitterXLine, href: settings.socialTwitter || '#', label: 'Twitter' },
-              { icon: RiFacebookCircleLine, href: settings.socialFacebook || '#', label: 'Facebook' },
+              { icon: RiInstagramLine, href: settings.socialInstagram || 'https://instagram.com', label: 'Instagram', hoverGlow: 'hover:bg-gradient-to-tr hover:from-purple-500 hover:to-pink-500 hover:border-transparent' },
+              { icon: RiTwitterXLine, href: settings.socialTwitter || 'https://twitter.com', label: 'Twitter', hoverGlow: 'hover:bg-white hover:text-black hover:border-transparent' },
+              { icon: RiFacebookCircleLine, href: settings.socialFacebook || 'https://facebook.com', label: 'Facebook', hoverGlow: 'hover:bg-blue-600 hover:border-transparent' },
+              { icon: RiYoutubeLine, href: settings.socialYoutube || 'https://youtube.com', label: 'Youtube', hoverGlow: 'hover:bg-red-600 hover:border-transparent' }
             ].map((social, idx) => (
               <a
                 key={idx}
                 href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={social.label}
-                className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/50 hover:text-white hover:border-primary-500/50 hover:bg-primary-500/10 transition-all duration-300"
+                className={`w-10 h-10 rounded-xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-center text-white/50 hover:text-white transition-all duration-300 active:scale-95 ${social.hoverGlow}`}
               >
-                <social.icon className="w-4 h-4" />
+                <social.icon className="w-5 h-5" />
               </a>
             ))}
           </div>
