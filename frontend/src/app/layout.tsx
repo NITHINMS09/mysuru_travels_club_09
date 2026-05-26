@@ -20,23 +20,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="light" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="" />
-        <meta name="theme-color" content="#050816" />
+        <meta name="theme-color" content="#ffffff" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className="font-inter antialiased bg-black text-white selection:bg-primary-500 selection:text-white" suppressHydrationWarning>
+      <body className="font-inter antialiased bg-[#f8fafc] text-[#0f172a] selection:bg-primary-500 selection:text-white" suppressHydrationWarning>
         <SmoothScroller />
         <Preloader />
         <Toaster
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1a1a3e',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: '#ffffff',
+              color: '#0f172a',
+              border: '1px solid rgba(15,23,42,0.08)',
               borderRadius: '12px',
               backdropFilter: 'blur(20px)',
             },

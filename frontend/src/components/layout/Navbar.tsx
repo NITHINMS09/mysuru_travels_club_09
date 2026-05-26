@@ -50,7 +50,7 @@ export default function Navbar() {
               <span className="text-white font-outfit font-black text-xl">T</span>
               <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent-gold rounded-full border border-white/20 animate-pulse" />
             </div>
-            <span className="text-lg md:text-xl font-outfit font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-primary-300 group-hover:to-accent-cyan transition-all duration-300">
+            <span className="text-lg md:text-xl font-outfit font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-800 to-primary-600 group-hover:to-accent-cyan transition-all duration-300">
               MYSURU TRAVEL CLUB
             </span>
           </Link>
