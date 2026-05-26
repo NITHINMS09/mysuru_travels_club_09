@@ -1,0 +1,16 @@
+{
+  "name": "TripNova Travel Agency",
+  "short_name": "TripNova",
+  "description": "AI-Powered Travel Agency for Extraordinary Adventures",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050816",
+  "theme_color": "#050816",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
