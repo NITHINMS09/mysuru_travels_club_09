@@ -39,10 +39,10 @@ export default function Preloader() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, y: '-100%' }}
           transition={{ duration: 0.95, ease: [0.76, 0, 0.24, 1], delay: 0.15 }}
-          className="fixed inset-0 z-[99999] bg-[#030014] flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 z-[99999] bg-[#ffffff] flex flex-col items-center justify-center overflow-hidden"
         >
           {/* Animated Background Blob */}
-          <div className="absolute w-[450px] h-[450px] bg-primary-600/10 rounded-full blur-[120px] pointer-events-none animate-spin-slow" />
+          <div className="absolute w-[450px] h-[450px] bg-violet-600/5 rounded-full blur-[120px] pointer-events-none" />
 
           {/* Logo Animation */}
           <div className="overflow-hidden mb-8 relative z-10">
@@ -50,16 +50,16 @@ export default function Preloader() {
               initial={{ y: 100 }}
               animate={{ y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-accent-cyan tracking-tight text-center font-outfit drop-shadow-[0_0_30px_rgba(139,92,246,0.25)]"
+              className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-blue-600 to-cyan-500 tracking-tight text-center font-outfit"
             >
               MYSURU TRAVEL CLUB
             </motion.h1>
           </div>
 
           {/* Progress Bar Container */}
-          <div className="w-64 md:w-96 h-[2px] bg-white/10 relative overflow-hidden rounded-full z-10 shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+          <div className="w-64 md:w-96 h-[2px] bg-slate-100 relative overflow-hidden rounded-full z-10 shadow-sm">
             <motion.div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-500 via-purple-500 to-accent-cyan"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-violet-600 via-blue-600 to-cyan-500"
               initial={{ width: '0%' }}
               animate={{ width: `${progress}%` }}
               transition={{ ease: "linear", duration: 0.2 }}
@@ -69,7 +69,7 @@ export default function Preloader() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-4 text-[10px] font-extrabold text-white/40 tracking-[0.3em] uppercase z-10 font-outfit"
+            className="mt-4 text-[10px] font-extrabold text-slate-400 tracking-[0.3em] uppercase z-10 font-outfit"
           >
             {progress}%
           </motion.div>

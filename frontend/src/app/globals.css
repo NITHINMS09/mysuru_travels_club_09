@@ -200,3 +200,104 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Premium Noise Overlay */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.012;
+  z-index: 99999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Custom Scroll Progress Bar styles */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+  transform-origin: 0%;
+  z-index: 10000;
+}
+
+/* Dark Mode Variables Override */
+.dark {
+  --bg-primary: #09090b;
+  --bg-secondary: #020205;
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --glass: rgba(9, 9, 11, 0.7);
+}
+
+.dark body {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--text-primary);
+}
+
+.dark .glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.75);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+}
+
+.dark .glass-card::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.dark .input-field {
+  background: rgba(9, 9, 11, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #ffffff !important;
+}
+
+.dark .input-field:focus {
+  border-color: rgba(124, 58, 237, 0.6);
+  background: #09090b;
+}
+
+.dark .bg-white {
+  background-color: #09090b !important;
+}
+
+.dark .bg-slate-50,
+.dark .bg-\[\#f8fafc\] {
+  background-color: #020205 !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-200\/60,
+.dark .border-slate-200\/80 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-600,
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-50\/50:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.dark .bg-white\/70,
+.dark .bg-white\/80 {
+  background-color: rgba(9, 9, 11, 0.75) !important;
+}
+
+
