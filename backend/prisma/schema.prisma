@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("MODERATOR")
+  avatar       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Trip {
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  description   String
+  destination   String
+  coverImage    String
+  images        String     // Comma separated
+  videoUrl      String?
+  trailerUrl    String?
+  startDate     DateTime
+  endDate       DateTime
+  price         Float
+  originalPrice Float?
+  totalSeats    Int
+  availableSeats Int
+  itinerary     String     // JSON string
+  pickupPoints  String     // JSON string
+  included      String     // Comma separated
+  excluded      String     // Comma separated
+  difficulty    String     @default("Easy")
+  category      String     @default("Adventure")
+  featured      Boolean    @default(false)
+  status        String     @default("UPCOMING")
+  latitude      Float?
+  longitude     Float?
+  currentLat    Float?
+  currentLng    Float?
+  isLiveTracking Boolean    @default(false)
+  mapRoute      String?    // JSON string
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  bookings     Booking[]
+  reviews      Review[]
+  chatMessages ChatMessage[]
+
+  @@index([status])
+  @@index([featured])
+  @@index([destination])
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  tripId           String
+  trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  travelerName     String
+  email            String
+  phone            String
+  age              Int
+  gender           String
+  emergencyName    String
+  emergencyPhone   String
+  idProofUrl       String?
+  seatCount        Int           @default(1)
+  specialRequests  String?
+  status           String        @default("PENDING")
+  totalAmount      Float
+  bookingRef       String        @unique
+  paymentScreenshot String?
+  isManualPayment  Boolean       @default(false)
+  pickupPoint      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  payment Payment?
+
+  @@index([tripId])
+  @@index([email])
+  @@index([bookingRef])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  bookingId          String        @unique
+  booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  razorpayOrderId    String        @unique
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  amount             Float
+  currency           String        @default("INR")
+  status             String        @default("CREATED")
+  method             String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([razorpayOrderId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userName  String
+  userEmail String
+  rating    Int
+  comment   String
+  avatar    String?
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([tripId])
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  tripId      String
+  trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  senderName  String
+  senderEmail String
+  content     String
+  type        String      @default("TEXT")
+  fileUrl     String?
+  fileName    String?
+  pollData    String?     // JSON string
+  pinned      Boolean     @default(false)
+  deleted     Boolean     @default(false)
+  isEdited    Boolean     @default(false)
+  replyToId   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([tripId])
+  @@index([createdAt])
+}
+
+model Blog {
+  id         String   @id @default(cuid())
+  title      String
+  slug       String   @unique
+  content    String
+  excerpt    String
+  author     String
+  coverImage String
+  tags       String   // Comma separated
+  published  Boolean  @default(true)
+  views      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model VoteDestination {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  imageUrl    String?
+  suggestedBy String
+  voteCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  votes    Vote[]
+  comments VoteComment[]
+}
+
+model Vote {
+  id            String          @id @default(cuid())
+  destinationId String
+  destination   VoteDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  voterEmail    String
+  createdAt     DateTime        @default(now())
+
+  @@unique([destinationId, voterEmail])
+}
+
+model VoteComment {
+  id            String          @id @default(cuid())
+  destinationId String
+  destination   VoteDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  userName      String
+  userEmail     String
+  comment       String
+  createdAt     DateTime        @default(now())
+
+  @@index([destinationId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  email     String
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([read])
+}
+
+model CrewMember {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  image       String
+  contact     String?
+  instagram   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // Can store JSON string for complex objects
+  category  String   @default("general") // e.g., 'hero', 'theme', 'seo'
+  updatedAt DateTime @updatedAt
+}
+
+model MarketplaceListing {
+  id          String   @id @default(cuid())
+  category    String   // 'RESORT', 'CAR_RENTAL', 'VILLA', 'HOTEL', 'ROOM', 'ADVENTURE', 'TOUR_GUIDE', 'BIKE_RENTAL', 'HOMESTAY', 'LUXURY_STAY', 'TRAVEL_PACKAGE', 'CRUISE', 'EVENT'
+  title       String
+  description String
+  price       Float
+  priceUnit   String   // e.g., 'per night', 'per day', 'per person', 'total'
+  location    String
+  coverImage  String
+  gallery     String   @default("[]") // JSON string of URLs
+  amenities   String   @default("[]") // JSON string of features
+  rating      Float    @default(5.0)
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
