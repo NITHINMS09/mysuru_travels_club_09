@@ -71,8 +71,8 @@ export default function Hero() {
         </motion.div>
 
         {/* Floating Glowing Accents */}
-        <div className="absolute top-[20%] left-[5%] w-[450px] h-[450px] bg-primary-400/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-accent-cyan/15 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-[20%] left-[5%] w-[450px] max-w-[80vw] h-[450px] bg-primary-400/15 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[10%] right-[5%] w-[500px] max-w-[80vw] h-[500px] bg-accent-cyan/15 rounded-full blur-[140px] pointer-events-none" />
 
         {/* Content */}
         <motion.div 
@@ -94,7 +94,7 @@ export default function Hero() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="text-6xl md:text-8xl lg:text-[7.5rem] font-black mb-8 leading-[1.05] tracking-tight flex flex-wrap justify-center gap-x-5 gap-y-3 font-outfit drop-shadow-sm"
+              className="text-4xl sm:text-5xl md:text-7xl lg:text-[7.5rem] font-black mb-8 leading-[1.05] tracking-tight flex flex-wrap justify-center gap-x-3 md:gap-x-5 gap-y-2 md:gap-y-3 font-outfit drop-shadow-sm"
             >
               {titleWords.map((word, i) => (
                 <motion.span 
@@ -111,7 +111,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 1, ease: "easeOut" }}
-              className="text-lg md:text-2xl text-slate-700 font-medium mb-12 max-w-3xl mx-auto font-inter leading-relaxed drop-shadow-sm"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-700 font-medium mb-12 max-w-3xl mx-auto font-inter leading-relaxed drop-shadow-sm"
             >
               Experience the world's most breathtaking destinations with our curated premium adventures. 
               AI-powered planning meets human-centric exploration.
@@ -163,7 +163,7 @@ export default function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5, duration: 1 }}
-              className="mt-20 pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16"
+              className="mt-20 pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 lg:gap-16"
             >
               <div className="flex items-center gap-4">
                 <div className="flex -space-x-3">

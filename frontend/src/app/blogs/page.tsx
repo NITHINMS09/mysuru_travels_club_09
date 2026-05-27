@@ -58,11 +58,11 @@ export default function BlogsPage() {
   }, []);
 
   return (
-    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
       <div className="max-w-7xl mx-auto px-4">
         
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 font-outfit">
+        <div className="text-center mb-10 sm:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 mb-4 sm:mb-6 font-outfit">
             Travel <span className="gradient-text">Journal</span>
           </h1>
           <p className="text-slate-500 max-w-2xl mx-auto">
@@ -76,12 +76,12 @@ export default function BlogsPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card bg-white border border-slate-100 shadow-lg mb-16 overflow-hidden flex flex-col lg:flex-row group cursor-pointer"
+            className="glass-card bg-white border border-slate-100 shadow-lg mb-10 sm:mb-16 overflow-hidden flex flex-col lg:flex-row group cursor-pointer"
           >
-            <div className="relative w-full lg:w-3/5 h-80 lg:h-[500px]">
+            <div className="relative w-full lg:w-3/5 h-56 sm:h-80 lg:h-[500px]">
               <Image src={blogs[0].image} alt={blogs[0].title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
-            <div className="p-8 lg:p-16 lg:w-2/5 flex flex-col justify-center bg-white border-l border-slate-50">
+            <div className="p-5 sm:p-8 lg:p-16 lg:w-2/5 flex flex-col justify-center bg-white border-l border-slate-50">
               <div className="flex gap-2 mb-6">
                 {blogs[0].tags?.map((tag: string) => (
                   <span key={tag} className="px-3 py-1 rounded-full bg-primary-50 border border-primary-100 text-primary-600 text-[10px] font-bold uppercase tracking-widest shadow-sm">
@@ -89,13 +89,13 @@ export default function BlogsPage() {
                   </span>
                 ))}
               </div>
-              <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-6 group-hover:text-primary-600 transition-colors font-outfit">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 mb-4 sm:mb-6 group-hover:text-primary-600 transition-colors font-outfit">
                 {blogs[0].title}
               </h2>
               <p className="text-slate-500 mb-10 leading-relaxed">
                 {blogs[0].excerpt}
               </p>
-              <div className="mt-auto flex items-center justify-between">
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
                   <span className="flex items-center gap-1.5"><HiOutlineCalendar className="w-4 h-4 text-primary-500" /> {blogs[0].date}</span>
                   <span className="flex items-center gap-1.5"><HiOutlineEye className="w-4 h-4 text-primary-500" /> {blogs[0].views}</span>
@@ -109,7 +109,7 @@ export default function BlogsPage() {
         )}
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {blogs.slice(1).map((blog, i) => (
             <motion.div
               key={blog.id}
@@ -121,7 +121,7 @@ export default function BlogsPage() {
               <div className="relative h-64 overflow-hidden">
                 <Image src={blog.image} alt={blog.title} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
               </div>
-              <div className="p-8 flex flex-col flex-1">
+              <div className="p-5 sm:p-8 flex flex-col flex-1">
                 <div className="flex gap-2 mb-4">
                   {blog.tags?.map((tag: string) => (
                     <span key={tag} className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">{tag}</span>

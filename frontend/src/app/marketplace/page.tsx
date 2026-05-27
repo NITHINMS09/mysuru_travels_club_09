@@ -35,12 +35,12 @@ function MarketplaceContent() {
   }, [category, query]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pt-28 pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-[#f8fafc] pt-20 sm:pt-28 pb-12 sm:pb-20 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header & Filters */}
-        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="mb-8 sm:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit">Premium <span className="gradient-text">Marketplace</span></h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit">Premium <span className="gradient-text">Marketplace</span></h1>
             <p className="text-slate-500 text-lg">Discover exclusive stays, rides, and experiences.</p>
           </div>
 
@@ -50,13 +50,13 @@ function MarketplaceContent() {
               <input 
                 type="text" 
                 placeholder="Search location or name..." 
-                className="input-field pl-12 min-w-[250px] bg-white border border-slate-200"
+                className="input-field pl-12 w-full sm:min-w-[250px] bg-white border border-slate-200"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <select 
-              className="input-field min-w-[200px] bg-white border border-slate-200 font-semibold text-slate-700"
+              className="input-field w-full sm:min-w-[200px] bg-white border border-slate-200 font-semibold text-slate-700"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -90,7 +90,7 @@ function MarketplaceContent() {
             <p className="text-slate-500">Try adjusting your filters or search query.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {listings.map((listing, i) => (
               <motion.div 
                 key={listing.id}
@@ -114,7 +114,7 @@ function MarketplaceContent() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
                 </div>
                 
-                <div className="p-6 relative bg-white">
+                <div className="p-4 sm:p-6 relative bg-white">
                   <h3 className="text-xl font-bold text-slate-900 mb-2 line-clamp-1 font-outfit">{listing.title}</h3>
                   <div className="flex items-center gap-2 text-slate-500 text-sm mb-4">
                     <HiOutlineLocationMarker className="w-4 h-4 text-primary-600" />
@@ -134,9 +134,9 @@ function MarketplaceContent() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
                     <div>
-                      <span className="text-2xl font-black text-slate-900">₹{listing.price.toLocaleString()}</span>
+                      <span className="text-xl sm:text-2xl font-black text-slate-900">₹{listing.price.toLocaleString()}</span>
                       <span className="text-slate-400 text-sm ml-1">/{listing.priceUnit}</span>
                     </div>
                     <button 

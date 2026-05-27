@@ -24,6 +24,10 @@ body {
   font-family: 'Inter', sans-serif;
   margin: 0;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -142,6 +146,23 @@ h1, h2, h3, h4, h5, h6 {
   background: #ffffff;
 }
 
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  .btn-primary {
+    padding: 0.95rem 1.75rem;
+    font-size: 0.9375rem;
+    min-height: 48px;
+  }
+  .input-field {
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+  .glass-card {
+    border-radius: 1.25rem;
+  }
+}
+
 /* Floating animation for glowing background blobs */
 .floating-orb {
   position: absolute;
@@ -153,17 +174,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .section-padding {
-  @apply py-24 md:py-36;
+  @apply py-16 sm:py-20 md:py-28 lg:py-36;
 }
 
 .section-title {
-  @apply text-4xl md:text-6xl font-black tracking-tight mb-6;
+  @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight mb-4 md:mb-6;
   font-family: 'Outfit', sans-serif;
   color: #0f172a;
 }
 
 .section-subtitle {
-  @apply text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed;
+  @apply text-sm sm:text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0;
   font-family: 'Inter', sans-serif;
 }
 

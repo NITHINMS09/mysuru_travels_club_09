@@ -30,7 +30,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 h-[500px] w-[500px] -translate-y-1/2 translate-x-1/2 rounded-full bg-violet-500/10 blur-[100px]" />
       <div className="absolute bottom-0 left-0 h-[500px] w-[500px] translate-y-1/2 -translate-x-1/2 rounded-full bg-cyan-500/5 blur-[100px]" />
 
@@ -39,15 +39,15 @@ export default function AdminLogin() {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="mb-10 text-center">
+        <div className="mb-6 sm:mb-10 text-center">
           <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 shadow-lg shadow-violet-500/20">
             <span className="font-outfit text-2xl font-bold text-white">T</span>
           </div>
-          <h1 className="mb-2 text-3xl font-black text-slate-900">Admin Portal</h1>
+          <h1 className="mb-2 text-2xl sm:text-3xl font-black text-slate-900">Admin Portal</h1>
           <p className="text-sm text-slate-500">Secure access for TripNova administrators</p>
         </div>
 
-        <div className="glass-card p-8">
+        <div className="glass-card p-5 sm:p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</label>

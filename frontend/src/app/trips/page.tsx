@@ -96,12 +96,12 @@ export default function TripsPage() {
   }, [search, activeCategory, trips]);
 
   return (
-    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 sm:mb-12 gap-6 sm:gap-8">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit">
               Explore Our <span className="gradient-text">Trips</span>
             </h1>
             <p className="text-slate-500 max-w-xl font-inter">
@@ -146,13 +146,13 @@ export default function TripsPage() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden mb-12"
             >
-              <div className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-lg flex flex-wrap gap-4">
+              <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/60 shadow-lg flex flex-wrap gap-2 sm:gap-4">
                 <span className="text-sm font-bold text-slate-400 uppercase tracking-widest w-full mb-2">Category</span>
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                    className={`px-4 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                       activeCategory === cat 
                         ? 'bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-glow' 
                         : 'bg-slate-50 text-slate-600 hover:bg-slate-100/50'
@@ -168,13 +168,13 @@ export default function TripsPage() {
 
         {/* Trips Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="h-[500px] rounded-2xl bg-slate-100 animate-pulse" />
             ))}
           </div>
         ) : filteredTrips.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredTrips.map((trip) => (
               <motion.div
                 key={trip.id}

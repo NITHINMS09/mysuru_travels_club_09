@@ -58,8 +58,8 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen text-slate-900 overflow-x-hidden">
+      <div className="max-w-4xl mx-auto px-4 w-full">
 
         {/* Header */}
         <div className="text-center mb-12">
@@ -74,7 +74,7 @@ export default function SearchPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit"
+            className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 font-outfit"
           >
             Travel <span className="gradient-text">Search</span>
           </motion.h1>
@@ -105,12 +105,12 @@ export default function SearchPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder='Search destinations, tips, hotels... (e.g. "Best time to visit Manali")'
-                  className="flex-1 bg-transparent text-slate-900 text-lg px-4 py-5 outline-none placeholder:text-slate-400"
+                  className="flex-1 bg-transparent text-slate-900 text-base sm:text-lg px-3 sm:px-4 py-4 sm:py-5 outline-none placeholder:text-slate-400 min-w-0"
                 />
                 <button
                   type="submit"
                   disabled={loading || !query.trim()}
-                  className="mr-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 rounded-xl text-white font-bold flex items-center gap-2 hover:from-primary-500 hover:to-primary-400 disabled:opacity-30 transition-all duration-300 shrink-0 cursor-pointer"
+                  className="mr-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 rounded-xl text-white font-bold flex items-center gap-2 hover:from-primary-500 hover:to-primary-400 disabled:opacity-30 transition-all duration-300 shrink-0 cursor-pointer"
                 >
                   <HiOutlineSearch className="w-5 h-5 text-white" />
                   Search
@@ -177,7 +177,7 @@ export default function SearchPage() {
             animate={{ opacity: 1, y: 0 }}
           >
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <h2 className="text-lg font-bold text-slate-700">
                 {results.length > 0
                   ? `Found ${results.length} results for "${query}"`

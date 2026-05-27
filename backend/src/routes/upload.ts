@@ -1,51 +1,43 @@
 import { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+import { config } from '../config';
 
 const router = Router();
 
-// Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname) || '';
-    // If it's an audio blob from Web Audio API without extension, append .webm or .wav
-    if (!ext && file.mimetype.includes('audio')) {
-      cb(null, file.fieldname + '-' + uniqueSuffix + '.webm');
-    } else {
-      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-    }
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: config.cloudinary.cloudName,
+  api_key: config.cloudinary.apiKey,
+  api_secret: config.cloudinary.apiSecret,
 });
 
+// Configure multer with memory storage
+const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for files/voice notes
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
 // Single file upload endpoint
-router.post('/single', upload.single('file'), (req, res) => {
+router.post('/single', upload.single('file'), async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Return the URL path to access the file
-    // Assuming backend serves static files from 'public' directory
-    const fileUrl = `/uploads/${req.file.filename}`;
-    
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Upload to cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      resource_type: 'auto',
+      folder: 'tripnova_uploads',
+    });
+
     res.status(200).json({
-      url: fileUrl,
+      url: result.secure_url,
       fileName: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size

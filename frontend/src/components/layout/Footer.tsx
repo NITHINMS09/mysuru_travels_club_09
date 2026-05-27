@@ -40,13 +40,13 @@ export default function Footer() {
   const siteName = settings.siteName || 'MYSURU TRAVEL CLUB';
 
   return (
-    <footer className="bg-white border-t border-slate-200/60 pt-24 pb-12 relative overflow-hidden">
+    <footer className="bg-white border-t border-slate-200/60 pt-12 sm:pt-24 pb-8 sm:pb-12 relative overflow-hidden">
       {/* Glow Effects */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-600/5 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent-cyan/5 rounded-full blur-[130px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-8 mb-12 sm:mb-20">
           
           {/* Brand Info */}
           <div className="lg:col-span-2">
@@ -104,7 +104,7 @@ export default function Footer() {
           </p>
           
           {/* Social Icons with colorful glows on hover */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end">
             {[
               { icon: RiInstagramLine, href: settings.socialInstagram || 'https://instagram.com', label: 'Instagram', hoverGlow: 'hover:bg-gradient-to-tr hover:from-purple-500 hover:to-pink-500 hover:border-transparent hover:text-white' },
               { icon: RiTwitterXLine, href: settings.socialTwitter || 'https://twitter.com', label: 'Twitter', hoverGlow: 'hover:bg-black hover:text-white hover:border-transparent' },

@@ -61,7 +61,7 @@ export default function VotePage() {
   };
 
   return (
-    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
       <div className="max-w-7xl mx-auto px-4">
         
         {/* Suggest Modal */}
@@ -120,9 +120,9 @@ export default function VotePage() {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-16 gap-6 sm:gap-8">
           <div>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-4 font-outfit">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 mb-4 font-outfit">
               Where to <span className="gradient-text">Next?</span>
             </h1>
             <p className="text-slate-500 max-w-xl">
@@ -150,18 +150,18 @@ export default function VotePage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[1, 2, 3].map(i => <div key={i} className="h-64 rounded-2xl bg-slate-100 animate-pulse" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {destinations.sort((a, b) => b.voteCount - a.voteCount).map((dest, i) => (
               <motion.div
                 key={dest.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-card bg-white border border-slate-100 shadow-md hover:shadow-xl hover:shadow-slate-200/50 p-8 flex flex-col group"
+                className="glass-card bg-white border border-slate-100 shadow-md hover:shadow-xl hover:shadow-slate-200/50 p-5 sm:p-8 flex flex-col group"
               >
                 <div className="flex justify-between items-start mb-6">
                   <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 shadow-sm">
@@ -176,7 +176,7 @@ export default function VotePage() {
                 <h3 className="text-2xl font-bold text-slate-900 mb-3 font-outfit">{dest.name}</h3>
                 <p className="text-slate-500 text-sm mb-8 flex-1 leading-relaxed">{dest.description}</p>
                 
-                <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-6 border-t border-slate-100">
                   <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">By {dest.suggestedBy}</span>
                   <div className="flex gap-2">
                     <button className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary-600 hover:bg-slate-100/50 transition-colors cursor-pointer">
@@ -184,7 +184,7 @@ export default function VotePage() {
                     </button>
                     <button 
                       onClick={() => handleVote(dest.id)}
-                      className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 text-white font-bold hover:from-primary-500 hover:to-purple-500 shadow-glow transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 text-white text-sm sm:text-base font-bold hover:from-primary-500 hover:to-purple-500 shadow-glow transition-all cursor-pointer"
                     >
                       <HiOutlineThumbUp className="w-5 h-5 text-white" />
                       Vote

@@ -5,11 +5,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import fs from 'fs';
 
 dotenv.config({ path: '../.env' });
 
 import { config } from './config';
+import prisma from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { initializeSocket } from './socket/chatHandler';
 import { initializeLocationSocket } from './socket/locationHandler';
@@ -34,12 +34,7 @@ import path from 'path';
 const app = express();
 const httpServer = createServer(app);
 
-// Create uploads directory if not exists
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
 
-app.use('/uploads', express.static('uploads'));
 
 // Socket.io
 const io = new SocketServer(httpServer, {
@@ -105,8 +100,7 @@ app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
 
-// Serve static files from public directory
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 
 // Error handling
 app.use(notFoundHandler);
@@ -114,11 +108,20 @@ app.use(errorHandler);
 
 // Start server
 const PORT = config.port;
-httpServer.listen(PORT, () => {
-  console.log(`\n🚀 TripNova Backend Server running on port ${PORT}`);
-  console.log(`📡 Socket.io ready for connections`);
-  console.log(`🌍 Environment: ${config.nodeEnv}`);
-  console.log(`🔗 Frontend URL: ${config.frontendUrl}\n`);
-});
+
+prisma.$connect()
+  .then(() => {
+    console.log(`🔌 Successfully connected to PostgreSQL database`);
+    httpServer.listen(PORT, () => {
+      console.log(`\n🚀 TripNova Backend Server running on port ${PORT}`);
+      console.log(`📡 Socket.io ready for connections`);
+      console.log(`🌍 Environment: ${config.nodeEnv}`);
+      console.log(`🔗 Frontend URL: ${config.frontendUrl}\n`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Failed to connect to PostgreSQL database:', error);
+    process.exit(1);
+  });
 
 export { app, io };

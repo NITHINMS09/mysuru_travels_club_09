@@ -80,21 +80,21 @@ function StatusContent() {
   };
 
   return (
-    <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen px-4 text-slate-900">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen px-4 text-slate-900">
       <div className="max-w-3xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card bg-white border border-slate-200/60 shadow-xl p-8 rounded-3xl"
+          className="glass-card bg-white border border-slate-200/60 shadow-xl p-5 sm:p-8 rounded-3xl"
         >
-          <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="flex flex-col-reverse md:flex-row gap-6 sm:gap-8 items-start">
             <div className="flex-1 space-y-6">
               <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60">
                   <HiOutlineDocumentText className="w-8 h-8 text-primary-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-black text-slate-900 font-outfit">Booking Status</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-outfit">Booking Status</h1>
                   <p className="text-sm text-slate-500 font-mono font-bold">Ref: {booking.bookingRef}</p>
                 </div>
               </div>
@@ -178,7 +178,7 @@ function StatusContent() {
               </div>
             </div>
 
-            <div className="w-full md:w-64 shrink-0 bg-slate-50 rounded-2xl border border-slate-200/60 p-4">
+            <div className="w-full md:w-64 shrink-0 bg-slate-50 rounded-2xl border border-slate-200/60 p-3 sm:p-4">
               <div className="relative h-32 rounded-xl overflow-hidden mb-4 border border-slate-200/60">
                 {booking.trip?.coverImage && (
                   <Image src={booking.trip.coverImage} alt={booking.trip.title} fill className="object-cover" />

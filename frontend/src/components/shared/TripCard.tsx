@@ -62,7 +62,7 @@ export default function TripCard({ trip }: TripCardProps) {
       className="glass-card group flex flex-col h-full bg-white border border-slate-100 hover:border-primary-500/20 hover:bg-white transition-all duration-500 rounded-3xl overflow-hidden relative shadow-lg hover:shadow-2xl hover:shadow-slate-200/50"
     >
       {/* Image Section */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
         {trip.coverImage ? (
           <Image
             src={trip.coverImage}
@@ -106,17 +106,17 @@ export default function TripCard({ trip }: TripCardProps) {
       </div>
 
       {/* Content Section */}
-      <div className="p-6 flex flex-col flex-1 relative z-10 bg-white">
+      <div className="p-4 sm:p-6 flex flex-col flex-1 relative z-10 bg-white">
         <div className="flex items-center gap-1.5 text-accent-cyan text-[10px] font-bold uppercase tracking-widest mb-2.5">
           <HiOutlineLocationMarker className="w-3.5 h-3.5 text-accent-cyan" />
           {trip.destination}
         </div>
         
-        <h3 className="text-xl font-bold font-outfit text-slate-900 group-hover:text-primary-600 transition-colors duration-300 mb-3.5 line-clamp-1 leading-tight">
+        <h3 className="text-base sm:text-xl font-bold font-outfit text-slate-900 group-hover:text-primary-600 transition-colors duration-300 mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight">
           {trip.title}
         </h3>
 
-        <div className="grid grid-cols-2 gap-4 mb-6 pt-1 border-t border-slate-100">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 pt-1 border-t border-slate-100">
           <div className="flex items-center gap-2 text-slate-500 text-xs font-outfit">
             <HiOutlineCalendar className="w-4 h-4 text-primary-600" />
             {new Date(trip.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
@@ -130,7 +130,7 @@ export default function TripCard({ trip }: TripCardProps) {
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
           <div>
             <div className="text-[10px] text-slate-400 line-through">₹{trip.originalPrice || (trip.price * 1.2).toFixed(0)}</div>
-            <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-purple-600 to-accent-cyan font-outfit">₹{trip.price}</div>
+            <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-purple-600 to-accent-cyan font-outfit">₹{trip.price}</div>
           </div>
           
           <Link href={`/trips/${trip.id}`}>

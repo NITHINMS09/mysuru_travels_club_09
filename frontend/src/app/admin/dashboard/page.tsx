@@ -9,7 +9,8 @@ import {
   HiOutlineTrash, HiOutlinePencil, HiOutlineCheckCircle, 
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
-  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye
+  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye,
+  HiOutlineMenuAlt3, HiX
 } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -166,6 +167,7 @@ export default function AdminDashboard() {
   const [admin, setAdmin] = useState<any>(null);
   const [isAddingTrip, setIsAddingTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Users & Admin details
   const [users, setUsers] = useState<any[]>([]);
@@ -610,10 +612,71 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 lg:hidden"
+          >
+            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+            <motion.aside
+              initial={{ x: -288 }}
+              animate={{ x: 0 }}
+              exit={{ x: -288 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute left-0 top-0 w-72 h-full bg-white/95 backdrop-blur-2xl border-r border-slate-200/80 flex flex-col p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-12 px-2">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 flex items-center justify-center font-bold shadow-md shadow-violet-500/15">
+                    <span className="text-xl text-white">T</span>
+                  </div>
+                  <span className="font-outfit font-black tracking-tight text-xl text-slate-800">Trip<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-cyan-500">Nova</span></span>
+                </div>
+                <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors">
+                  <HiX className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="space-y-2 flex-1 overflow-y-auto">
+                {navItems.map((item) => (
+                  <button 
+                    key={item.label} 
+                    onClick={() => { setActiveTab(item.label); setSidebarOpen(false); }} 
+                    className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 text-sm font-semibold border ${
+                      activeTab === item.label 
+                        ? 'bg-gradient-to-r from-violet-600/10 via-blue-600/5 to-cyan-500/5 text-slate-900 border-slate-200/60 shadow-sm' 
+                        : 'text-slate-500 border-transparent hover:text-slate-900 hover:bg-slate-900/[0.02]'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 ${activeTab === item.label ? item.color : 'text-slate-400'}`} />
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+              <button 
+                onClick={handleLogout} 
+                className="flex items-center gap-3.5 px-5 py-4 text-slate-500 hover:text-red-600 border border-transparent hover:border-red-200 hover:bg-red-50 rounded-2xl transition-all duration-300 text-sm font-bold mt-auto"
+              >
+                <HiOutlineLogout className="w-5 h-5" />
+                Sign Out
+              </button>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 flex flex-col z-10 overflow-y-auto">
-        <header className="h-20 border-b border-slate-200/80 flex items-center justify-between px-8 bg-white/70 backdrop-blur-md sticky top-0 z-30">
-          <h2 className="font-black text-xl tracking-wide text-slate-800">{activeTab}</h2>
+        <header className="h-16 md:h-20 border-b border-slate-200/80 flex items-center justify-between px-4 md:px-8 bg-white/70 backdrop-blur-md sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-1 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors">
+              <HiOutlineMenuAlt3 className="w-6 h-6" />
+            </button>
+            <h2 className="font-black text-lg md:text-xl tracking-wide text-slate-800">{activeTab}</h2>
+          </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3.5 pl-6 border-l border-slate-200">
               <div className="text-right">
@@ -625,7 +688,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
           {isAddingTrip && <CreateTripModal onClose={() => setIsAddingTrip(false)} onSuccess={() => { setIsAddingTrip(false); fetchData(); }} />}
           {editingTrip && <CreateTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} onSuccess={() => { setEditingTrip(null); fetchData(); }} />}
           
@@ -756,7 +819,7 @@ export default function AdminDashboard() {
               <motion.div key="bookings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                   <h3 className="text-2xl font-black font-outfit text-slate-800">Bookings approval</h3>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <div className="relative">
                       <HiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input 
@@ -782,7 +845,7 @@ export default function AdminDashboard() {
 
                 <div className="glass-card bg-white overflow-hidden border-slate-200/80 shadow-md">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead className="bg-slate-50 text-slate-500 text-[10px] font-extrabold uppercase tracking-widest border-b border-slate-200/80">
                         <tr>
                           <th className="px-6 py-4.5">Ref</th>
