@@ -27,6 +27,11 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Hide the global public navbar on admin pages since they have their own dashboard layout
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <>
       <motion.nav

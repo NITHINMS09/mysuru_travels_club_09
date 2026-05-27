@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiInstagramLine, RiTwitterXLine, RiFacebookCircleLine, RiYoutubeLine } from 'react-icons/ri';
 import api from '@/lib/api';
@@ -30,9 +31,15 @@ const footerLinks = {
 export default function Footer() {
   const [settings, setSettings] = useState<any>({});
 
+  const pathname = usePathname();
+
   useEffect(() => {
     api.settings.getAll().then(setSettings).catch(console.error);
   }, []);
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   const email = settings.contactEmail || 'hello@mysurutravelclub.com';
   const phone = settings.contactPhone || '+91 98765 43210';
