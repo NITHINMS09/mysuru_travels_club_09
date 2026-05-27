@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../config/database';
+import { authenticateAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -68,6 +69,32 @@ router.post('/:id/comments', async (req, res) => {
       data: { destinationId: req.params.id, userName, userEmail, comment },
     });
     res.status(201).json(c);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update destination (admin only)
+router.put('/destinations/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { name, description, voteCount } = req.body;
+    const dest = await prisma.voteDestination.update({
+      where: { id: req.params.id },
+      data: { name, description, voteCount: voteCount ? parseInt(voteCount) : undefined },
+    });
+    res.json(dest);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete destination (admin only)
+router.delete('/destinations/:id', authenticateAdmin, async (req, res) => {
+  try {
+    await prisma.voteDestination.delete({
+      where: { id: req.params.id },
+    });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

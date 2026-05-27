@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye,
-  HiOutlineMenuAlt3, HiX
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp
 } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -162,6 +162,7 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [crew, setCrew] = useState<any[]>([]);
+  const [votes, setVotes] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<any>(null);
@@ -185,6 +186,8 @@ export default function AdminDashboard() {
 
   // Modals state
   const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
+  const [editingVote, setEditingVote] = useState<any>(null);
+  const [voteForm, setVoteForm] = useState({ name: '', description: '', voteCount: 0 });
   const [editingUser, setEditingUser] = useState<any>(null);
   const [userForm, setUserForm] = useState({
     name: '',
@@ -215,6 +218,16 @@ export default function AdminDashboard() {
     order: '0',
     isVisible: 'true'
   });
+
+  useEffect(() => {
+    if (editingVote) {
+      setVoteForm({
+        name: editingVote.name || '',
+        description: editingVote.description || '',
+        voteCount: editingVote.voteCount || 0
+      });
+    }
+  }, [editingVote]);
 
   useEffect(() => {
     if (editingCrew) {
@@ -278,13 +291,14 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       setLoading(true);
-      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData] = await Promise.all([
+      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData] = await Promise.all([
         api.auth.dashboard(token),
         api.trips.getAll(),
         api.bookings.getAll(token),
         api.blogs.getAll(),
         api.crew.getAll(),
-        api.settings.getAll()
+        api.settings.getAll(),
+        api.votes.getDestinations()
       ]);
 
       setStats(statsData.stats);
@@ -297,6 +311,7 @@ export default function AdminDashboard() {
       setBlogs(blogsData.blogs || []);
       setCrew(crewData || []);
       setSettings(settingsData || {});
+      setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
 
       if (settingsData.banned_emails) {
         try {
@@ -431,6 +446,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteVote = async (id: string) => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    if (!confirm('Are you sure you want to permanently delete this vote destination?')) return;
+    try {
+      await api.votes.deleteDestination(id, token);
+      setVotes(votes.filter(v => v.id !== id));
+      toast.success('Vote destination deleted');
+      fetchData();
+    } catch (err) { toast.error('Failed to delete vote destination'); }
+  };
+
+  const handleSaveVote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token || !editingVote) return;
+    try {
+      await api.votes.updateDestination(editingVote.id, voteForm, token);
+      toast.success('Vote destination updated');
+      setEditingVote(null);
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to update vote destination');
+    }
+  };
+
   const handleSaveAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('tripnova_admin_token');
@@ -498,6 +539,7 @@ export default function AdminDashboard() {
     ...(admin?.role === 'SUPER_ADMIN' ? [{ label: 'Admins', icon: HiOutlineUser, color: 'text-violet-600' }] : []),
     { label: 'Crew', icon: HiOutlineUsers, color: 'text-amber-600' },
     { label: 'Blogs', icon: HiOutlineDocumentText, color: 'text-indigo-600' },
+    { label: 'Votes', icon: HiOutlineThumbUp, color: 'text-rose-500' },
     { label: 'Settings', icon: HiOutlineCog, color: 'text-cyan-600' },
   ];
 
@@ -1249,6 +1291,71 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
+            {activeTab === 'Votes' && (
+              <motion.div key="votes" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black font-outfit text-slate-800">Vote Destinations</h3>
+                    <p className="text-slate-500 text-sm mt-1">Manage user-suggested destinations and their votes.</p>
+                  </div>
+                </div>
+
+                <div className="glass-card bg-white border border-slate-200/80 shadow-md rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto min-w-[700px]">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50/50">
+                          <th className="p-4 font-bold text-xs uppercase tracking-widest text-slate-400">Destination</th>
+                          <th className="p-4 font-bold text-xs uppercase tracking-widest text-slate-400">Suggested By</th>
+                          <th className="p-4 font-bold text-xs uppercase tracking-widest text-slate-400 text-center">Votes</th>
+                          <th className="p-4 font-bold text-xs uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {votes.map((vote) => (
+                          <tr key={vote.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-4">
+                              <h4 className="font-bold text-slate-800 font-outfit">{vote.name}</h4>
+                              <p className="text-sm text-slate-500 line-clamp-1">{vote.description}</p>
+                            </td>
+                            <td className="p-4 text-sm text-slate-600 font-medium">{vote.suggestedBy}</td>
+                            <td className="p-4 text-center">
+                              <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-full bg-rose-50 text-rose-600 font-bold text-sm border border-rose-100">
+                                {vote.voteCount}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => setEditingVote(vote)} 
+                                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-violet-300 transition-all duration-300"
+                                  title="Edit vote"
+                                >
+                                  <HiOutlinePencil className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => deleteVote(vote.id)} 
+                                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all duration-300"
+                                  title="Delete vote"
+                                >
+                                  <HiOutlineTrash className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {votes.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-8 text-center text-slate-400 font-bold">No vote destinations found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === 'Settings' && (
               <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 <div className="flex justify-between items-center mb-8">
@@ -1501,6 +1608,63 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Profile Settings</button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL: Edit Vote */}
+      {editingVote && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl w-full max-w-md"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-800">Edit Vote Destination</h3>
+                <p className="text-xs text-slate-400">Update details for {editingVote.name}</p>
+              </div>
+              <button 
+                onClick={() => setEditingVote(null)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVote} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Destination Name</label>
+                <input 
+                  required
+                  value={voteForm.name}
+                  onChange={e => setVoteForm({...voteForm, name: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Description</label>
+                <textarea 
+                  required
+                  value={voteForm.description}
+                  onChange={e => setVoteForm({...voteForm, description: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-24 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Total Votes</label>
+                <input 
+                  type="number"
+                  min="0"
+                  required
+                  value={voteForm.voteCount}
+                  onChange={e => setVoteForm({...voteForm, voteCount: parseInt(e.target.value) || 0})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                />
+              </div>
+              <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Changes</button>
             </form>
           </motion.div>
         </div>

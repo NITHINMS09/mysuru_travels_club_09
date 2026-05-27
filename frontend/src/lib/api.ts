@@ -80,6 +80,8 @@ export const api = {
     suggest: (data: any) => fetchAPI('/vote/destinations', { method: 'POST', body: JSON.stringify(data) }),
     vote: (id: string, voterEmail: string) => fetchAPI(`/vote/${id}/vote`, { method: 'POST', body: JSON.stringify({ voterEmail }) }),
     comment: (id: string, data: any) => fetchAPI(`/vote/${id}/comments`, { method: 'POST', body: JSON.stringify(data) }),
+    updateDestination: (id: string, data: any, token: string) => fetchAPI(`/vote/destinations/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+    deleteDestination: (id: string, token: string) => fetchAPI(`/vote/destinations/${id}`, { method: 'DELETE', token }),
   },
 
   chat: {
