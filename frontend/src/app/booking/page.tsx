@@ -67,7 +67,8 @@ function BookingContent() {
     return { subtotal, discount, platformFee, total: subtotal - discount + platformFee };
   }, [trip, seatCount]);
 
-  const upiId = '9632463347@ptyes';
+  const upiId = 'appupavithran09-1@oksbi';
+  
   const upiLink = useMemo(() => {
     if (!trip) return '';
     return `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
@@ -390,10 +391,25 @@ function BookingContent() {
                       </div>
 
                       <div className="w-full grid grid-cols-2 gap-3 mb-2 sm:grid-cols-4">
-                        <a href={`phonepe://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#5f259f] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#4d1f81]">PhonePe</a>
-                        <a href={`gpay://upi/pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#4285F4] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#3367d6]">GPay</a>
-                        <a href={`paytmmp://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#00baf2] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#00a3d9]">Paytm</a>
-                        <a href={`bhim://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#f89c1e] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#e08914]">BHIM</a>
+                        <button type="button" onClick={() => {
+                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
+                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
+                        }} className="py-3 px-2 bg-[#5f259f] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#4d1f81]">PhonePe</button>
+                        
+                        <button type="button" onClick={() => {
+                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
+                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
+                        }} className="py-3 px-2 bg-[#4285F4] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#3367d6]">GPay</button>
+                        
+                        <button type="button" onClick={() => {
+                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
+                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
+                        }} className="py-3 px-2 bg-[#00baf2] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#00a3d9]">Paytm</button>
+                        
+                        <button type="button" onClick={() => {
+                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
+                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
+                        }} className="py-3 px-2 bg-[#f89c1e] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#e08914]">BHIM</button>
                       </div>
                     </div>
 
