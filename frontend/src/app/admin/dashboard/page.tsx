@@ -181,6 +181,7 @@ export default function AdminDashboard() {
   // Search & Filter state
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState('ALL');
+  const [userSearch, setUserSearch] = useState('');
   const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
