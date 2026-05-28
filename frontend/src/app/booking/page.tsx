@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineCheckCircle, HiOutlineIdentification, HiOutlineCreditCard, 
@@ -358,14 +357,36 @@ function BookingContent() {
                     </div>
 
                     <div className="flex flex-col items-center p-8 bg-slate-50/80 border border-slate-200 rounded-[2rem] mx-auto max-w-sm shadow-inner">
-                      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6 flex justify-center">
-                        <QRCode value={upiLink} size={192} style={{ height: "auto", maxWidth: "100%", width: "100%" }} />
+                      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6 flex justify-center w-64 h-64 mx-auto relative overflow-hidden">
+                        <img 
+                          src="https://cdn.corenexis.com/files/c/8845266720.png" 
+                          alt="UPI Payment QR Code" 
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
                       </div>
                       
                       <div className="text-center mb-6">
                         <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Total to Pay</div>
-                        <div className="text-3xl font-black text-slate-900 tracking-tight">₹{pricing.total.toLocaleString()}</div>
-                        <div className="text-xs text-slate-500 mt-2">UPI ID: <span className="font-bold text-slate-800">{upiId}</span></div>
+                        <div className="text-3xl font-black text-slate-900 tracking-tight mb-2">₹{pricing.total.toLocaleString()}</div>
+                        <div className="text-xs text-slate-500 mb-4">UPI ID: <span className="font-bold text-slate-800">{upiId}</span></div>
+                        
+                        <div className="bg-slate-100/50 p-4 rounded-xl text-left border border-slate-200/50">
+                          <ul className="text-xs text-slate-600 space-y-2 font-medium">
+                            <li className="flex items-start gap-2">
+                              <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                              <span>Scan using PhonePe, Google Pay, Paytm, or any UPI app</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                              <span>Complete payment of ₹{pricing.total.toLocaleString()}</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                              <span>Upload payment screenshot for admin verification</span>
+                            </li>
+                          </ul>
+                        </div>
                       </div>
 
                       <div className="w-full grid grid-cols-2 gap-3 mb-2 sm:grid-cols-4">
