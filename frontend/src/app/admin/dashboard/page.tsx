@@ -181,11 +181,11 @@ export default function AdminDashboard() {
   // Search & Filter state
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState('ALL');
-  const [userSearch, setUserSearch] = useState('');
+  const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
+  const [adminNotes, setAdminNotes] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
 
   // Modals state
-  const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
   const [editingVote, setEditingVote] = useState<any>(null);
   const [voteForm, setVoteForm] = useState({ name: '', description: '', voteCount: 0 });
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -374,12 +374,12 @@ export default function AdminDashboard() {
     } catch (err) { toast.error('Failed to delete trip'); }
   };
 
-  const updateBookingStatus = async (id: string, status: string) => {
+  const updateBookingStatus = async (id: string, status: string, notes?: string) => {
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
     try {
-      await api.bookings.updateStatus(id, status, token);
-      setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+      await api.bookings.updateStatus(id, status, token, notes);
+      setBookings(bookings.map(b => b.id === id ? { ...b, status, adminNotes: notes || b.adminNotes } : b));
       toast.success(`Booking ${status}`);
       fetchData();
     } catch (err) { toast.error('Failed to update booking'); }
@@ -881,6 +881,7 @@ export default function AdminDashboard() {
                       <option value="CONFIRMED">Confirmed</option>
                       <option value="PENDING">Pending Payment</option>
                       <option value="CANCELLED">Cancelled</option>
+                      <option value="REJECTED">Rejected</option>
                     </select>
                   </div>
                 </div>
@@ -937,7 +938,10 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4">
                               <div className="flex gap-2">
                                 <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="p-1 text-slate-400 hover:text-green-600 transition-colors" title="Confirm Booking"><HiOutlineCheckCircle className="w-5.5 h-5.5" /></button>
-                                <button onClick={() => updateBookingStatus(booking.id, 'CANCELLED')} className="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Cancel Booking"><HiOutlineXCircle className="w-5.5 h-5.5" /></button>
+                                <button onClick={() => {
+                                  const reason = prompt("Enter reason for rejection (optional):");
+                                  if (reason !== null) updateBookingStatus(booking.id, 'REJECTED', reason);
+                                }} className="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Reject Booking"><HiOutlineXCircle className="w-5.5 h-5.5" /></button>
                               </div>
                             </td>
                           </tr>
@@ -1467,7 +1471,10 @@ export default function AdminDashboard() {
                 <p className="text-xs text-slate-400">Ref: <span className="font-mono font-bold text-cyan-600">{selectedBookingScreenshot.bookingRef}</span></p>
               </div>
               <button 
-                onClick={() => setSelectedBookingScreenshot(null)}
+                onClick={() => {
+                  setSelectedBookingScreenshot(null);
+                  setAdminNotes('');
+                }}
                 className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors"
               >
                 <HiOutlineXCircle className="w-6 h-6" />
@@ -1502,24 +1509,41 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            <div className="mb-6">
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Admin Notes (Required for Rejection)</label>
+              <textarea 
+                placeholder="Reason for rejection or internal notes..." 
+                className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-violet-400 bg-slate-50/50 resize-none" 
+                rows={2}
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+            </div>
+
             <div className="flex gap-3">
               <button 
                 onClick={() => {
-                  updateBookingStatus(selectedBookingScreenshot.id, 'CONFIRMED');
+                  updateBookingStatus(selectedBookingScreenshot.id, 'CONFIRMED', adminNotes);
                   setSelectedBookingScreenshot(null);
+                  setAdminNotes('');
                 }} 
                 className="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10"
               >
-                <HiOutlineCheckCircle className="w-5 h-5" /> Approve & Confirm
+                <HiOutlineCheckCircle className="w-5 h-5" /> Approve Payment
               </button>
               <button 
                 onClick={() => {
-                  updateBookingStatus(selectedBookingScreenshot.id, 'CANCELLED');
+                  if (!adminNotes.trim()) {
+                    toast.error('Please provide a reason for rejection in Admin Notes');
+                    return;
+                  }
+                  updateBookingStatus(selectedBookingScreenshot.id, 'REJECTED', adminNotes);
                   setSelectedBookingScreenshot(null);
+                  setAdminNotes('');
                 }} 
                 className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
               >
-                <HiOutlineXCircle className="w-5 h-5" /> Reject & Cancel
+                <HiOutlineXCircle className="w-5 h-5" /> Reject Payment
               </button>
             </div>
           </motion.div>

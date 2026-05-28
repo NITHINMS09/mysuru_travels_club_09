@@ -64,7 +64,8 @@ function StatusContent() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'CONFIRMED': return <HiOutlineCheckCircle className="w-8 h-8 text-green-500" />;
-      case 'CANCELLED': return <HiOutlineXCircle className="w-8 h-8 text-red-500" />;
+      case 'CANCELLED':
+      case 'REJECTED': return <HiOutlineXCircle className="w-8 h-8 text-red-500" />;
       default: return <HiOutlineClock className="w-8 h-8 text-amber-500" />;
     }
   };
@@ -75,6 +76,7 @@ function StatusContent() {
       case 'PENDING_APPROVAL': return 'Payment Submitted (Awaiting Review)';
       case 'CONFIRMED': return 'Booking Confirmed';
       case 'CANCELLED': return 'Booking Cancelled';
+      case 'REJECTED': return 'Payment Rejected';
       default: return status;
     }
   };
@@ -107,7 +109,7 @@ function StatusContent() {
                     <p className="text-xs text-slate-500">
                       {booking.status === 'CONFIRMED' ? 'Your booking has been fully verified and confirmed.' : 
                        booking.status === 'PENDING_APPROVAL' ? 'Your payment screenshot is under review by our team.' :
-                       booking.status === 'CANCELLED' ? 'This booking has been cancelled.' : 
+                       (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'This booking has been cancelled or rejected.' : 
                        'Awaiting payment completion.'}
                     </p>
                   </div>
@@ -145,25 +147,30 @@ function StatusContent() {
                     <div className="flex items-start gap-4">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-xs border-2 ${
                         booking.status === 'CONFIRMED' ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-500/30' : 
-                        booking.status === 'CANCELLED' ? 'bg-red-500 border-red-500 text-white' :
+                        (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'bg-red-500 border-red-500 text-white' :
                         booking.status === 'PENDING_APPROVAL' ? 'bg-amber-100 border-amber-400 text-amber-600' :
                         'bg-white border-slate-300 text-slate-400'
                       }`}>
                         {booking.status === 'CONFIRMED' ? <HiOutlineCheckCircle className="w-5 h-5" /> : 
-                         booking.status === 'CANCELLED' ? <HiOutlineXCircle className="w-5 h-5" /> :
+                         (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? <HiOutlineXCircle className="w-5 h-5" /> :
                          booking.status === 'PENDING_APPROVAL' ? <HiOutlineClock className="w-5 h-5" /> : '3'}
                       </div>
                       <div className="pt-1.5 bg-white px-2">
                         <p className={`text-sm font-bold ${
                           booking.status === 'CONFIRMED' ? 'text-slate-900' : 
-                          booking.status === 'CANCELLED' ? 'text-red-600' :
+                          (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'text-red-600' :
                           booking.status === 'PENDING_APPROVAL' ? 'text-amber-600' :
                           'text-slate-500'
                         }`}>
-                          {booking.status === 'CANCELLED' ? 'Booking Rejected' : 'Admin Verification'}
+                          {(booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'Booking Rejected' : 'Admin Verification'}
                         </p>
                         {booking.status === 'PENDING_APPROVAL' && (
                           <p className="text-xs text-amber-600 mt-1">Checking your payment screenshot...</p>
+                        )}
+                        {booking.adminNotes && (booking.status === 'CANCELLED' || booking.status === 'REJECTED') && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-xs text-red-700">
+                            <strong>Reason:</strong> {booking.adminNotes}
+                          </div>
                         )}
                       </div>
                     </div>

@@ -5,19 +5,20 @@ import type { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
 import multer from 'multer';
 import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { config } from '../config';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: config.cloudinary.cloudName,
+  api_key: config.cloudinary.apiKey,
+  api_secret: config.cloudinary.apiSecret,
+});
 
 const router = Router();
 
-// Configure Multer for screenshot uploads
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'screenshot-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Configure Multer for screenshot uploads to memory
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage,
@@ -107,7 +108,17 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       return;
     }
 
-    const screenshotUrl = `/uploads/${req.file.filename}`;
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Upload to cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      resource_type: 'auto',
+      folder: 'tripnova_payments',
+    });
+
+    const screenshotUrl = result.secure_url;
     
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
@@ -178,14 +189,43 @@ router.get('/ref/:ref', async (req, res) => {
   }
 });
 
-// UPDATE booking status (admin - for approval)
+// UPDATE booking status (admin - for approval/rejection)
 router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { status } = req.body;
+    const { status, adminNotes } = req.body;
+    
+    const currentBooking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!currentBooking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    const updateData: any = { status };
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
-      data: { status },
+      data: updateData,
     });
+
+    const isNowCancelled = status === 'REJECTED' || status === 'CANCELLED';
+    const wasCancelled = currentBooking.status === 'REJECTED' || currentBooking.status === 'CANCELLED';
+
+    if (isNowCancelled && !wasCancelled) {
+      await prisma.trip.update({
+        where: { id: currentBooking.tripId },
+        data: { availableSeats: { increment: currentBooking.seatCount } },
+      });
+    } else if (!isNowCancelled && wasCancelled) {
+      await prisma.trip.update({
+        where: { id: currentBooking.tripId },
+        data: { availableSeats: { decrement: currentBooking.seatCount } },
+      });
+    }
+
     res.json(booking);
   } catch (error) {
     console.error('Update booking error:', error);

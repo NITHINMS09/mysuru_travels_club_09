@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineCheckCircle, HiOutlineIdentification, HiOutlineCreditCard, 
@@ -67,10 +68,10 @@ function BookingContent() {
     return { subtotal, discount, platformFee, total: subtotal - discount + platformFee };
   }, [trip, seatCount]);
 
-  const upiId = '9632463347@upi';
+  const upiId = '9632463347@ptyes';
   const upiLink = useMemo(() => {
     if (!trip) return '';
-    return `upi://pay?pa=${upiId}&pn=Mysuru%20Travel%20Club&am=${pricing.total}&cu=INR&tn=MTC-Trip`;
+    return `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
   }, [trip, pricing.total]);
 
   useEffect(() => {
@@ -146,10 +147,12 @@ function BookingContent() {
       const formData = new FormData();
       formData.append('screenshot', screenshot);
       await api.bookings.uploadScreenshot(createdBookingId, formData);
+      toast.success('Verification submitted successfully!');
       setStep(5);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      toast.error(err.message || 'Screenshot submission failed');
+      console.error("Upload error:", err);
+      toast.error(err.message || 'Screenshot submission failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -356,7 +359,7 @@ function BookingContent() {
 
                     <div className="flex flex-col items-center p-8 bg-slate-50/80 border border-slate-200 rounded-[2rem] mx-auto max-w-sm shadow-inner">
                       <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6 flex justify-center">
-                        <img src="https://cdn.corenexis.com/files/c/2563753720.jpg" alt="UPI QR Code" className="w-48 h-48 rounded-xl mix-blend-multiply object-contain" />
+                        <QRCode value={upiLink} size={192} style={{ height: "auto", maxWidth: "100%", width: "100%" }} />
                       </div>
                       
                       <div className="text-center mb-6">
@@ -365,9 +368,11 @@ function BookingContent() {
                         <div className="text-xs text-slate-500 mt-2">UPI ID: <span className="font-bold text-slate-800">{upiId}</span></div>
                       </div>
 
-                      <div className="w-full grid grid-cols-2 gap-3 mb-2 md:hidden">
-                        <a href={upiLink} className="py-3 px-4 bg-slate-900 rounded-xl text-center text-sm font-bold text-white shadow-sm hover:bg-slate-800">GPay/PhonePe</a>
-                        <a href={`paytmmp://pay?pa=${upiId}&pn=MysuruTravel&am=${pricing.total}&cu=INR`} className="py-3 px-4 bg-[#00baf2] rounded-xl text-center text-sm font-bold text-white shadow-sm hover:bg-[#00a3d9]">Paytm</a>
+                      <div className="w-full grid grid-cols-2 gap-3 mb-2 sm:grid-cols-4">
+                        <a href={`phonepe://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#5f259f] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#4d1f81]">PhonePe</a>
+                        <a href={`gpay://upi/pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#4285F4] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#3367d6]">GPay</a>
+                        <a href={`paytmmp://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#00baf2] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#00a3d9]">Paytm</a>
+                        <a href={`bhim://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`} className="py-3 px-2 bg-[#f89c1e] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#e08914]">BHIM</a>
                       </div>
                     </div>
 

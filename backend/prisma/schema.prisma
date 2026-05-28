@@ -80,6 +80,7 @@ model Booking {
   paymentScreenshot String?
   isManualPayment  Boolean       @default(false)
   pickupPoint      String?
+  adminNotes       String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

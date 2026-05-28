@@ -38,7 +38,7 @@ export const api = {
       return fetchAPI(`/bookings${query}`, { token });
     },
     getByRef: (ref: string) => fetchAPI(`/bookings/ref/${ref}`),
-    updateStatus: (id: string, status: string, token: string) => fetchAPI(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }), token }),
+    updateStatus: (id: string, status: string, token: string, adminNotes?: string) => fetchAPI(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, adminNotes }), token }),
     uploadScreenshot: async (id: string, formData: FormData) => {
       const res = await fetch(`${API_BASE}/bookings/${id}/screenshot`, {
         method: 'PATCH',
