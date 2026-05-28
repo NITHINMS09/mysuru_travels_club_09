@@ -913,12 +913,21 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4 font-bold text-slate-800">₹{booking.totalAmount?.toLocaleString()}</td>
                             <td className="px-6 py-4">
                               {booking.paymentScreenshot ? (
-                                <button 
-                                  onClick={() => setSelectedBookingScreenshot(booking)}
-                                  className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 border border-violet-100 text-xs font-bold hover:bg-violet-100 transition-all flex items-center gap-1 shadow-sm"
-                                >
-                                  Proof of Payment
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <img 
+                                    src={booking.paymentScreenshot.startsWith('http') ? booking.paymentScreenshot : `${getApiBaseClean()}${booking.paymentScreenshot}`} 
+                                    alt="Proof Thumbnail" 
+                                    className="w-8 h-8 object-cover rounded shadow-sm border border-slate-200 cursor-pointer hover:scale-105 transition-transform"
+                                    onClick={() => setSelectedBookingScreenshot(booking)}
+                                    onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
+                                  />
+                                  <button 
+                                    onClick={() => setSelectedBookingScreenshot(booking)}
+                                    className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 border border-violet-100 text-xs font-bold hover:bg-violet-100 transition-all shadow-sm"
+                                  >
+                                    View Proof
+                                  </button>
+                                </div>
                               ) : (
                                 <span className="text-slate-400 text-xs font-medium">Automatic verification</span>
                               )}
@@ -1484,9 +1493,14 @@ export default function AdminDashboard() {
 
             <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-900 max-h-[50vh] flex items-center justify-center p-2 mb-6">
               <img 
-                src={`${getApiBaseClean()}${selectedBookingScreenshot.paymentScreenshot}`} 
+                src={selectedBookingScreenshot.paymentScreenshot?.startsWith('http') 
+                  ? selectedBookingScreenshot.paymentScreenshot 
+                  : `${getApiBaseClean()}${selectedBookingScreenshot.paymentScreenshot}`} 
                 alt="Payment screenshot proof"
                 className="max-w-full max-h-[46vh] object-contain rounded-xl"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Image+Not+Found';
+                }}
               />
             </div>
 
