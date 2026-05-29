@@ -201,7 +201,7 @@ export default function TripDetails() {
                   </span>
                 )}
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-[#FFFFFF] mb-6 leading-tight font-outfit" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{trip.title}</h1>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-[#FFFFFF] mb-6 leading-tight font-outfit" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{trip.title}</h1>
               <div className="flex flex-wrap gap-6 text-sm font-semibold text-white/90">
                 <div className="flex items-center gap-2"><HiOutlineLocationMarker className="w-5 h-5 text-primary-400" />{trip.destination}</div>
                 <div className="flex items-center gap-2"><HiOutlineCalendar className="w-5 h-5 text-primary-400" />{new Date(trip.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div>

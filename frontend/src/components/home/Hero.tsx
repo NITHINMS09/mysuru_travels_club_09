@@ -7,32 +7,7 @@ import toast from 'react-hot-toast';
 import { useRef, useState, useEffect } from 'react';
 import VideoModal from '@/components/shared/VideoModal';
 
-// Word stagger animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.4,
-    },
-  },
-};
 
-const wordVariants = {
-  hidden: { opacity: 0, y: 60, scale: 0.9, rotateX: -20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    rotateX: 0,
-    transition: {
-      type: "spring",
-      damping: 14,
-      stiffness: 100,
-    },
-  },
-};
 
 export default function Hero() {
   const ref = useRef(null);
@@ -90,22 +65,19 @@ export default function Hero() {
               </span>
             </motion.div>
             
-            <motion.h1 
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="text-4xl sm:text-5xl md:text-7xl lg:text-[7.5rem] font-black mb-8 leading-[1.05] tracking-tight flex flex-wrap justify-center gap-x-3 md:gap-x-5 gap-y-2 md:gap-y-3 font-outfit drop-shadow-sm"
+            <h1 
+              className="text-4xl sm:text-5xl md:text-7xl lg:text-[7.5rem] font-bold mb-8 leading-[1.05] tracking-tight flex flex-wrap justify-center gap-x-3 md:gap-x-5 gap-y-2 md:gap-y-3 font-outfit"
             >
               {titleWords.map((word, i) => (
-                <motion.span 
+                <span 
                   key={i} 
-                  variants={wordVariants}
-                  className={i >= 2 ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-primary-600 to-cyan-600 inline-block drop-shadow-[0_4px_20px_rgba(139,92,246,0.2)]" : "inline-block text-slate-950"}
+                  className="inline-block text-[#FFFFFF]"
+                  style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                 >
                   {word}
-                </motion.span>
+                </span>
               ))}
-            </motion.h1>
+            </h1>
             
             <motion.p 
               initial={{ opacity: 0, y: 30 }}

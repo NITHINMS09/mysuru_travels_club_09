@@ -55,11 +55,8 @@ export default function TripCard({ trip }: TripCardProps) {
   }, [trip.startDate]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="glass-card group flex flex-col h-full bg-white border border-slate-100 hover:border-primary-500/20 hover:bg-white transition-all duration-500 rounded-3xl overflow-hidden relative shadow-lg hover:shadow-2xl hover:shadow-slate-200/50"
+    <div
+      className="glass-card group flex flex-col h-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden relative shadow-lg"
     >
       {/* Image Section */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
@@ -69,7 +66,7 @@ export default function TripCard({ trip }: TripCardProps) {
             alt={trip.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">No Cover Image</div>
@@ -77,7 +74,7 @@ export default function TripCard({ trip }: TripCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent opacity-90" />
         
         {/* Category Badge */}
-        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary-600 to-purple-600 backdrop-blur-md border border-white/[0.1] text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md">
+        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-slate-800 backdrop-blur-md border border-white/[0.1] text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md">
           {trip.category}
         </div>
 
@@ -99,7 +96,7 @@ export default function TripCard({ trip }: TripCardProps) {
           </div>
           
           <div className="px-3 py-1.5 rounded-xl bg-accent-gold/15 backdrop-blur-md border border-accent-gold/30 text-accent-gold text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-            <HiOutlineClock className="w-3.5 h-3.5 animate-pulse" />
+            <HiOutlineClock className="w-3.5 h-3.5" />
             Limited Seats
           </div>
         </div>
@@ -107,12 +104,12 @@ export default function TripCard({ trip }: TripCardProps) {
 
       {/* Content Section */}
       <div className="p-4 sm:p-6 flex flex-col flex-1 relative z-10 bg-slate-900">
-        <div className="flex items-center gap-1.5 text-accent-cyan text-[10px] font-bold uppercase tracking-widest mb-2.5">
-          <HiOutlineLocationMarker className="w-3.5 h-3.5 text-accent-cyan" />
+        <div className="flex items-center gap-1.5 text-[#FFFFFF] text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+          <HiOutlineLocationMarker className="w-3.5 h-3.5 text-[#FFFFFF]" />
           {trip.destination}
         </div>
         
-        <h3 className="text-base sm:text-xl font-bold font-outfit text-[#FFFFFF] mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+        <h3 className="text-base sm:text-xl font-bold font-outfit text-[#FFFFFF] mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
           {trip.title}
         </h3>
 
@@ -134,19 +131,14 @@ export default function TripCard({ trip }: TripCardProps) {
           </div>
           
           <Link href={`/trips/${trip.id}`}>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-gradient-to-br hover:from-primary-600 hover:to-accent-cyan hover:border-transparent text-slate-300 hover:text-white shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all duration-300"
+            <button
+              className="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300"
             >
-              <HiOutlineArrowRight className="w-5 h-5 animate-pulse" />
-            </motion.button>
+              <HiOutlineArrowRight className="w-5 h-5" />
+            </button>
           </Link>
         </div>
       </div>
-      
-      {/* Subtle bottom neon border line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary-500 via-purple-500 to-accent-cyan transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-    </motion.div>
+    </div>
   );
 }
