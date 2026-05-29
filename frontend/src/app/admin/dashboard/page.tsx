@@ -192,6 +192,8 @@ export default function AdminDashboard() {
   const [bookingFilter, setBookingFilter] = useState('ALL');
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [userSearch, setUserSearch] = useState('');
+  const [userFilter, setUserFilter] = useState('ALL');
+  const [viewingUser, setViewingUser] = useState<any>(null);
   const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
@@ -377,8 +379,11 @@ export default function AdminDashboard() {
       }
 
       // Fetch users
-      const usersRes = await api.auth.getUsers(token);
+      const usersRes = await api.users.getAll(token);
       setUsers(usersRes.users || []);
+      if (usersRes.stats) {
+        setStats((prev: any) => ({ ...prev, userStats: usersRes.stats }));
+      }
 
       // Fetch admins if SUPER_ADMIN
       const user = localStorage.getItem('tripnova_admin_user');
@@ -880,9 +885,21 @@ export default function AdminDashboard() {
 
   // Filter Users
   const filteredUsers = users.filter(u => {
-    return u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-           u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
-           u.phone?.toLowerCase().includes(userSearch.toLowerCase());
+    const matchesSearch = u.fullName?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.mobileNumber?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.id.toLowerCase().includes(userSearch.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (userFilter === 'CONFIRMED') {
+      return u.bookings.some((b: any) => b.status === 'CONFIRMED');
+    }
+    if (userFilter === 'PENDING') {
+      return u.bookings.some((b: any) => b.status.includes('PENDING'));
+    }
+    if (userFilter === 'REJECTED') {
+      return u.bookings.every((b: any) => b.status === 'REJECTED' || b.status === 'CANCELLED');
+    }
+    return true;
   });
 
   // Filter Admins
@@ -1022,11 +1039,11 @@ export default function AdminDashboard() {
                 {/* Stats Summary Widgets */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                   {[
-                    { label: 'Total Bookings', value: stats?.totalBookings || '0', color: 'text-violet-600', glow: 'shadow-violet-500/5 border-violet-200/60' },
-                    { label: 'Pending Payments', value: stats?.pendingPayments || '0', color: 'text-amber-600', glow: 'shadow-amber-500/5 border-amber-200/60' },
-                    { label: 'Confirmed Payments', value: stats?.confirmedPayments || '0', color: 'text-emerald-600', glow: 'shadow-emerald-500/5 border-emerald-200/60' },
-                    { label: 'Rejected Payments', value: stats?.rejectedPayments || '0', color: 'text-red-600', glow: 'shadow-red-500/5 border-red-200/60' },
-                    { label: 'Total Visitors', value: visitorStats?.totalVisitors || '0', color: 'text-blue-600', glow: 'shadow-blue-500/5 border-blue-200/60' },
+                    { label: 'Total Users', value: stats?.userStats?.totalUsers || users.length || '0', color: 'text-violet-600', glow: 'shadow-violet-500/5 border-violet-200/60' },
+                    { label: 'Total Bookings', value: stats?.totalBookings || '0', color: 'text-amber-600', glow: 'shadow-amber-500/5 border-amber-200/60' },
+                    { label: 'Confirmed Bookings', value: stats?.userStats?.confirmedBookings || stats?.confirmedPayments || '0', color: 'text-emerald-600', glow: 'shadow-emerald-500/5 border-emerald-200/60' },
+                    { label: 'Repeat Customers', value: stats?.userStats?.repeatCustomers || '0', color: 'text-blue-600', glow: 'shadow-blue-500/5 border-blue-200/60' },
+                    { label: 'New Customers Today', value: stats?.userStats?.newCustomersToday || '0', color: 'text-rose-600', glow: 'shadow-rose-500/5 border-rose-200/60' },
                     { label: 'Total Blogs', value: stats?.totalBlogs || blogs.length || '0', color: 'text-indigo-600', glow: 'shadow-indigo-500/5 border-indigo-200/60' },
                     { label: 'Total Videos', value: stats?.totalVideos || updates.length || '0', color: 'text-rose-600', glow: 'shadow-rose-500/5 border-rose-200/60' },
                     { label: 'Notifications Sent', value: stats?.notificationsSent || '0', color: 'text-cyan-600', glow: 'shadow-cyan-500/5 border-cyan-200/60' }
@@ -1350,14 +1367,26 @@ export default function AdminDashboard() {
                     <h3 className="text-2xl font-black font-outfit text-slate-800">Explorer Directory</h3>
                     <p className="text-sm text-slate-500 font-medium">Manage travelers, contact details, and account suspension</p>
                   </div>
-                  <div className="relative">
-                    <HiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <input 
-                      placeholder="Search explorers name/email..." 
-                      value={userSearch}
-                      onChange={e => setUserSearch(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 bg-white shadow-sm w-72"
-                    />
+                  <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
+                    <select 
+                      value={userFilter}
+                      onChange={e => setUserFilter(e.target.value)}
+                      className="px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 bg-white shadow-sm font-semibold text-slate-700"
+                    >
+                      <option value="ALL">All Users</option>
+                      <option value="CONFIRMED">Confirmed Bookings</option>
+                      <option value="PENDING">Pending Payments</option>
+                      <option value="REJECTED">Rejected Bookings</option>
+                    </select>
+                    <div className="relative">
+                      <HiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <input 
+                        placeholder="Search name/mobile/id..." 
+                        value={userSearch}
+                        onChange={e => setUserSearch(e.target.value)}
+                        className="pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 bg-white shadow-sm w-64"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1377,49 +1406,36 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredUsers.map(userItem => {
-                          const isBanned = userItem.status === 'Banned' || bannedEmails.includes(userItem.email.toLowerCase().trim());
+                          const latestBooking = userItem.bookings?.[0];
                           return (
-                            <tr key={userItem.email} className="text-sm hover:bg-slate-50/50 transition-colors duration-200 text-slate-700">
+                            <tr key={userItem.id} className="text-sm hover:bg-slate-50/50 transition-colors duration-200 text-slate-700">
                               <td className="px-6 py-4">
-                                <div className="font-semibold text-slate-800">{userItem.name}</div>
-                                <div className="text-xs text-slate-400">{userItem.email}</div>
-                                {userItem.age ? (
-                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">{userItem.gender}, {userItem.age}yo</span>
-                                ) : null}
+                                <div className="font-semibold text-slate-800">{userItem.fullName}</div>
+                                <div className="text-xs text-slate-400">Joined {new Date(userItem.createdAt).toLocaleDateString()}</div>
                               </td>
-                              <td className="px-6 py-4 font-medium text-slate-600">{userItem.phone || 'N/A'}</td>
-                              <td className="px-6 py-4 font-black text-slate-700">{userItem.bookingsCount}</td>
+                              <td className="px-6 py-4 font-medium text-slate-600">{userItem.mobileNumber}</td>
+                              <td className="px-6 py-4 font-black text-slate-700">{userItem.totalTrips}</td>
                               <td className="px-6 py-4 font-bold text-slate-800">₹{userItem.totalSpent?.toLocaleString()}</td>
                               <td className="px-6 py-4">
-                                {userItem.emergencyName ? (
+                                {latestBooking ? (
                                   <div className="text-xs">
-                                    <span className="font-semibold text-slate-600">{userItem.emergencyName}</span>
-                                    <div className="text-slate-400">{userItem.emergencyPhone}</div>
+                                    <span className="font-semibold text-slate-600">{latestBooking.trip?.title}</span>
+                                    <div className="text-slate-400">{new Date(latestBooking.createdAt).toLocaleDateString()}</div>
                                   </div>
                                 ) : (
-                                  <span className="text-slate-450 text-xs italic">Not Provided</span>
+                                  <span className="text-slate-450 text-xs italic">No bookings yet</span>
                                 )}
                               </td>
                               <td className="px-6 py-4">
                                 <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-wider ${
-                                  isBanned ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'
+                                  userItem.totalTrips > 1 ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-blue-50 border border-blue-200 text-blue-700'
                                 }`}>
-                                  {isBanned ? 'BANNED' : 'ACTIVE'}
+                                  {userItem.totalTrips > 1 ? 'REPEAT' : 'NEW'}
                                 </span>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex gap-2">
-                                  <button onClick={() => setEditingUser(userItem)} className="p-2 bg-slate-50 border border-slate-200 text-slate-500 rounded-lg hover:text-violet-600 transition-colors" title="Edit Profile Details"><HiOutlinePencil className="w-4 h-4" /></button>
-                                  <button 
-                                    onClick={() => handleToggleBanEmail(userItem.email)} 
-                                    className={`p-2 border rounded-lg transition-colors ${
-                                      isBanned ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100' : 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
-                                    }`}
-                                    title={isBanned ? 'Lift Suspension' : 'Suspend traveler email'}
-                                  >
-                                    {isBanned ? <HiOutlineLockOpen className="w-4 h-4" /> : <HiOutlineLockClosed className="w-4 h-4" />}
-                                  </button>
-                                  <button onClick={() => handleDeleteUser(userItem.email)} className="p-2 bg-slate-50 border border-slate-200 text-red-500/70 rounded-lg hover:text-red-600 transition-colors" title="Delete Traveler Records"><HiOutlineTrash className="w-4 h-4" /></button>
+                                  <button onClick={() => setViewingUser(userItem)} className="px-3 py-1.5 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-lg text-xs font-bold transition-colors">View Profile</button>
                                 </div>
                               </td>
                             </tr>
@@ -2427,6 +2443,68 @@ export default function AdminDashboard() {
       )}
 
       {/* MODAL: Add/Edit Administrator Account */}
+      {viewingUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative my-8">
+            <button onClick={() => setViewingUser(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors">
+              <HiOutlineX className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-4 mb-8 border-b border-slate-100 pb-6">
+              <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-2xl font-black">
+                {viewingUser.fullName?.[0]?.toUpperCase() || '?'}
+              </div>
+              <div>
+                <h2 className="text-2xl font-black font-outfit text-slate-800">{viewingUser.fullName}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm font-medium text-slate-500">{viewingUser.mobileNumber}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-sm font-bold text-violet-600">Total Spent: ₹{viewingUser.totalSpent?.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                <HiOutlineTicket className="w-5 h-5 text-violet-500" />
+                Booking History
+              </h3>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {viewingUser.bookings?.map((b: any) => (
+                  <div key={b.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-xs font-bold font-mono text-slate-400">#{b.bookingRef}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                          b.status === 'REJECTED' || b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {b.status}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-lg">{b.trip?.title}</h4>
+                      <p className="text-sm text-slate-500 mt-1">Booked on: {new Date(b.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-black text-slate-800">₹{b.totalAmount.toLocaleString()}</div>
+                      <div className="text-xs text-slate-500 mt-1 font-medium">{b.seatCount} Seat{b.seatCount > 1 ? 's' : ''}</div>
+                      {b.paymentScreenshot && (
+                        <a href={b.paymentScreenshot} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-violet-600 hover:text-violet-700">
+                          View Receipt <HiOutlineExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(!viewingUser.bookings || viewingUser.bookings.length === 0) && (
+                  <div className="text-center py-8 text-slate-400 font-medium">No bookings found for this customer.</div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {(isAddingAdmin || editingAdmin) && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
           <motion.div 

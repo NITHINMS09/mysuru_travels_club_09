@@ -18,6 +18,18 @@ model Admin {
   updatedAt    DateTime  @updatedAt
 }
 
+model User {
+  id           String    @id @default(cuid())
+  fullName     String
+  mobileNumber String    @unique
+  totalTrips   Int       @default(0)
+  totalSpent   Float     @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bookings     Booking[]
+}
+
 model Trip {
   id            String     @id @default(cuid())
   title         String
@@ -81,6 +93,8 @@ model Booking {
   isManualPayment  Boolean       @default(false)
   pickupPoint      String?
   adminNotes       String?
+  userId           String?
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -90,6 +104,7 @@ model Booking {
   @@index([tripId])
   @@index([email])
   @@index([bookingRef])
+  @@index([userId])
 }
 
 model Payment {

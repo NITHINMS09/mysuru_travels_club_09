@@ -68,8 +68,22 @@ router.post('/', async (req, res) => {
     const bookingRef = `TN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
     const finalAmount = totalAmount || (trip.price * seatCount);
 
+    let user = await prisma.user.findUnique({ where: { mobileNumber: phone } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          fullName: travelerName,
+          mobileNumber: phone,
+        }
+      });
+    } else if (user.fullName !== travelerName) {
+      // Update name if different, optionally
+      await prisma.user.update({ where: { id: user.id }, data: { fullName: travelerName } });
+    }
+
     const booking = await prisma.booking.create({
       data: {
+        userId: user.id,
         tripId,
         travelerName,
         email: email || null,
@@ -232,8 +246,21 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
     }
 
     if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
+      if (currentBooking.userId) {
+        await prisma.user.update({
+          where: { id: currentBooking.userId },
+          data: { totalTrips: { increment: 1 }, totalSpent: { increment: currentBooking.totalAmount } }
+        });
+      }
       const message = `Hello ${currentBooking.travelerName},\n\nYour payment for ${currentBooking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location from the available pickup points mentioned in the trip details.\n\nFor assistance contact:\n9632463347`;
       await sendNotification(currentBooking.id, currentBooking.phone, message);
+    } else if (status === 'REJECTED' && currentBooking.status === 'CONFIRMED') {
+      if (currentBooking.userId) {
+        await prisma.user.update({
+          where: { id: currentBooking.userId },
+          data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: currentBooking.totalAmount } }
+        });
+      }
     }
 
     await prisma.adminLog.create({
@@ -268,6 +295,13 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       await prisma.trip.update({
         where: { id: booking.tripId },
         data: { availableSeats: { increment: booking.seatCount } },
+      });
+    }
+
+    if (booking.status === 'CONFIRMED' && booking.userId) {
+      await prisma.user.update({
+        where: { id: booking.userId },
+        data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.totalAmount } }
       });
     }
 

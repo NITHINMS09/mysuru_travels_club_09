@@ -202,6 +202,10 @@ export const api = {
     search: (query: string) => fetchAPI(`/ai/search?q=${encodeURIComponent(query)}`),
   },
 
+  users: {
+    getAll: (token: string) => fetchAPI('/users', { token }),
+  },
+
   auth: {
     login: (email: string, password: string) => fetchAPI('/auth/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     verify: (token: string) => fetchAPI('/auth/admin/verify', { token }),
