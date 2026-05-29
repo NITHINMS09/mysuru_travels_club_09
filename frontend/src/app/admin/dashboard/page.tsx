@@ -9,9 +9,10 @@ import {
   HiOutlineTrash, HiOutlinePencil, HiOutlineCheckCircle, 
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
-  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye,
+  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
   HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload
 } from 'react-icons/hi';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api, { fetchAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import CreateTripModal from '@/components/admin/CreateTripModal';
@@ -914,6 +915,7 @@ export default function AdminDashboard() {
                           <th className="px-6 py-4.5">Payment Screenshot</th>
                           <th className="px-6 py-4.5">Booking Date</th>
                           <th className="px-6 py-4.5">Status</th>
+                          <th className="px-6 py-4.5">Notif</th>
                           <th className="px-6 py-4.5">Actions</th>
                         </tr>
                       </thead>
@@ -960,6 +962,19 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="px-6 py-4">
+                              {booking.notifications && booking.notifications.length > 0 ? (
+                                <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                                  booking.notifications[0].status === 'SENT' ? 'text-green-600' :
+                                  booking.notifications[0].status === 'FAILED' ? 'text-red-600' :
+                                  'text-amber-600'
+                                }`} title={booking.notifications[0].error || 'Notification sent'}>
+                                  {booking.notifications[0].status}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[10px]">-</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
                               <div className="flex gap-2">
                                 <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="p-1 text-slate-400 hover:text-green-600 transition-colors" title="Confirm Booking"><HiOutlineCheckCircle className="w-5.5 h-5.5" /></button>
                                 <button onClick={() => {
@@ -972,7 +987,7 @@ export default function AdminDashboard() {
                         ))}
                         {filteredBookings.length === 0 && (
                           <tr>
-                            <td colSpan={7} className="text-center py-10 text-slate-400 font-bold">No bookings found matching filters.</td>
+                            <td colSpan={8} className="text-center py-10 text-slate-400 font-bold">No bookings found matching filters.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1392,18 +1407,41 @@ export default function AdminDashboard() {
                 
                 {visitorStats ? (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Visits</div>
-                        <div className="text-5xl font-black text-indigo-600">{visitorStats.totalVisits}</div>
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Visitors</div>
+                        <div className="text-4xl font-black text-indigo-600">{visitorStats.totalVisitors}</div>
                       </div>
                       <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Unique Visitors</div>
-                        <div className="text-5xl font-black text-purple-600">{visitorStats.uniqueVisitors}</div>
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Active Visitors</div>
+                        <div className="text-4xl font-black text-green-600">{visitorStats.activeVisitors}</div>
+                      </div>
+                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Bookings</div>
+                        <div className="text-4xl font-black text-purple-600">{visitorStats.totalBookings}</div>
+                      </div>
+                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Conversion Rate</div>
+                        <div className="text-4xl font-black text-orange-600">{visitorStats.conversionRate}%</div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm col-span-full">
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Daily Visitors (Last 7 Days)</h4>
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={visitorStats.dailyVisitors}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                              <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                              <Line type="monotone" dataKey="count" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4, fill: '#4f46e5', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
                       <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                         <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Top Pages Visited</h4>
                         <ul className="space-y-3">
@@ -1416,26 +1454,29 @@ export default function AdminDashboard() {
                         </ul>
                       </div>
                       <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Browsers</h4>
-                        <ul className="space-y-3">
-                          {visitorStats.browserStats?.map((b: any, i: number) => (
-                            <li key={i} className="flex justify-between items-center text-sm">
-                              <span className="text-slate-600 font-medium">{b.browser || 'Unknown'}</span>
-                              <span className="font-bold text-slate-900">{b._count.browser}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Devices</h4>
-                        <ul className="space-y-3">
-                          {visitorStats.deviceStats?.map((d: any, i: number) => (
-                            <li key={i} className="flex justify-between items-center text-sm">
-                              <span className="text-slate-600 font-medium">{d.device || 'Unknown'}</span>
-                              <span className="font-bold text-slate-900">{d._count.device}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Recent Visitors</h4>
+                        <div className="overflow-y-auto max-h-[300px]">
+                          <table className="w-full text-left border-collapse text-sm">
+                            <thead>
+                              <tr className="border-b border-slate-100 sticky top-0 bg-white">
+                                <th className="py-2 text-xs uppercase tracking-widest text-slate-400">Location</th>
+                                <th className="py-2 text-xs uppercase tracking-widest text-slate-400">Device</th>
+                                <th className="py-2 text-xs uppercase tracking-widest text-slate-400">OS/Browser</th>
+                                <th className="py-2 text-xs uppercase tracking-widest text-slate-400">Time</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                              {visitorStats.recentVisitors?.map((v: any, i: number) => (
+                                <tr key={i}>
+                                  <td className="py-2 font-medium text-slate-700">{v.city ? `${v.city}, ${v.country}` : 'Unknown'}</td>
+                                  <td className="py-2 text-slate-500">{v.device || 'Desktop'}</td>
+                                  <td className="py-2 text-slate-500">{v.os} / {v.browser}</td>
+                                  <td className="py-2 text-slate-500">{new Date(v.startedAt).toLocaleTimeString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
                   </div>

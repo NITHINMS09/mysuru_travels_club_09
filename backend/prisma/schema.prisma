@@ -85,6 +85,7 @@ model Booking {
   updatedAt        DateTime      @updatedAt
 
   payment Payment?
+  notifications NotificationLog[]
 
   @@index([tripId])
   @@index([email])
@@ -245,16 +246,59 @@ model MarketplaceListing {
   updatedAt   DateTime @updatedAt
 }
 
-model VisitorLog {
+model Visitor {
   id        String   @id @default(cuid())
-  sessionId String
+  visitorId String   @unique
+  createdAt DateTime @default(now())
+  sessions  VisitorSession[]
+}
+
+model VisitorSession {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  visitorId String
+  visitor   Visitor  @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
   ipAddress String?
+  country   String?
+  state     String?
+  city      String?
   device    String?  // Mobile / Desktop / Tablet
   browser   String?
+  os        String?
+  referrer  String?
+  startedAt DateTime @default(now())
+  endedAt   DateTime @default(now())
+
+  pageViews PageView[]
+
+  @@index([startedAt])
+  @@index([visitorId])
+}
+
+model PageView {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   VisitorSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
   page      String
-  createdAt DateTime @default(now())
+  visitedAt DateTime       @default(now())
 
   @@index([sessionId])
-  @@index([createdAt])
+  @@index([visitedAt])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  recipient String   // Phone number or email
+  provider  String   // 'Twilio', 'MSG91', etc.
+  message   String
+  status    String   // 'PENDING', 'SENT', 'FAILED'
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
 }
 

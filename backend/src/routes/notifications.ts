@@ -1,7 +1,23 @@
 import { Router } from 'express';
 import prisma from '../config/database';
 
+import { authenticateAdmin } from '../middleware/auth';
+
 const router = Router();
+
+// GET all notification logs (admin)
+router.get('/logs', authenticateAdmin, async (req, res) => {
+  try {
+    const logs = await prisma.notificationLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { booking: { select: { bookingRef: true, travelerName: true } } }
+    });
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // GET notifications for user
 router.get('/', async (req, res) => {

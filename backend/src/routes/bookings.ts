@@ -7,7 +7,7 @@ import multer from 'multer';
 import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config';
-import { sendWhatsAppMessage } from '../utils/notifier';
+import { sendNotification } from '../utils/notifier';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -156,6 +156,7 @@ router.get('/', authenticateAdmin, async (req: AuthRequest, res) => {
         include: {
           trip: { select: { title: true, destination: true } },
           payment: true,
+          notifications: { orderBy: { createdAt: 'desc' }, take: 1 }
         },
       }),
       prisma.booking.count({ where }),
@@ -232,7 +233,7 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
 
     if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
       const message = `Hello ${currentBooking.travelerName},\n\nYour payment for ${currentBooking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location from the available pickup points mentioned in the trip details.\n\nFor assistance contact:\n9632463347`;
-      await sendWhatsAppMessage(currentBooking.phone, message);
+      await sendNotification(currentBooking.id, currentBooking.phone, message);
     }
 
     res.json(booking);
