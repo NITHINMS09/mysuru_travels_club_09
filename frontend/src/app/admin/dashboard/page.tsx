@@ -828,10 +828,6 @@ export default function AdminDashboard() {
     }
     return true;
   });
-    
-    if (bookingFilter === 'ALL') return matchesSearch;
-    return matchesSearch && b.status === bookingFilter;
-  });
 
   // Filter Users
   const filteredUsers = users.filter(u => {
