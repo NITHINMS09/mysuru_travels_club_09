@@ -35,13 +35,19 @@ export default function Hero() {
   return (
     <>
       <section ref={ref} className="relative h-screen w-full overflow-hidden bg-slate-50 perspective-[1000px]">
-        {/* Cinematic Mountain Landscape Background with Parallax */}
-        <motion.div style={{ y: yBg }} className="absolute inset-0 z-0 origin-top">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/70 to-slate-50 z-10 backdrop-blur-[2px]" />
+        {/* Cinematic Mountain Landscape Background with Parallax & Slow Zoom */}
+        <motion.div 
+          style={{ y: yBg }} 
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.1 }}
+          transition={{ duration: 30, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+          className="absolute inset-0 z-0 origin-top"
+        >
+          <div className="absolute inset-0 bg-black/45 z-10" />
           <img
-            src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&q=80&w=2560"
+            src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&q=80&w=2560"
             alt="Cinematic Landscape"
-            className="h-[120%] w-full object-cover -translate-y-[10%] opacity-90 object-center"
+            className="h-[120%] w-full object-cover -translate-y-[10%] object-center"
           />
         </motion.div>
 
@@ -60,7 +66,7 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
             >
-              <span className="inline-block px-6 py-2.5 mb-8 text-xs font-bold tracking-[0.3em] uppercase bg-white/70 backdrop-blur-md border border-slate-200/60 rounded-full text-slate-800 shadow-sm shadow-slate-200/50">
+              <span className="inline-block px-6 py-2.5 mb-8 text-xs font-bold tracking-[0.3em] uppercase bg-black/30 backdrop-blur-md border border-white/20 rounded-full text-white shadow-sm shadow-black/50">
                 {settings.heroTagline || "Explore the Extraordinary"}
               </span>
             </motion.div>
@@ -83,7 +89,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 1, ease: "easeOut" }}
-              className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-700 font-medium mb-12 max-w-3xl mx-auto font-inter leading-relaxed drop-shadow-sm"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-200 font-medium mb-12 max-w-3xl mx-auto font-inter leading-relaxed drop-shadow-md"
             >
               Experience the world's most breathtaking destinations with our curated premium adventures. 
               AI-powered planning meets human-centric exploration.
