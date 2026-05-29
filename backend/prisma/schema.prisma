@@ -65,12 +65,12 @@ model Booking {
   tripId           String
   trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   travelerName     String
-  email            String
+  email            String?
   phone            String
-  age              Int
-  gender           String
-  emergencyName    String
-  emergencyPhone   String
+  age              Int?
+  gender           String?
+  emergencyName    String?
+  emergencyPhone   String?
   idProofUrl       String?
   seatCount        Int           @default(1)
   specialRequests  String?
@@ -244,3 +244,17 @@ model MarketplaceListing {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model VisitorLog {
+  id        String   @id @default(cuid())
+  sessionId String
+  ipAddress String?
+  device    String?  // Mobile / Desktop / Tablet
+  browser   String?
+  page      String
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+

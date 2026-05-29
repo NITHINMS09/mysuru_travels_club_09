@@ -7,6 +7,7 @@ import multer from 'multer';
 import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config';
+import { sendWhatsAppMessage } from '../utils/notifier';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -42,12 +43,14 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     // Enforce email suspension check
-    const bannedSetting = await prisma.siteSetting.findUnique({ where: { key: 'banned_emails' } });
-    if (bannedSetting) {
-      const bannedEmails = JSON.parse(bannedSetting.value);
-      if (Array.isArray(bannedEmails) && bannedEmails.includes(email.toLowerCase().trim())) {
-        res.status(400).json({ error: 'Access Denied: This email account has been suspended by the administrator.' });
-        return;
+    if (email) {
+      const bannedSetting = await prisma.siteSetting.findUnique({ where: { key: 'banned_emails' } });
+      if (bannedSetting) {
+        const bannedEmails = JSON.parse(bannedSetting.value);
+        if (Array.isArray(bannedEmails) && bannedEmails.includes(email.toLowerCase().trim())) {
+          res.status(400).json({ error: 'Access Denied: This email account has been suspended by the administrator.' });
+          return;
+        }
       }
     }
 
@@ -69,12 +72,12 @@ router.post('/', async (req, res) => {
       data: {
         tripId,
         travelerName,
-        email,
+        email: email || null,
         phone,
-        age: parseInt(age),
-        gender,
-        emergencyName,
-        emergencyPhone,
+        age: age ? parseInt(age) : null,
+        gender: gender || null,
+        emergencyName: emergencyName || null,
+        emergencyPhone: emergencyPhone || null,
         idProofUrl: idProofUrl || null,
         seatCount,
         specialRequests: specialRequests || null,
@@ -195,7 +198,8 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
     const { status, adminNotes } = req.body;
     
     const currentBooking = await prisma.booking.findUnique({
-      where: { id: req.params.id }
+      where: { id: req.params.id },
+      include: { trip: true }
     });
 
     if (!currentBooking) {
@@ -224,6 +228,11 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
         where: { id: currentBooking.tripId },
         data: { availableSeats: { decrement: currentBooking.seatCount } },
       });
+    }
+
+    if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
+      const message = `Hello ${currentBooking.travelerName},\n\nYour payment for ${currentBooking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location from the available pickup points mentioned in the trip details.\n\nFor assistance contact:\n9632463347`;
+      await sendWhatsAppMessage(currentBooking.phone, message);
     }
 
     res.json(booking);

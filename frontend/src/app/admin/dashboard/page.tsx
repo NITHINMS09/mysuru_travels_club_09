@@ -12,7 +12,7 @@ import {
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye,
   HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload
 } from 'react-icons/hi';
-import api from '@/lib/api';
+import api, { fetchAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import CreateTripModal from '@/components/admin/CreateTripModal';
 import MarketplaceManager from '@/components/admin/MarketplaceManager';
@@ -209,6 +209,7 @@ export default function AdminDashboard() {
   });
 
   const [editingCrew, setEditingCrew] = useState<any>(null);
+  const [visitorStats, setVisitorStats] = useState<any>(null);
   const [crewForm, setCrewForm] = useState({
     name: '',
     role: '',
@@ -335,6 +336,19 @@ export default function AdminDashboard() {
         const adminsRes = await api.auth.getAdmins(token);
         setAdmins(adminsRes.admins || []);
       }
+      
+      const fetchVisitorStats = async () => {
+        try {
+          const data = await fetchAPI('/analytics/stats', {
+            token
+          });
+          setVisitorStats(data);
+        } catch (e) {
+          console.error('Failed to fetch visitor stats');
+        }
+      };
+      await fetchVisitorStats();
+
     } catch (err) {
       toast.error('Failed to fetch data');
     } finally {
@@ -533,6 +547,7 @@ export default function AdminDashboard() {
 
   const navItems = [
     { label: 'Overview', icon: HiOutlineChartBar, color: 'text-purple-600' },
+    { label: 'Visitor Analytics', icon: HiOutlineEye, color: 'text-indigo-600' },
     { label: 'Marketplace', icon: HiOutlineMap, color: 'text-emerald-600' },
     { label: 'Trips', icon: HiOutlineMap, color: 'text-blue-600' },
     { label: 'Bookings', icon: HiOutlineTicket, color: 'text-pink-600' },
@@ -892,11 +907,12 @@ export default function AdminDashboard() {
                     <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead className="bg-slate-50 text-slate-500 text-[10px] font-extrabold uppercase tracking-widest border-b border-slate-200/80">
                         <tr>
-                          <th className="px-6 py-4.5">Ref</th>
-                          <th className="px-6 py-4.5">Traveler</th>
-                          <th className="px-6 py-4.5">Trip Title</th>
-                          <th className="px-6 py-4.5">Amount</th>
-                          <th className="px-6 py-4.5">Receipt Proof</th>
+                          <th className="px-6 py-4.5">Customer Name</th>
+                          <th className="px-6 py-4.5">Mobile Number</th>
+                          <th className="px-6 py-4.5">Trip Name</th>
+                          <th className="px-6 py-4.5">Seats</th>
+                          <th className="px-6 py-4.5">Payment Screenshot</th>
+                          <th className="px-6 py-4.5">Booking Date</th>
                           <th className="px-6 py-4.5">Status</th>
                           <th className="px-6 py-4.5">Actions</th>
                         </tr>
@@ -904,13 +920,10 @@ export default function AdminDashboard() {
                       <tbody className="divide-y divide-slate-100">
                         {filteredBookings.map(booking => (
                           <tr key={booking.id} className="text-sm hover:bg-slate-50/50 transition-colors duration-200 text-slate-700">
-                            <td className="px-6 py-4 font-mono font-bold text-cyan-600">{booking.bookingRef}</td>
-                            <td className="px-6 py-4 font-semibold text-slate-800">
-                              <div>{booking.travelerName}</div>
-                              <div className="text-xs text-slate-400">{booking.email}</div>
-                            </td>
+                            <td className="px-6 py-4 font-semibold text-slate-800">{booking.travelerName}</td>
+                            <td className="px-6 py-4 text-slate-600">{booking.phone}</td>
                             <td className="px-6 py-4 text-slate-600">{booking.trip?.title}</td>
-                            <td className="px-6 py-4 font-bold text-slate-800">₹{booking.totalAmount?.toLocaleString()}</td>
+                            <td className="px-6 py-4 text-slate-600 font-bold">{booking.seatCount}</td>
                             <td className="px-6 py-4">
                               {booking.paymentScreenshot ? (
                                 <div className="flex items-center gap-2">
@@ -932,6 +945,7 @@ export default function AdminDashboard() {
                                 <span className="text-slate-400 text-xs font-medium">Automatic verification</span>
                               )}
                             </td>
+                            <td className="px-6 py-4 text-slate-600">{new Date(booking.createdAt).toLocaleDateString()}</td>
                             <td className="px-6 py-4">
                               <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-wider ${
                                 booking.status === 'CONFIRMED' 
@@ -1367,6 +1381,67 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'Visitor Analytics' && (
+              <motion.div key="visitor-analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-black font-outfit text-slate-800">Visitor Analytics</h3>
+                </div>
+                
+                {visitorStats ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Visits</div>
+                        <div className="text-5xl font-black text-indigo-600">{visitorStats.totalVisits}</div>
+                      </div>
+                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Unique Visitors</div>
+                        <div className="text-5xl font-black text-purple-600">{visitorStats.uniqueVisitors}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Top Pages Visited</h4>
+                        <ul className="space-y-3">
+                          {visitorStats.pageStats?.map((p: any, i: number) => (
+                            <li key={i} className="flex justify-between items-center text-sm">
+                              <span className="text-slate-600 font-medium truncate pr-4">{p.page}</span>
+                              <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg">{p._count.page}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Browsers</h4>
+                        <ul className="space-y-3">
+                          {visitorStats.browserStats?.map((b: any, i: number) => (
+                            <li key={i} className="flex justify-between items-center text-sm">
+                              <span className="text-slate-600 font-medium">{b.browser || 'Unknown'}</span>
+                              <span className="font-bold text-slate-900">{b._count.browser}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="glass-card bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Devices</h4>
+                        <ul className="space-y-3">
+                          {visitorStats.deviceStats?.map((d: any, i: number) => (
+                            <li key={i} className="flex justify-between items-center text-sm">
+                              <span className="text-slate-600 font-medium">{d.device || 'Unknown'}</span>
+                              <span className="font-bold text-slate-900">{d._count.device}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center py-20 text-slate-400 font-bold">Loading visitor data...</div>
+                )}
               </motion.div>
             )}
 

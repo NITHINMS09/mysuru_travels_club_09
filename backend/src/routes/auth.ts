@@ -102,6 +102,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
 
     const usersMap: any = {};
     bookings.forEach(b => {
+      if (!b.email) return;
       const emailLower = b.email.toLowerCase().trim();
       if (!usersMap[emailLower]) {
         usersMap[emailLower] = {

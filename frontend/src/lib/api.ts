@@ -1,10 +1,10 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 interface FetchOptions extends RequestInit {
   token?: string;
 }
 
-async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
+export async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
   const { token, ...fetchOpts } = options;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -6,6 +6,8 @@ import { Toaster } from "react-hot-toast";
 import SmoothScroller from "@/components/shared/SmoothScroller";
 import Preloader from "@/components/shared/Preloader";
 import FloatingWidgets from "@/components/shared/FloatingWidgets";
+import VisitorTracker from "@/components/VisitorTracker";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "MYSURU TRAVEL CLUB | Explore the Extraordinary",
@@ -30,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-inter antialiased bg-[#f8fafc] text-[#0f172a] selection:bg-primary-500 selection:text-white" suppressHydrationWarning>
         <SmoothScroller />
+        <Suspense>
+          <VisitorTracker />
+        </Suspense>
         <Preloader />
         <FloatingWidgets />
         <div className="noise-overlay" />
