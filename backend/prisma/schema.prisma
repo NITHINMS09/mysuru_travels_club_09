@@ -232,6 +232,7 @@ model CrewMember {
   contact     String?
   instagram   String?
   description String?
+  displayOrder Int     @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

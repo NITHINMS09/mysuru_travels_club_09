@@ -9,7 +9,10 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const crew = await prisma.crewMember.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { displayOrder: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
     res.json(crew);
   } catch (error) {
@@ -21,7 +24,7 @@ router.get('/', async (req, res) => {
 // CREATE crew member (admin)
 router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { name, role, image, contact, instagram, description } = req.body;
+    const { name, role, image, contact, instagram, description, displayOrder } = req.body;
     
     if (!name || !role || !image) {
       return res.status(400).json({ error: 'Name, role, and image are required' });
@@ -34,7 +37,8 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
         image,
         contact,
         instagram,
-        description
+        description,
+        displayOrder: displayOrder ? parseInt(displayOrder) : 0
       }
     });
     
@@ -48,7 +52,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
 // UPDATE crew member (admin)
 router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { name, role, image, contact, instagram, description } = req.body;
+    const { name, role, image, contact, instagram, description, displayOrder } = req.body;
 
     if (!name || !role || !image || !description) {
       return res.status(400).json({ error: 'Name, role, image, and description are required' });
@@ -62,7 +66,8 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
         image,
         contact,
         instagram,
-        description
+        description,
+        displayOrder: displayOrder !== undefined ? parseInt(displayOrder) : undefined
       }
     });
 
@@ -73,6 +78,32 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Crew member not found' });
     }
     res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+});
+
+// BULK REORDER crew members (admin)
+router.patch('/reorder', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { orders } = req.body; // Array of { id, displayOrder }
+    
+    if (!Array.isArray(orders)) {
+      return res.status(400).json({ error: 'Orders must be an array' });
+    }
+
+    // Process all updates in a transaction
+    await prisma.$transaction(
+      orders.map((item: any) => 
+        prisma.crewMember.update({
+          where: { id: item.id },
+          data: { displayOrder: parseInt(item.displayOrder) || 0 }
+        })
+      )
+    );
+
+    res.json({ message: 'Order updated successfully' });
+  } catch (error) {
+    console.error('Reorder crew error:', error);
+    res.status(500).json({ error: 'Server error updating order' });
   }
 });
 

@@ -277,7 +277,7 @@ export default function AdminDashboard() {
         contact: editingCrew.contact || '',
         instagram: editingCrew.instagram || '',
         description: editingCrew.description || '',
-        order: editingCrew.order?.toString() || '0',
+        displayOrder: editingCrew.displayOrder?.toString() || '0',
         isVisible: editingCrew.isVisible !== false ? 'true' : 'false'
       });
     } else {
@@ -1548,7 +1548,7 @@ export default function AdminDashboard() {
                         if (!token) return;
                         const formattedForm = {
                           ...crewForm,
-                          order: parseInt(crewForm.order) || 0,
+                          displayOrder: parseInt(crewForm.displayOrder) || 0,
                           isVisible: crewForm.isVisible === 'true'
                         };
                         try {
@@ -1569,7 +1569,7 @@ export default function AdminDashboard() {
                             contact: '',
                             instagram: '',
                             description: '',
-                            order: '0',
+                            displayOrder: '0',
                             isVisible: 'true'
                           });
                         } catch (err) {
@@ -1591,7 +1591,7 @@ export default function AdminDashboard() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Display Order</label>
-                            <input name="order" type="number" required className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={crewForm.order} onChange={e => setCrewForm({...crewForm, order: e.target.value})} />
+                            <input name="displayOrder" type="number" required className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={crewForm.displayOrder || '0'} onChange={e => setCrewForm({...crewForm, displayOrder: e.target.value})} />
                           </div>
                           <div>
                             <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Visibility</label>
@@ -1623,11 +1623,70 @@ export default function AdminDashboard() {
 
                   {/* Crew List */}
                   <div className="lg:col-span-2 space-y-4">
+                    <div className="flex justify-end mb-2">
+                      <button 
+                        onClick={async () => {
+                          const token = localStorage.getItem('tripnova_admin_token');
+                          if (!token) return;
+                          try {
+                            const orders = crew.map(c => ({ id: c.id, displayOrder: c.displayOrder || 0 }));
+                            await api.crew.reorder(orders, token);
+                            toast.success('Crew order saved successfully!');
+                          } catch (err) {
+                            toast.error('Failed to save order');
+                          }
+                        }}
+                        className="btn-primary py-2 px-6 shadow-md"
+                      >
+                        Save Bulk Order
+                      </button>
+                    </div>
                     {crew.length === 0 ? (
                       <div className="glass-card bg-white p-12 text-center text-slate-350 font-bold border-dashed border-2 border-slate-200 shadow-md">No crew members yet.</div>
                     ) : (
-                      [...crew].sort((a, b) => (a.order || 0) - (b.order || 0)).map(member => (
+                      [...crew].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).map((member, index) => (
                         <div key={member.id} className={`glass-card bg-white p-4.5 flex items-center gap-6 border hover:border-slate-300 hover:bg-slate-50/50 transition-all duration-300 shadow-sm ${member.isVisible === false ? 'opacity-60 border-dashed border-slate-200' : 'border-slate-200/80'}`}>
+                          <div className="flex flex-col gap-1 items-center justify-center">
+                            <button 
+                              onClick={() => {
+                                if (index === 0) return;
+                                const newCrew = [...crew].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+                                const temp = newCrew[index].displayOrder;
+                                newCrew[index].displayOrder = newCrew[index - 1].displayOrder;
+                                newCrew[index - 1].displayOrder = temp;
+                                setCrew(newCrew);
+                              }}
+                              className="text-slate-400 hover:text-violet-600 disabled:opacity-30 disabled:hover:text-slate-400 p-1"
+                              disabled={index === 0}
+                            >
+                              <HiOutlineChevronUp className="w-5 h-5" />
+                            </button>
+                            <input 
+                              type="number"
+                              value={member.displayOrder || 0}
+                              onChange={(e) => {
+                                const newCrew = [...crew];
+                                const target = newCrew.find(c => c.id === member.id);
+                                if (target) target.displayOrder = parseInt(e.target.value) || 0;
+                                setCrew(newCrew);
+                              }}
+                              className="w-12 text-center text-sm font-bold border border-slate-200 rounded p-1"
+                            />
+                            <button 
+                              onClick={() => {
+                                if (index === crew.length - 1) return;
+                                const newCrew = [...crew].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+                                const temp = newCrew[index].displayOrder;
+                                newCrew[index].displayOrder = newCrew[index + 1].displayOrder;
+                                newCrew[index + 1].displayOrder = temp;
+                                setCrew(newCrew);
+                              }}
+                              className="text-slate-400 hover:text-violet-600 disabled:opacity-30 disabled:hover:text-slate-400 p-1"
+                              disabled={index === crew.length - 1}
+                            >
+                              <HiOutlineChevronDown className="w-5 h-5" />
+                            </button>
+                          </div>
                           <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200 shadow-sm">
                             {member.image && <img src={member.image} className="w-full h-full object-cover" alt={member.name} />}
                           </div>
@@ -1638,7 +1697,7 @@ export default function AdminDashboard() {
                                 <span className="px-1.5 py-0.5 rounded text-[8px] bg-slate-100 border border-slate-200 font-bold text-slate-500 uppercase tracking-widest">Hidden</span>
                               )}
                             </div>
-                            <p className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 text-xs uppercase tracking-widest font-extrabold">{member.role} • Order: {member.order || 0}</p>
+                            <p className="text-[#FFFFFF] uppercase tracking-widest font-bold text-xs" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{member.role}</p>
                           </div>
                           <div className="flex gap-2">
                             <button onClick={() => setEditingCrew(member)} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-violet-300 transition-all duration-300" title="Edit member"><HiOutlinePencil className="w-5 h-5" /></button>
