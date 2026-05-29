@@ -911,8 +911,8 @@ export default function AdminDashboard() {
                         <img src={trip.coverImage} className="w-full h-full object-cover" alt={trip.title} />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-lg font-outfit text-slate-800 mb-1.5">{trip.title}</h4>
-                        <p className="text-slate-500 text-sm font-medium">{trip.destination} • <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 font-bold">₹{trip.price}</span></p>
+                        <h4 className="font-bold text-lg font-outfit text-[#FFFFFF] mb-1.5" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{trip.title}</h4>
+                        <p className="text-slate-500 text-sm font-medium">{trip.destination} • <span className="text-[#00C853] font-bold">₹{trip.price}</span></p>
                       </div>
                       <div className="flex gap-2">
                         <button 

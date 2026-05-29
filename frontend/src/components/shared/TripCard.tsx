@@ -112,7 +112,7 @@ export default function TripCard({ trip }: TripCardProps) {
           {trip.destination}
         </div>
         
-        <h3 className="text-base sm:text-xl font-bold font-outfit text-white group-hover:text-primary-400 transition-colors duration-300 mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight drop-shadow-sm">
+        <h3 className="text-base sm:text-xl font-bold font-outfit text-[#FFFFFF] mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
           {trip.title}
         </h3>
 
@@ -130,7 +130,7 @@ export default function TripCard({ trip }: TripCardProps) {
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-800">
           <div>
             <div className="text-[10px] text-slate-400 line-through">₹{trip.originalPrice || (trip.price * 1.2).toFixed(0)}</div>
-            <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-accent-cyan font-outfit">₹{trip.price}</div>
+            <div className="text-xl sm:text-2xl font-black text-[#00C853] font-outfit">₹{trip.price}</div>
           </div>
           
           <Link href={`/trips/${trip.id}`}>

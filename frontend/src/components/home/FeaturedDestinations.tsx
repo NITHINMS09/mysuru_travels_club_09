@@ -91,7 +91,7 @@ export default function FeaturedDestinations() {
                 <div className="absolute bottom-0 left-0 p-8 w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-2xl font-bold text-white mb-1">{dest.name}</h3>
+                      <h3 className="text-2xl font-bold text-[#FFFFFF] mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{dest.name}</h3>
                       <p className="text-white/60 text-sm font-medium">{dest.trips} Upcoming Trips</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">

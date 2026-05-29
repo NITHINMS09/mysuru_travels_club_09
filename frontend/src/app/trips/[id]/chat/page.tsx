@@ -231,7 +231,7 @@ export default function TripChat() {
             <span className="relative z-10 text-white">T</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">{trip.title}</h1>
+            <h1 className="text-lg font-bold text-[#FFFFFF]" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{trip.title}</h1>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <p className="text-xs text-slate-500 font-medium">

@@ -191,7 +191,7 @@ function StatusContent() {
                   <Image src={booking.trip.coverImage} alt={booking.trip.title} fill className="object-cover" />
                 )}
               </div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">{booking.trip?.title}</h3>
+              <h3 className="font-bold text-[#FFFFFF] text-sm mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{booking.trip?.title}</h3>
               <p className="text-xs text-slate-500 mb-4">{booking.trip?.destination}</p>
               
               <div className="space-y-2 text-xs">
@@ -205,7 +205,7 @@ function StatusContent() {
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200">
                   <span className="text-slate-500">Total Amount:</span>
-                  <span className="font-bold text-slate-800">₹{booking.totalAmount?.toLocaleString()}</span>
+                  <span className="font-bold text-[#00C853]">₹{booking.totalAmount?.toLocaleString()}</span>
                 </div>
               </div>
             </div>

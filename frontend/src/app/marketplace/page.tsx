@@ -136,7 +136,7 @@ function MarketplaceContent() {
 
                   <div className="flex flex-wrap items-center justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
                     <div>
-                      <span className="text-xl sm:text-2xl font-black text-slate-900">₹{listing.price.toLocaleString()}</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#00C853]">₹{listing.price.toLocaleString()}</span>
                       <span className="text-slate-400 text-sm ml-1">/{listing.priceUnit}</span>
                     </div>
                     <button 

@@ -201,7 +201,7 @@ export default function TripDetails() {
                   </span>
                 )}
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight font-outfit">{trip.title}</h1>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-[#FFFFFF] mb-6 leading-tight font-outfit" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{trip.title}</h1>
               <div className="flex flex-wrap gap-6 text-sm font-semibold text-white/90">
                 <div className="flex items-center gap-2"><HiOutlineLocationMarker className="w-5 h-5 text-primary-400" />{trip.destination}</div>
                 <div className="flex items-center gap-2"><HiOutlineCalendar className="w-5 h-5 text-primary-400" />{new Date(trip.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
@@ -274,7 +274,7 @@ export default function TripDetails() {
 
                         <div className="pt-4 border-t border-slate-100 flex justify-between items-center mb-4">
                           <span className="text-slate-500 font-bold text-sm">Total to Pay</span>
-                          <span className="font-black text-2xl text-slate-900">₹{pricing.total.toLocaleString()}</span>
+                          <span className="font-black text-2xl text-[#00C853]">₹{pricing.total.toLocaleString()}</span>
                         </div>
                         <button type="button" onClick={handleSubmit(handleCreateBookingAndProceed)} disabled={bookingLoading || trip.availableSeats === 0} className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none">
                           {bookingLoading ? 'Processing...' : 'Proceed to Payment'} <HiOutlineArrowRight />
@@ -293,7 +293,7 @@ export default function TripDetails() {
                           </div>
                           <div className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Pay via UPI / Mobile</div>
                           <div className="text-3xl font-black text-slate-900 mb-2">9632463347</div>
-                          <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">Amount: <b>₹{pricing.total.toLocaleString()}</b></div>
+                          <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">Amount: <b className="text-[#00C853]">₹{pricing.total.toLocaleString()}</b></div>
                         </div>
 
                         <div>
@@ -445,7 +445,7 @@ export default function TripDetails() {
               <div className="glass-card p-8 bg-white border border-slate-200/60 shadow-lg rounded-3xl">
                 <div className="mb-8">
                   <div className="text-slate-400 text-sm mb-1 font-bold tracking-widest uppercase">Starting from</div>
-                  <div className="text-5xl font-black text-slate-900 font-outfit tracking-tighter">₹{trip.price}</div>
+                  <div className="text-5xl font-black text-[#00C853] font-outfit tracking-tighter">₹{trip.price}</div>
                 </div>
                 <button onClick={() => {
                   document.getElementById('booking-section')?.scrollIntoView({ behavior: 'smooth' });
