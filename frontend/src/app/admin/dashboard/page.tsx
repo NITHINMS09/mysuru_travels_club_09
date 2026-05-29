@@ -12,6 +12,7 @@ import {
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
   HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera
 } from 'react-icons/hi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api, { fetchAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -1046,6 +1047,17 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex gap-2">
+                                {booking.status === 'CONFIRMED' && (
+                                  <a 
+                                    href={`https://wa.me/${booking.phone.replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(booking.travelerName)}%2C%20Your%20payment%20for%20${encodeURIComponent(booking.trip?.title || 'your trip')}%20has%20been%20verified.%20Please%20reply%20with%20your%20pickup%20location.%20Thank%20you%20for%20choosing%20Mysuru%20Travel%20Club.`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="p-1 text-slate-400 hover:text-green-500 transition-colors"
+                                    title="Send WhatsApp Message"
+                                  >
+                                    <FaWhatsapp className="w-5.5 h-5.5" />
+                                  </a>
+                                )}
                                 <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="p-1 text-slate-400 hover:text-green-600 transition-colors" title="Confirm Booking"><HiOutlineCheckCircle className="w-5.5 h-5.5" /></button>
                                 <button onClick={() => {
                                   const reason = prompt("Enter reason for rejection (optional):");
