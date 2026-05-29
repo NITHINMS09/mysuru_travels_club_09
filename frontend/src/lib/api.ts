@@ -39,6 +39,8 @@ export const api = {
     },
     getByRef: (ref: string) => fetchAPI(`/bookings/ref/${ref}`),
     updateStatus: (id: string, status: string, token: string, adminNotes?: string) => fetchAPI(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, adminNotes }), token }),
+    delete: (id: string, token: string) => fetchAPI(`/bookings/${id}`, { method: 'DELETE', token }),
+    bulkUpdate: (bookingIds: string[], action: 'CONFIRM' | 'REJECT' | 'DELETE', token: string) => fetchAPI('/bookings/bulk-update', { method: 'POST', body: JSON.stringify({ bookingIds, action }), token }),
     uploadScreenshot: async (id: string, formData: FormData) => {
       const res = await fetch(`${API_BASE}/bookings/${id}/screenshot`, {
         method: 'PATCH',

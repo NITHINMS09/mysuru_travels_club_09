@@ -236,9 +236,138 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
       await sendNotification(currentBooking.id, currentBooking.phone, message);
     }
 
+    await prisma.adminLog.create({
+      data: {
+        adminName: req.admin?.email || 'System',
+        action: `BOOKING_STATUS_UPDATE`,
+        details: `Updated booking ${currentBooking.bookingRef} to ${status}`,
+      }
+    });
+
     res.json(booking);
   } catch (error) {
     console.error('Update booking error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE booking (admin)
+router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    // Revert available seats if it wasn't cancelled or rejected
+    if (booking.status !== 'REJECTED' && booking.status !== 'CANCELLED') {
+      await prisma.trip.update({
+        where: { id: booking.tripId },
+        data: { availableSeats: { increment: booking.seatCount } },
+      });
+    }
+
+    await prisma.booking.delete({
+      where: { id: req.params.id }
+    });
+
+    await prisma.adminLog.create({
+      data: {
+        adminName: req.admin?.email || 'System',
+        action: 'BOOKING_DELETE',
+        details: `Deleted booking ${booking.bookingRef} for ${booking.travelerName}`,
+      }
+    });
+
+    res.json({ message: 'Booking deleted successfully' });
+  } catch (error) {
+    console.error('Delete booking error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST bulk update bookings (admin)
+router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { bookingIds, action } = req.body; // action: 'CONFIRM', 'REJECT', 'DELETE'
+    if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+      res.status(400).json({ error: 'No bookings selected' });
+      return;
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: { id: { in: bookingIds } },
+      include: { trip: true }
+    });
+
+    const adminEmail = req.admin?.email || 'System';
+
+    if (action === 'DELETE') {
+      for (const booking of bookings) {
+        if (booking.status !== 'REJECTED' && booking.status !== 'CANCELLED') {
+          await prisma.trip.update({
+            where: { id: booking.tripId },
+            data: { availableSeats: { increment: booking.seatCount } }
+          });
+        }
+      }
+      await prisma.booking.deleteMany({
+        where: { id: { in: bookingIds } }
+      });
+      await prisma.adminLog.create({
+        data: {
+          adminName: adminEmail,
+          action: 'BULK_BOOKING_DELETE',
+          details: `Deleted ${bookingIds.length} bookings`,
+        }
+      });
+    } else {
+      const newStatus = action === 'CONFIRM' ? 'CONFIRMED' : 'REJECTED';
+      
+      for (const booking of bookings) {
+        const isNowCancelled = newStatus === 'REJECTED';
+        const wasCancelled = booking.status === 'REJECTED' || booking.status === 'CANCELLED';
+
+        if (isNowCancelled && !wasCancelled) {
+          await prisma.trip.update({
+            where: { id: booking.tripId },
+            data: { availableSeats: { increment: booking.seatCount } },
+          });
+        } else if (!isNowCancelled && wasCancelled) {
+          await prisma.trip.update({
+            where: { id: booking.tripId },
+            data: { availableSeats: { decrement: booking.seatCount } },
+          });
+        }
+        
+        // Notify if confirmed
+        if (newStatus === 'CONFIRMED' && booking.status !== 'CONFIRMED') {
+          const message = `Hello ${booking.travelerName},\n\nYour payment for ${booking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location.\n\nFor assistance contact:\n9632463347`;
+          await sendNotification(booking.id, booking.phone, message).catch(console.error);
+        }
+      }
+
+      await prisma.booking.updateMany({
+        where: { id: { in: bookingIds } },
+        data: { status: newStatus }
+      });
+
+      await prisma.adminLog.create({
+        data: {
+          adminName: adminEmail,
+          action: `BULK_BOOKING_${action}`,
+          details: `Updated ${bookingIds.length} bookings to ${newStatus}`,
+        }
+      });
+    }
+
+    res.json({ message: `Successfully executed bulk ${action.toLowerCase()}` });
+  } catch (error) {
+    console.error('Bulk update error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

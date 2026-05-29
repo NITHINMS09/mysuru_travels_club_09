@@ -289,7 +289,7 @@ model PageView {
 model NotificationLog {
   id        String   @id @default(cuid())
   bookingId String?
-  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   recipient String   // Phone number or email
   provider  String   // 'Twilio', 'MSG91', etc.
   message   String
@@ -317,4 +317,12 @@ model WhatsAppSettings {
   imageUrl        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model AdminLog {
+  id          String   @id @default(cuid())
+  adminName   String
+  action      String
+  details     String?
+  createdAt   DateTime @default(now())
 }

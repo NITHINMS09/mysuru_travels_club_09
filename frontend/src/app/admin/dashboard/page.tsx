@@ -190,6 +190,7 @@ export default function AdminDashboard() {
   // Search & Filter state
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState('ALL');
+  const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -435,11 +436,43 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       await api.bookings.updateStatus(id, status, token, notes);
-      setBookings(bookings.map(b => b.id === id ? { ...b, status, adminNotes: notes || b.adminNotes } : b));
-      toast.success(`Booking ${status}`);
+      toast.success(`Booking ${status.toLowerCase()} successfully`);
       fetchData();
-    } catch (err) {
-      toast.error('Failed to update booking status');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update booking');
+    }
+  };
+
+  const deleteBooking = async (id: string) => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    if (!confirm('Are you sure you want to permanently delete this booking?')) return;
+    try {
+      await api.bookings.delete(id, token);
+      toast.success('Booking deleted successfully');
+      setSelectedBookings(prev => prev.filter(bId => bId !== id));
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete booking');
+    }
+  };
+
+  const handleBulkBookingAction = async (action: 'CONFIRM' | 'REJECT' | 'DELETE') => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token || selectedBookings.length === 0) return;
+    const confirmMessage = action === 'DELETE' 
+      ? `Are you sure you want to permanently delete ${selectedBookings.length} booking(s)?` 
+      : `Are you sure you want to ${action.toLowerCase()} ${selectedBookings.length} booking(s)?`;
+      
+    if (!confirm(confirmMessage)) return;
+    
+    try {
+      await api.bookings.bulkUpdate(selectedBookings, action, token);
+      toast.success(`Successfully executed bulk ${action.toLowerCase()}`);
+      setSelectedBookings([]);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || `Failed to execute bulk ${action.toLowerCase()}`);
     }
   };
 
@@ -742,7 +775,17 @@ export default function AdminDashboard() {
   const filteredBookings = bookings.filter(b => {
     const matchesSearch = b.bookingRef?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
                           b.travelerName?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+                          b.phone?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+                          b.trip?.title?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
                           b.email?.toLowerCase().includes(bookingSearch.toLowerCase());
+                          
+    if (!matchesSearch) return false;
+    
+    if (bookingFilter !== 'ALL') {
+      return b.status === bookingFilter;
+    }
+    return true;
+  });
     
     if (bookingFilter === 'ALL') return matchesSearch;
     return matchesSearch && b.status === bookingFilter;
@@ -1042,11 +1085,45 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {selectedBookings.length > 0 && (
+                  <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center justify-between mb-6 animate-fade-in sticky top-4 z-50">
+                    <span className="font-bold">{selectedBookings.length} booking(s) selected</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleBulkBookingAction('CONFIRM')} className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors">
+                        <HiOutlineCheckCircle className="w-4 h-4" /> Confirm
+                      </button>
+                      <button onClick={() => handleBulkBookingAction('REJECT')} className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors">
+                        <HiOutlineXCircle className="w-4 h-4" /> Reject
+                      </button>
+                      <button onClick={() => handleBulkBookingAction('DELETE')} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors border border-slate-600">
+                        <HiOutlineTrash className="w-4 h-4" /> Delete
+                      </button>
+                      <button onClick={() => setSelectedBookings([])} className="px-3 py-2 bg-transparent hover:bg-slate-800 rounded-lg text-slate-300 font-medium text-sm transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="glass-card bg-white overflow-hidden border-slate-200/80 shadow-md">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead className="bg-slate-50 text-slate-500 text-[10px] font-extrabold uppercase tracking-widest border-b border-slate-200/80">
                         <tr>
+                          <th className="px-6 py-4.5 w-10">
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-slate-300 text-violet-600 focus:ring-violet-500 w-4 h-4 cursor-pointer"
+                              checked={selectedBookings.length === filteredBookings.length && filteredBookings.length > 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedBookings(filteredBookings.map(b => b.id));
+                                } else {
+                                  setSelectedBookings([]);
+                                }
+                              }}
+                            />
+                          </th>
                           <th className="px-6 py-4.5">Customer Name</th>
                           <th className="px-6 py-4.5">Mobile Number</th>
                           <th className="px-6 py-4.5">Trip Name</th>
@@ -1055,12 +1132,26 @@ export default function AdminDashboard() {
                           <th className="px-6 py-4.5">Booking Date</th>
                           <th className="px-6 py-4.5">Status</th>
                           <th className="px-6 py-4.5">Notif</th>
-                          <th className="px-6 py-4.5">Actions</th>
+                          <th className="px-6 py-4.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredBookings.map(booking => (
-                          <tr key={booking.id} className="text-sm hover:bg-slate-50/50 transition-colors duration-200 text-slate-700">
+                          <tr key={booking.id} className={`text-sm hover:bg-slate-50/50 transition-colors duration-200 text-slate-700 ${selectedBookings.includes(booking.id) ? 'bg-violet-50/30' : ''}`}>
+                            <td className="px-6 py-4">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-slate-300 text-violet-600 focus:ring-violet-500 w-4 h-4 cursor-pointer"
+                                checked={selectedBookings.includes(booking.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedBookings(prev => [...prev, booking.id]);
+                                  } else {
+                                    setSelectedBookings(prev => prev.filter(id => id !== booking.id));
+                                  }
+                                }}
+                              />
+                            </td>
                             <td className="px-6 py-4 font-semibold text-slate-800">{booking.travelerName}</td>
                             <td className="px-6 py-4 text-slate-600">{booking.phone}</td>
                             <td className="px-6 py-4 text-slate-600">{booking.trip?.title}</td>
@@ -1114,30 +1205,38 @@ export default function AdminDashboard() {
                               )}
                             </td>
                             <td className="px-6 py-4">
-                                <div className="flex flex-col gap-2">
-                                  {(booking.status === 'PENDING_VERIFICATION' || booking.status === 'PENDING') && (
-                                    <>
-                                      <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-md hover:bg-green-100 flex items-center justify-center gap-1 font-medium transition-colors text-xs border border-green-200">
-                                        <HiOutlineCheckCircle className="w-4 h-4" /> Verify Payment
-                                      </button>
-                                      <button onClick={() => {
-                                        const reason = prompt("Enter reason for rejection (optional):");
-                                        if (reason !== null) updateBookingStatus(booking.id, 'REJECTED', reason);
-                                      }} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 flex items-center justify-center gap-1 font-medium transition-colors text-xs border border-red-200">
-                                        <HiOutlineXCircle className="w-4 h-4" /> Reject Payment
-                                      </button>
-                                    </>
-                                  )}
+                                <div className="flex flex-col gap-2 items-end">
+                                  <div className="flex gap-2">
+                                    {(booking.status === 'PENDING_VERIFICATION' || booking.status === 'PENDING') && (
+                                      <>
+                                        <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors border border-green-200" title="Confirm Booking">
+                                          <HiOutlineCheckCircle className="w-5 h-5" />
+                                        </button>
+                                        <button onClick={() => {
+                                          if (confirm("Are you sure you want to reject this booking?")) {
+                                            const reason = prompt("Enter reason for rejection (optional):");
+                                            updateBookingStatus(booking.id, 'REJECTED', reason || undefined);
+                                          }
+                                        }} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200" title="Reject Booking">
+                                          <HiOutlineXCircle className="w-5 h-5" />
+                                        </button>
+                                      </>
+                                    )}
+                                    <button onClick={() => deleteBooking(booking.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors border border-slate-200" title="Delete Booking">
+                                      <HiOutlineTrash className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  
                                   {booking.status === 'CONFIRMED' && (
-                                    <div className="flex gap-2 w-full">
+                                    <div className="w-full mt-1">
                                       <a 
                                         href={generateWhatsAppLink(booking)}
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center justify-center gap-1 font-bold transition-colors text-xs shadow-sm"
+                                        className="w-full px-3 py-1.5 bg-[#25D366] text-white rounded-md hover:bg-[#1ebd5a] flex items-center justify-center gap-1 font-bold transition-colors text-xs shadow-sm"
                                         title="Send WhatsApp Message"
                                       >
-                                        <FaWhatsapp className="w-4 h-4" /> Send WhatsApp
+                                        <FaWhatsapp className="w-4 h-4" /> WhatsApp
                                       </a>
                                     </div>
                                   )}
@@ -1147,7 +1246,7 @@ export default function AdminDashboard() {
                         ))}
                         {filteredBookings.length === 0 && (
                           <tr>
-                            <td colSpan={8} className="text-center py-10 text-slate-400 font-bold">No bookings found matching filters.</td>
+                            <td colSpan={10} className="text-center py-10 text-slate-400 font-bold">No bookings found matching filters.</td>
                           </tr>
                         )}
                       </tbody>
