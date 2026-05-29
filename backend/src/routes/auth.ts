@@ -53,7 +53,7 @@ router.get('/verify', authenticateAdmin, (req: AuthRequest, res) => {
 // Dashboard analytics
 router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
-    const [totalTrips, totalBookings, totalRevenue, upcomingTrips, recentBookings, totalBlogs, totalVideos] = await Promise.all([
+    const [totalTrips, totalBookings, totalRevenue, upcomingTrips, recentBookings, totalBlogs, totalVideos, pendingPayments, confirmedPayments, rejectedPayments, notificationsSent] = await Promise.all([
       prisma.trip.count(),
       prisma.booking.count({ where: { status: 'CONFIRMED' } }),
       prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
@@ -64,7 +64,11 @@ router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
         include: { trip: { select: { title: true } }, payment: true },
       }),
       prisma.blog.count(),
-      prisma.updateVideo.count()
+      prisma.updateVideo.count(),
+      prisma.booking.count({ where: { status: { in: ['PENDING', 'PENDING_VERIFICATION'] } } }),
+      prisma.booking.count({ where: { status: 'CONFIRMED' } }),
+      prisma.booking.count({ where: { status: 'REJECTED' } }),
+      prisma.notificationLog.count({ where: { status: 'SENT' } })
     ]);
 
     const monthlyRevenue = await prisma.payment.groupBy({
@@ -86,6 +90,10 @@ router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
         upcomingTrips,
         totalBlogs,
         totalVideos,
+        pendingPayments,
+        confirmedPayments,
+        rejectedPayments,
+        notificationsSent,
       },
       recentBookings,
       bookingsByStatus,

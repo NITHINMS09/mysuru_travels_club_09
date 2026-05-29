@@ -276,8 +276,7 @@ export default function TripDetails() {
                           <span className="text-slate-500 font-bold text-sm">Total to Pay</span>
                           <span className="font-black text-2xl text-slate-900">₹{pricing.total.toLocaleString()}</span>
                         </div>
-                        
-                        <button type="button" onClick={handleSubmit(handleCreateBookingAndProceed)} disabled={bookingLoading || trip.availableSeats === 0} className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md disabled:bg-slate-300 disabled:cursor-not-allowed">
+                        <button type="button" onClick={handleSubmit(handleCreateBookingAndProceed)} disabled={bookingLoading || trip.availableSeats === 0} className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none">
                           {bookingLoading ? 'Processing...' : 'Proceed to Payment'} <HiOutlineArrowRight />
                         </button>
                       </motion.div>

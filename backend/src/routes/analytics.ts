@@ -81,8 +81,14 @@ router.post('/visit', async (req, res) => {
 
 router.get('/stats', authenticateAdmin, async (req, res) => {
   try {
-    const [totalVisitors, activeVisitors, totalBookings] = await Promise.all([
+    const now = new Date();
+    const today = new Date(now); today.setHours(0,0,0,0);
+    const last7Days = new Date(now); last7Days.setDate(now.getDate() - 7);
+    const last30Days = new Date(now); last30Days.setDate(now.getDate() - 30);
+
+    const [uniqueVisitors, totalVisitors, activeVisitors, todayVisitors, weeklyVisitors, monthlyVisitors, totalBookings] = await Promise.all([
       prisma.visitor.count(),
+      prisma.visitorSession.count(),
       prisma.visitorSession.count({
         where: {
           startedAt: {
@@ -90,10 +96,13 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
           }
         }
       }),
+      prisma.visitorSession.count({ where: { startedAt: { gte: today } } }),
+      prisma.visitorSession.count({ where: { startedAt: { gte: last7Days } } }),
+      prisma.visitorSession.count({ where: { startedAt: { gte: last30Days } } }),
       prisma.booking.count()
     ]);
 
-    const conversionRate = totalVisitors > 0 ? ((totalBookings / totalVisitors) * 100).toFixed(2) : '0.00';
+    const conversionRate = uniqueVisitors > 0 ? ((totalBookings / uniqueVisitors) * 100).toFixed(2) : '0.00';
 
     const pageStatsRaw = await prisma.pageView.groupBy({
       by: ['page'],
@@ -132,8 +141,12 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
     const dailyVisitors = Object.entries(dailyMap).map(([date, count]) => ({ date, count }));
 
     res.json({
+      uniqueVisitors,
       totalVisitors,
       activeVisitors,
+      todayVisitors,
+      weeklyVisitors,
+      monthlyVisitors,
       totalBookings,
       conversionRate,
       pageStats: pageStatsRaw,

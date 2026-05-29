@@ -106,38 +106,38 @@ export default function TripCard({ trip }: TripCardProps) {
       </div>
 
       {/* Content Section */}
-      <div className="p-4 sm:p-6 flex flex-col flex-1 relative z-10 bg-white">
+      <div className="p-4 sm:p-6 flex flex-col flex-1 relative z-10 bg-slate-900">
         <div className="flex items-center gap-1.5 text-accent-cyan text-[10px] font-bold uppercase tracking-widest mb-2.5">
           <HiOutlineLocationMarker className="w-3.5 h-3.5 text-accent-cyan" />
           {trip.destination}
         </div>
         
-        <h3 className="text-base sm:text-xl font-bold font-outfit text-slate-900 group-hover:text-primary-600 transition-colors duration-300 mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight">
+        <h3 className="text-base sm:text-xl font-bold font-outfit text-white group-hover:text-primary-400 transition-colors duration-300 mb-3.5 line-clamp-2 sm:line-clamp-1 leading-tight drop-shadow-sm">
           {trip.title}
         </h3>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 pt-1 border-t border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 text-xs font-outfit">
-            <HiOutlineCalendar className="w-4 h-4 text-primary-600" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 pt-1 border-t border-slate-800">
+          <div className="flex items-center gap-2 text-slate-300 text-xs font-outfit">
+            <HiOutlineCalendar className="w-4 h-4 text-primary-400" />
             {new Date(trip.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
           </div>
-          <div className="flex items-center gap-2 text-slate-500 text-xs font-outfit">
-            <HiOutlineUserGroup className="w-4 h-4 text-primary-600" />
+          <div className="flex items-center gap-2 text-slate-300 text-xs font-outfit">
+            <HiOutlineUserGroup className="w-4 h-4 text-primary-400" />
             {trip.availableSeats} / {trip.totalSeats} Seats
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-800">
           <div>
             <div className="text-[10px] text-slate-400 line-through">₹{trip.originalPrice || (trip.price * 1.2).toFixed(0)}</div>
-            <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-purple-600 to-accent-cyan font-outfit">₹{trip.price}</div>
+            <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-accent-cyan font-outfit">₹{trip.price}</div>
           </div>
           
           <Link href={`/trips/${trip.id}`}>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-gradient-to-br hover:from-primary-600 hover:to-accent-cyan hover:border-transparent text-slate-500 hover:text-white shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all duration-300"
+              className="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-gradient-to-br hover:from-primary-600 hover:to-accent-cyan hover:border-transparent text-slate-300 hover:text-white shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all duration-300"
             >
               <HiOutlineArrowRight className="w-5 h-5 animate-pulse" />
             </motion.button>

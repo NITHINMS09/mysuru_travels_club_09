@@ -824,14 +824,16 @@ export default function AdminDashboard() {
             {activeTab === 'Overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 {/* Stats Summary Widgets */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                   {[
-                    { label: 'Total Revenue', value: `₹${stats?.totalRevenue?.toLocaleString() || '0'}`, color: 'text-emerald-600', glow: 'shadow-emerald-500/5 border-emerald-200/60' },
-                    { label: 'Total Bookings', value: bookings.length || '0', color: 'text-violet-600', glow: 'shadow-violet-500/5 border-violet-200/60' },
-                    { label: 'Total Travelers', value: users.length || '0', color: 'text-blue-600', glow: 'shadow-blue-500/5 border-blue-200/60' },
-                    { label: 'Upcoming Trips', value: stats?.upcomingTrips || '0', color: 'text-cyan-600', glow: 'shadow-cyan-500/5 border-cyan-200/60' },
+                    { label: 'Total Bookings', value: stats?.totalBookings || '0', color: 'text-violet-600', glow: 'shadow-violet-500/5 border-violet-200/60' },
+                    { label: 'Pending Payments', value: stats?.pendingPayments || '0', color: 'text-amber-600', glow: 'shadow-amber-500/5 border-amber-200/60' },
+                    { label: 'Confirmed Payments', value: stats?.confirmedPayments || '0', color: 'text-emerald-600', glow: 'shadow-emerald-500/5 border-emerald-200/60' },
+                    { label: 'Rejected Payments', value: stats?.rejectedPayments || '0', color: 'text-red-600', glow: 'shadow-red-500/5 border-red-200/60' },
+                    { label: 'Total Visitors', value: visitorStats?.totalVisitors || '0', color: 'text-blue-600', glow: 'shadow-blue-500/5 border-blue-200/60' },
                     { label: 'Total Blogs', value: stats?.totalBlogs || blogs.length || '0', color: 'text-indigo-600', glow: 'shadow-indigo-500/5 border-indigo-200/60' },
-                    { label: 'Total Videos', value: stats?.totalVideos || updates.length || '0', color: 'text-rose-600', glow: 'shadow-rose-500/5 border-rose-200/60' }
+                    { label: 'Total Videos', value: stats?.totalVideos || updates.length || '0', color: 'text-rose-600', glow: 'shadow-rose-500/5 border-rose-200/60' },
+                    { label: 'Notifications Sent', value: stats?.notificationsSent || '0', color: 'text-cyan-600', glow: 'shadow-cyan-500/5 border-cyan-200/60' }
                   ].map((stat, i) => (
                     <div key={i} className={`glass-card p-6 bg-white border hover:scale-[1.02] transition-all duration-300 shadow-md ${stat.glow}`}>
                       <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest mb-4 font-outfit">{stat.label}</p>
@@ -1396,25 +1398,44 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-auto">
                           <span className="text-xs font-semibold text-slate-400">By {blog.authorName || 'Admin'} • {new Date(blog.createdAt).toLocaleDateString()}</span>
-                          <button 
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const token = localStorage.getItem('tripnova_admin_token');
-                              if (!token) return;
-                              if (!confirm('Are you sure you want to delete this blog post?')) return;
-                              try {
-                                await api.blogs.delete(blog.id, token);
-                                setBlogs(blogs.filter(b => b.id !== blog.id));
-                                toast.success('Blog post deleted');
-                              } catch(e) {
-                                toast.error('Failed to delete blog');
-                              }
-                            }}
-                            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-300"
-                            title="Delete Blog"
-                          >
-                            <HiOutlineTrash className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const token = localStorage.getItem('tripnova_admin_token');
+                                if (!token) return;
+                                try {
+                                  const res = await api.blogs.update(blog.id, { published: !blog.published }, token);
+                                  setBlogs(blogs.map(b => b.id === blog.id ? res : b));
+                                  toast.success(`Blog ${res.published ? 'published' : 'unpublished'}`);
+                                } catch(e) {
+                                  toast.error('Failed to update status');
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-300 border ${blog.published ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+                            >
+                              {blog.published ? 'Published' : 'Draft'}
+                            </button>
+                            <button 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const token = localStorage.getItem('tripnova_admin_token');
+                                if (!token) return;
+                                if (!confirm('Are you sure you want to delete this blog post?')) return;
+                                try {
+                                  await api.blogs.delete(blog.id, token);
+                                  setBlogs(blogs.filter(b => b.id !== blog.id));
+                                  toast.success('Blog post deleted');
+                                } catch(e) {
+                                  toast.error('Failed to delete blog');
+                                }
+                              }}
+                              className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-300"
+                              title="Delete Blog"
+                            >
+                              <HiOutlineTrash className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -1545,22 +1566,30 @@ export default function AdminDashboard() {
                 
                 {visitorStats ? (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Visitors</div>
-                        <div className="text-4xl font-black text-indigo-600">{visitorStats.totalVisitors}</div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Total Visitors</div>
+                        <div className="text-3xl font-black text-indigo-600">{visitorStats.totalVisitors}</div>
                       </div>
-                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Active Visitors</div>
-                        <div className="text-4xl font-black text-green-600">{visitorStats.activeVisitors}</div>
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Unique Visitors</div>
+                        <div className="text-3xl font-black text-blue-600">{visitorStats.uniqueVisitors}</div>
                       </div>
-                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Total Bookings</div>
-                        <div className="text-4xl font-black text-purple-600">{visitorStats.totalBookings}</div>
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Today's Visitors</div>
+                        <div className="text-3xl font-black text-cyan-600">{visitorStats.todayVisitors}</div>
                       </div>
-                      <div className="glass-card bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2">Conversion Rate</div>
-                        <div className="text-4xl font-black text-orange-600">{visitorStats.conversionRate}%</div>
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Weekly Visitors</div>
+                        <div className="text-3xl font-black text-emerald-600">{visitorStats.weeklyVisitors}</div>
+                      </div>
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Monthly Visitors</div>
+                        <div className="text-3xl font-black text-purple-600">{visitorStats.monthlyVisitors}</div>
+                      </div>
+                      <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Active Visitors</div>
+                        <div className="text-3xl font-black text-green-600">{visitorStats.activeVisitors}</div>
                       </div>
                     </div>
 
