@@ -73,7 +73,7 @@ function StatusContent() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'PENDING': return 'Payment Pending';
-      case 'PENDING_APPROVAL': return 'Payment Submitted (Awaiting Review)';
+      case 'PENDING_VERIFICATION': return 'Payment Submitted (Awaiting Review)';
       case 'CONFIRMED': return 'Booking Confirmed';
       case 'CANCELLED': return 'Booking Cancelled';
       case 'REJECTED': return 'Payment Rejected';
@@ -108,7 +108,7 @@ function StatusContent() {
                     <h2 className="text-lg font-bold text-slate-900">{getStatusText(booking.status)}</h2>
                     <p className="text-xs text-slate-500">
                       {booking.status === 'CONFIRMED' ? 'Your booking has been fully verified and confirmed.' : 
-                       booking.status === 'PENDING_APPROVAL' ? 'Your payment screenshot is under review by our team.' :
+                       booking.status === 'PENDING_VERIFICATION' ? 'Your payment screenshot is under review by our team.' :
                        (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'This booking has been cancelled or rejected.' : 
                        'Awaiting payment completion.'}
                     </p>

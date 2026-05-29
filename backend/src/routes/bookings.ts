@@ -24,7 +24,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (_req, file, cb) => {
-    const allowed = /jpeg|jpg|png/;
+    const allowed = /jpeg|jpg|png|webp/;
     const ext = allowed.test(path.extname(file.originalname).toLowerCase());
     const mime = allowed.test(file.mimetype);
     if (ext && mime) return cb(null, true);
@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
         bookingRef,
         isManualPayment,
         pickupPoint,
-        status: isManualPayment ? 'PENDING_APPROVAL' : 'PENDING'
+        status: 'PENDING_VERIFICATION'
       },
       include: { trip: { select: { title: true, destination: true, startDate: true } } },
     });
@@ -124,7 +124,7 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       where: { id: req.params.id },
       data: { 
         paymentScreenshot: screenshotUrl,
-        status: 'PENDING_APPROVAL'
+        status: 'PENDING_VERIFICATION'
       }
     });
 

@@ -18,7 +18,6 @@ import { initializeLocationSocket } from './socket/locationHandler';
 import authRoutes from './routes/auth';
 import tripRoutes from './routes/trips';
 import bookingRoutes from './routes/bookings';
-import paymentRoutes from './routes/payments';
 import reviewRoutes from './routes/reviews';
 import blogRoutes from './routes/blogs';
 import voteRoutes from './routes/votes';
@@ -88,7 +87,6 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/v1/auth/admin', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
-app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/vote', voteRoutes);

@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload
 } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -878,7 +878,7 @@ export default function AdminDashboard() {
                       className="px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 bg-white shadow-sm"
                     >
                       <option value="ALL">All Statuses</option>
-                      <option value="PENDING_APPROVAL">Pending Approval</option>
+                      <option value="PENDING_VERIFICATION">Pending Verification</option>
                       <option value="CONFIRMED">Confirmed</option>
                       <option value="PENDING">Pending Payment</option>
                       <option value="CANCELLED">Cancelled</option>
@@ -936,7 +936,7 @@ export default function AdminDashboard() {
                               <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-wider ${
                                 booking.status === 'CONFIRMED' 
                                   ? 'bg-green-50 border border-green-200 text-green-700' 
-                                  : booking.status === 'PENDING_APPROVAL'
+                                  : booking.status === 'PENDING_VERIFICATION'
                                   ? 'bg-purple-50 border border-purple-200 text-purple-700'
                                   : booking.status === 'CANCELLED'
                                   ? 'bg-red-50 border border-red-200 text-red-700'
@@ -1491,17 +1491,27 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-900 max-h-[50vh] flex items-center justify-center p-2 mb-6">
+            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-900 max-h-[50vh] flex flex-col items-center justify-center p-2 mb-6">
               <img 
                 src={selectedBookingScreenshot.paymentScreenshot?.startsWith('http') 
                   ? selectedBookingScreenshot.paymentScreenshot 
                   : `${getApiBaseClean()}${selectedBookingScreenshot.paymentScreenshot}`} 
                 alt="Payment screenshot proof"
-                className="max-w-full max-h-[46vh] object-contain rounded-xl"
+                className="max-w-full max-h-[40vh] object-contain rounded-xl"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Image+Not+Found';
                 }}
               />
+              <a 
+                href={selectedBookingScreenshot.paymentScreenshot?.startsWith('http') 
+                  ? selectedBookingScreenshot.paymentScreenshot 
+                  : `${getApiBaseClean()}${selectedBookingScreenshot.paymentScreenshot}`} 
+                download={`payment-${selectedBookingScreenshot.bookingRef}`} 
+                target="_blank" 
+                className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-white/20"
+              >
+                <HiOutlineDownload className="w-5 h-5" /> Download Screenshot
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm">
@@ -1544,7 +1554,7 @@ export default function AdminDashboard() {
                 }} 
                 className="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10"
               >
-                <HiOutlineCheckCircle className="w-5 h-5" /> Approve Payment
+                <HiOutlineCheckCircle className="w-5 h-5" /> Verify Payment
               </button>
               <button 
                 onClick={() => {

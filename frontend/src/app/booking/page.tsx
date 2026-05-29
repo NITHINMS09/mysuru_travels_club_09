@@ -390,27 +390,7 @@ function BookingContent() {
                         </div>
                       </div>
 
-                      <div className="w-full grid grid-cols-2 gap-3 mb-2 sm:grid-cols-4">
-                        <button type="button" onClick={() => {
-                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
-                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
-                        }} className="py-3 px-2 bg-[#5f259f] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#4d1f81]">PhonePe</button>
-                        
-                        <button type="button" onClick={() => {
-                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
-                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
-                        }} className="py-3 px-2 bg-[#4285F4] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#3367d6]">GPay</button>
-                        
-                        <button type="button" onClick={() => {
-                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
-                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
-                        }} className="py-3 px-2 bg-[#00baf2] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#00a3d9]">Paytm</button>
-                        
-                        <button type="button" onClick={() => {
-                          window.location.href = `upi://pay?pa=${upiId}&pn=MysuruTravelClub&am=${pricing.total}&cu=INR`;
-                          setTimeout(() => { if (!document.hidden) toast.error('Please scan the QR code if you are on a desktop or if the app is not installed'); }, 2000);
-                        }} className="py-3 px-2 bg-[#f89c1e] rounded-xl text-center text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#e08914]">BHIM</button>
-                      </div>
+
                     </div>
 
                     <div className="pt-6 border-t border-slate-100">
@@ -425,7 +405,7 @@ function BookingContent() {
                           dragActive ? 'border-slate-800 bg-slate-50' : 'border-slate-300 hover:border-slate-400 bg-white'
                         }`}
                       >
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" />
                         
                         {previewUrl ? (
                           <div className="relative">
@@ -439,7 +419,7 @@ function BookingContent() {
                             </div>
                             <div>
                               <p className="text-sm font-bold text-slate-900">Click or drag image here</p>
-                              <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
+                              <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP up to 5MB</p>
                             </div>
                           </div>
                         )}
