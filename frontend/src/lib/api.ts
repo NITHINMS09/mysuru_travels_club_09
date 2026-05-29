@@ -13,8 +13,26 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${endpoint}`, { ...fetchOpts, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'API request failed');
+  
+  let data;
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = null;
+    }
+  } else {
+    const textData = await res.text();
+    data = { error: textData || `Unexpected response format (${res.status})` };
+  }
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again later.");
+    }
+    throw new Error(data?.error || `API request failed with status ${res.status}`);
+  }
   return data;
 }
 
@@ -46,11 +64,15 @@ export const api = {
         method: 'PATCH',
         body: formData,
       });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Screenshot upload failed');
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        const text = await res.text();
+        data = { error: text || 'Screenshot upload failed' };
       }
-      return res.json();
+      if (!res.ok) throw new Error(data.error || 'Screenshot upload failed');
+      return data;
     },
   },
 
@@ -131,8 +153,15 @@ export const api = {
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
-      return res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        const text = await res.text();
+        data = { error: text || 'Upload failed' };
+      }
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      return data;
     },
     video: async (file: File) => {
       const formData = new FormData();
@@ -141,8 +170,15 @@ export const api = {
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error('Video upload failed');
-      return res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        const text = await res.text();
+        data = { error: text || 'Video upload failed' };
+      }
+      if (!res.ok) throw new Error(data.error || 'Video upload failed');
+      return data;
     }
   },
 
