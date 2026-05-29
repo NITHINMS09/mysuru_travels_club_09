@@ -7,11 +7,13 @@ import Testimonials from '@/components/home/Testimonials';
 import BlogPreview from '@/components/home/BlogPreview';
 import OurCrew from '@/components/home/OurCrew';
 import VotingSection from '@/components/home/VotingSection';
+import LatestUpdates from '@/components/home/LatestUpdates';
 
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <Hero />
+      <LatestUpdates />
       <OurCrew />
       <MarketplaceCategories />
       <UpcomingTrips />

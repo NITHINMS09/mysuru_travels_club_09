@@ -104,6 +104,11 @@ export const api = {
     getAll: () => fetchAPI('/settings'),
     update: (settings: any, token: string) => fetchAPI('/settings', { method: 'POST', body: JSON.stringify({ settings }), token }),
   },
+  updates: {
+    getAll: () => fetchAPI('/updates'),
+    create: (data: any, token: string) => fetchAPI('/updates', { method: 'POST', body: JSON.stringify(data), token }),
+    delete: (id: string, token: string) => fetchAPI(`/updates/${id}`, { method: 'DELETE', token }),
+  },
 
   upload: {
     single: async (file: File) => {

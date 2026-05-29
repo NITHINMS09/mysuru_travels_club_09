@@ -10,14 +10,18 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera
 } from 'react-icons/hi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api, { fetchAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import CreateTripModal from '@/components/admin/CreateTripModal';
 import MarketplaceManager from '@/components/admin/MarketplaceManager';
+import dynamic from 'next/dynamic';
 import { io } from 'socket.io-client';
+
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import 'react-quill/dist/quill.snow.css';
 
 const socket = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000');
 
@@ -162,6 +166,7 @@ export default function AdminDashboard() {
   const [trips, setTrips] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
   const [crew, setCrew] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>({});
@@ -221,6 +226,28 @@ export default function AdminDashboard() {
     order: '0',
     isVisible: 'true'
   });
+
+  const [isAddingUpdate, setIsAddingUpdate] = useState(false);
+  const [updateForm, setUpdateForm] = useState({ title: '', description: '', videoUrl: '' });
+
+  const [isAddingBlog, setIsAddingBlog] = useState(false);
+  const [editingBlog, setEditingBlog] = useState<any>(null);
+  const [blogForm, setBlogForm] = useState({ title: '', excerpt: '', content: '', coverImage: '', tags: '', category: '' });
+
+  useEffect(() => {
+    if (editingBlog) {
+      setBlogForm({
+        title: editingBlog.title || '',
+        excerpt: editingBlog.excerpt || '',
+        content: editingBlog.content || '',
+        coverImage: editingBlog.coverImage || '',
+        tags: Array.isArray(editingBlog.tags) ? editingBlog.tags.join(', ') : editingBlog.tags || '',
+        category: editingBlog.category || ''
+      });
+    } else {
+      setBlogForm({ title: '', excerpt: '', content: '', coverImage: '', tags: '', category: '' });
+    }
+  }, [editingBlog]);
 
   useEffect(() => {
     if (editingVote) {
@@ -294,14 +321,15 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       setLoading(true);
-      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData] = await Promise.all([
+      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData] = await Promise.all([
         api.auth.dashboard(token),
         api.trips.getAll(),
         api.bookings.getAll(token),
         api.blogs.getAll(),
         api.crew.getAll(),
         api.settings.getAll(),
-        api.votes.getDestinations()
+        api.votes.getDestinations(),
+        api.updates.getAll()
       ]);
 
       setStats(statsData.stats);
@@ -311,10 +339,11 @@ export default function AdminDashboard() {
       
       setTrips(tripsData.trips);
       setBookings(bookingsData.bookings);
-      setBlogs(blogsData.blogs || []);
+      setBlogs(blogsData.blogs || blogsData);
       setCrew(crewData || []);
       setSettings(settingsData || {});
       setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
+      setUpdates(updatesData);
 
       if (settingsData.banned_emails) {
         try {
@@ -488,6 +517,44 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSaveUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('tripnova_admin_token');
+      if (!token) return;
+      const res = await api.updates.create(updateForm, token);
+      setUpdates([res, ...updates]);
+      setIsAddingUpdate(false);
+      setUpdateForm({ title: '', description: '', videoUrl: '' });
+      toast.success('Video update added successfully');
+    } catch (err) {
+      toast.error('Failed to add update');
+    }
+  };
+
+  const handleSaveBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('tripnova_admin_token');
+      if (!token) return;
+      let res: any;
+      if (editingBlog) {
+        res = await fetchAPI(`/blogs/${editingBlog.id}`, { method: 'PUT', body: JSON.stringify(blogForm), token });
+        setBlogs(blogs.map(b => b.id === editingBlog.id ? res : b));
+        toast.success('Blog updated');
+      } else {
+        res = await fetchAPI('/blogs', { method: 'POST', body: JSON.stringify(blogForm), token });
+        setBlogs([res, ...blogs]);
+        toast.success('Blog created');
+      }
+      setIsAddingBlog(false);
+      setEditingBlog(null);
+      setBlogForm({ title: '', excerpt: '', content: '', coverImage: '', tags: '', category: '' });
+    } catch (err) {
+      toast.error('Failed to save blog');
+    }
+  };
+
   const handleSaveAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('tripnova_admin_token');
@@ -556,6 +623,7 @@ export default function AdminDashboard() {
     ...(admin?.role === 'SUPER_ADMIN' ? [{ label: 'Admins', icon: HiOutlineUser, color: 'text-violet-600' }] : []),
     { label: 'Crew', icon: HiOutlineUsers, color: 'text-amber-600' },
     { label: 'Blogs', icon: HiOutlineDocumentText, color: 'text-indigo-600' },
+    { label: 'Updates', icon: HiOutlineVideoCamera, color: 'text-rose-500' },
     { label: 'Votes', icon: HiOutlineThumbUp, color: 'text-rose-500' },
     { label: 'Settings', icon: HiOutlineCog, color: 'text-cyan-600' },
   ];
@@ -755,12 +823,14 @@ export default function AdminDashboard() {
             {activeTab === 'Overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 {/* Stats Summary Widgets */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
                   {[
                     { label: 'Total Revenue', value: `₹${stats?.totalRevenue?.toLocaleString() || '0'}`, color: 'text-emerald-600', glow: 'shadow-emerald-500/5 border-emerald-200/60' },
                     { label: 'Total Bookings', value: bookings.length || '0', color: 'text-violet-600', glow: 'shadow-violet-500/5 border-violet-200/60' },
                     { label: 'Total Travelers', value: users.length || '0', color: 'text-blue-600', glow: 'shadow-blue-500/5 border-blue-200/60' },
-                    { label: 'Upcoming Trips', value: stats?.upcomingTrips || '0', color: 'text-cyan-600', glow: 'shadow-cyan-500/5 border-cyan-200/60' }
+                    { label: 'Upcoming Trips', value: stats?.upcomingTrips || '0', color: 'text-cyan-600', glow: 'shadow-cyan-500/5 border-cyan-200/60' },
+                    { label: 'Total Blogs', value: stats?.totalBlogs || blogs.length || '0', color: 'text-indigo-600', glow: 'shadow-indigo-500/5 border-indigo-200/60' },
+                    { label: 'Total Videos', value: stats?.totalVideos || updates.length || '0', color: 'text-rose-600', glow: 'shadow-rose-500/5 border-rose-200/60' }
                   ].map((stat, i) => (
                     <div key={i} className={`glass-card p-6 bg-white border hover:scale-[1.02] transition-all duration-300 shadow-md ${stat.glow}`}>
                       <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest mb-4 font-outfit">{stat.label}</p>
@@ -1293,23 +1363,30 @@ export default function AdminDashboard() {
             {activeTab === 'Blogs' && (
               <motion.div key="blogs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black font-outfit text-slate-800">Manage Blogs</h3>
+                  <div>
+                    <h3 className="text-2xl font-black font-outfit text-slate-800">Manage Blogs</h3>
+                    <p className="text-slate-500 text-sm mt-1">Create and manage travel journal entries.</p>
+                  </div>
+                  <button onClick={() => setIsAddingBlog(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-primary-600 transition-all font-bold text-sm shadow-md">
+                    <HiOutlinePlus className="w-4 h-4" /> Write Blog
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {blogs.length === 0 ? (
                     <div className="md:col-span-2 glass-card bg-white p-12 text-center text-slate-350 font-bold border-dashed border-2 border-slate-200 shadow-md">No blogs created yet.</div>
                   ) : (
                     blogs.map(blog => (
-                      <div key={blog.id} className="glass-card bg-white p-6 border border-slate-200/80 hover:border-slate-300 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+                      <div key={blog.id} className="glass-card bg-white p-6 border border-slate-200/80 hover:border-slate-300 hover:shadow-lg transition-all duration-300 flex flex-col justify-between group cursor-pointer" onClick={() => { setEditingBlog(blog); setIsAddingBlog(true); }}>
                         <div>
                           <span className="text-xs text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 font-extrabold uppercase tracking-widest block mb-2">{blog.category || 'Travel'}</span>
-                          <h4 className="font-bold text-lg font-outfit text-slate-800 mb-2 leading-snug">{blog.title}</h4>
-                          <p className="text-slate-500 text-sm line-clamp-2 mb-4 leading-relaxed">{blog.excerpt || blog.content}</p>
+                          <h4 className="font-bold text-lg font-outfit text-slate-800 mb-2 leading-snug group-hover:text-primary-600 transition-colors">{blog.title}</h4>
+                          <p className="text-slate-500 text-sm line-clamp-2 mb-4 leading-relaxed">{blog.excerpt || (blog.content ? blog.content.replace(/<[^>]*>?/gm, '') : '')}</p>
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-auto">
                           <span className="text-xs font-semibold text-slate-400">By {blog.authorName || 'Admin'} • {new Date(blog.createdAt).toLocaleDateString()}</span>
                           <button 
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               const token = localStorage.getItem('tripnova_admin_token');
                               if (!token) return;
                               if (!confirm('Are you sure you want to delete this blog post?')) return;
@@ -1327,6 +1404,55 @@ export default function AdminDashboard() {
                             <HiOutlineTrash className="w-4 h-4" />
                           </button>
                         </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'Updates' && (
+              <motion.div key="updates" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black font-outfit text-slate-800">Manage Updates</h3>
+                    <p className="text-slate-500 text-sm mt-1">Upload short video updates for the homepage.</p>
+                  </div>
+                  <button onClick={() => setIsAddingUpdate(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-primary-600 transition-all font-bold text-sm shadow-md">
+                    <HiOutlinePlus className="w-4 h-4" /> Add Video
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {updates.length === 0 ? (
+                    <div className="sm:col-span-2 lg:col-span-3 glass-card bg-white p-12 text-center text-slate-400 font-bold border-dashed border-2 border-slate-200">No videos uploaded yet.</div>
+                  ) : (
+                    updates.map(update => (
+                      <div key={update.id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
+                        <div className="aspect-[9/16] bg-slate-900 w-full relative">
+                          <video src={update.videoUrl} autoPlay muted loop className="w-full h-full object-cover opacity-80" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                          <div className="absolute bottom-0 left-0 p-4 w-full">
+                            <h4 className="text-white font-bold text-lg leading-tight mb-1">{update.title}</h4>
+                            <p className="text-white/70 text-xs line-clamp-2">{update.description}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!confirm('Delete this video?')) return;
+                            try {
+                              const token = localStorage.getItem('tripnova_admin_token') || '';
+                              await api.updates.delete(update.id, token);
+                              setUpdates(updates.filter(u => u.id !== update.id));
+                              toast.success('Video deleted');
+                            } catch (e) {
+                              toast.error('Failed to delete video');
+                            }
+                          }}
+                          className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <HiOutlineTrash className="w-4 h-4" />
+                        </button>
                       </div>
                     ))
                   )}
@@ -1906,6 +2032,116 @@ export default function AdminDashboard() {
                 </select>
               </div>
               <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Credentials</button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      {/* MODAL: Add Update Video */}
+      {isAddingUpdate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl w-full max-w-md"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-800">Add Video Update</h3>
+                <p className="text-xs text-slate-400">Upload a video feed for the homepage.</p>
+              </div>
+              <button 
+                onClick={() => setIsAddingUpdate(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUpdate} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Title</label>
+                <input 
+                  required
+                  value={updateForm.title}
+                  onChange={e => setUpdateForm({...updateForm, title: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Video URL</label>
+                <input 
+                  required
+                  value={updateForm.videoUrl}
+                  onChange={e => setUpdateForm({...updateForm, videoUrl: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Description</label>
+                <textarea 
+                  value={updateForm.description}
+                  onChange={e => setUpdateForm({...updateForm, description: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-24 resize-none"
+                />
+              </div>
+              <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Update</button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      
+      {/* MODAL: Add/Edit Blog */}
+      {isAddingBlog && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-800">{editingBlog ? 'Edit Blog Post' : 'Write New Blog'}</h3>
+                <p className="text-xs text-slate-400">Share your travel experiences and tips.</p>
+              </div>
+              <button 
+                onClick={() => { setIsAddingBlog(false); setEditingBlog(null); }}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBlog} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Title</label>
+                  <input required value={blogForm.title} onChange={e => setBlogForm({...blogForm, title: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Category</label>
+                  <input required value={blogForm.category} onChange={e => setBlogForm({...blogForm, category: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="e.g. Travel Guide" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Tags (comma separated)</label>
+                  <input value={blogForm.tags} onChange={e => setBlogForm({...blogForm, tags: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="Trekking, Nature, Mountains" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Cover Image URL</label>
+                  <input value={blogForm.coverImage} onChange={e => setBlogForm({...blogForm, coverImage: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://..." />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Short Excerpt</label>
+                <textarea required value={blogForm.excerpt} onChange={e => setBlogForm({...blogForm, excerpt: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-20 resize-none" />
+              </div>
+              <div className="mb-12">
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Rich Content</label>
+                <div className="h-64 mb-10 text-slate-900">
+                  <ReactQuill theme="snow" value={blogForm.content} onChange={(val: string) => setBlogForm({...blogForm, content: val})} className="h-full rounded-xl bg-white" />
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full py-3.5 mt-8">Save Blog Post</button>
             </form>
           </motion.div>
         </div>
