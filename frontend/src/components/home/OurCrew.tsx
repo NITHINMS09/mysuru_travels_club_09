@@ -102,7 +102,11 @@ export default function OurCrew() {
               <div className="p-6 flex-1 flex flex-col justify-between relative z-10 bg-white">
                 <div>
                   <h3 className="text-xl font-bold font-outfit text-slate-900 group-hover:text-primary-600 transition-colors duration-300 mb-1">{member.name}</h3>
-                  <p className="text-[#FFFFFF] font-bold text-xs uppercase tracking-widest mb-3" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{member.role}</p>
+                  <div className="mb-4">
+                    <span className="inline-block px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-[0_0_8px_rgba(168,85,247,0.4)] border border-purple-500/50 backdrop-blur-sm">
+                      {member.role}
+                    </span>
+                  </div>
                   
                   {/* Short Description */}
                   <p className="text-slate-500 text-sm font-outfit line-clamp-3 leading-relaxed">

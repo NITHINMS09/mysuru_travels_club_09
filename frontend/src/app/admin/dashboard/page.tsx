@@ -1697,7 +1697,10 @@ export default function AdminDashboard() {
                                 <span className="px-1.5 py-0.5 rounded text-[8px] bg-slate-100 border border-slate-200 font-bold text-slate-500 uppercase tracking-widest">Hidden</span>
                               )}
                             </div>
-                            <p className="text-[#FFFFFF] uppercase tracking-widest font-bold text-xs" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{member.role}</p>
+                            <div className="inline-block px-2.5 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-[0_0_8px_rgba(168,85,247,0.4)] mt-1">
+                              {member.role}
+                            </div>
+                            <span className="text-xs text-slate-400 font-bold ml-2">Order: {member.displayOrder || 0}</span>
                           </div>
                           <div className="flex gap-2">
                             <button onClick={() => setEditingCrew(member)} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-violet-300 transition-all duration-300" title="Edit member"><HiOutlinePencil className="w-5 h-5" /></button>
