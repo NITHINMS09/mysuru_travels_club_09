@@ -45,14 +45,27 @@ export default function LatestUpdates() {
               <div className="relative aspect-[9/16] w-full bg-slate-900 overflow-hidden">
                 <video 
                   src={video.videoUrl}
+                  poster={video.thumbnailUrl || undefined}
+                  preload="metadata"
                   autoPlay 
                   muted 
                   loop 
                   playsInline
+                  onPlay={() => {
+                    // Fire-and-forget view tracking
+                    if (video.id) {
+                      api.updates.incrementView(video.id).catch(() => {});
+                    }
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-                <div className="absolute bottom-0 left-0 p-6 w-full">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 p-6 w-full pointer-events-none">
+                  {video.category && (
+                    <span className="inline-block mb-3 px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider">
+                      {video.category}
+                    </span>
+                  )}
                   <h3 className="text-white font-bold text-xl mb-2 leading-tight">{video.title}</h3>
                   {video.description && (
                     <p className="text-white/80 text-sm line-clamp-2">{video.description}</p>

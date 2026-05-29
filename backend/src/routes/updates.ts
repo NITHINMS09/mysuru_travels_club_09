@@ -5,10 +5,11 @@ import type { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-// GET all update videos (public)
+// GET all update videos (public - published only)
 router.get('/', async (req, res) => {
   try {
     const updates = await prisma.updateVideo.findMany({
+      where: { status: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' }
     });
     res.json(updates);
@@ -18,10 +19,44 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET all update videos (admin - includes drafts)
+router.get('/admin', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const updates = await prisma.updateVideo.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(updates);
+  } catch (error) {
+    console.error('Fetch admin updates error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET stats (admin)
+router.get('/stats', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const [total, published, drafts, viewsAgg] = await Promise.all([
+      prisma.updateVideo.count(),
+      prisma.updateVideo.count({ where: { status: 'PUBLISHED' } }),
+      prisma.updateVideo.count({ where: { status: 'DRAFT' } }),
+      prisma.updateVideo.aggregate({ _sum: { views: true } })
+    ]);
+    res.json({
+      total,
+      published,
+      drafts,
+      totalViews: viewsAgg._sum.views || 0
+    });
+  } catch (error) {
+    console.error('Fetch updates stats error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST new update video (admin)
 router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { title, description, videoUrl } = req.body;
+    const { title, description, videoUrl, thumbnailUrl, fileSize, duration, status, category } = req.body;
     
     if (!title || !videoUrl) {
       return res.status(400).json({ error: 'Title and Video URL are required' });
@@ -31,13 +66,44 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       data: {
         title,
         description,
-        videoUrl
+        videoUrl,
+        thumbnailUrl,
+        fileSize,
+        duration,
+        status: status || 'PUBLISHED',
+        category
       }
     });
 
     res.status(201).json(update);
   } catch (error) {
     console.error('Create update error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PUT edit update video (admin)
+router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { title, description, videoUrl, thumbnailUrl, fileSize, duration, status, category } = req.body;
+    
+    const update = await prisma.updateVideo.update({
+      where: { id: req.params.id },
+      data: {
+        title,
+        description,
+        videoUrl,
+        thumbnailUrl,
+        fileSize,
+        duration,
+        status,
+        category
+      }
+    });
+
+    res.json(update);
+  } catch (error) {
+    console.error('Edit update error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -52,6 +118,20 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Delete update error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST increment view count (public)
+router.post('/:id/view', async (req, res) => {
+  try {
+    await prisma.updateVideo.update({
+      where: { id: req.params.id },
+      data: { views: { increment: 1 } }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    // Silently fail for views to not interrupt user
+    res.status(500).json({ error: 'Failed' });
   }
 });
 

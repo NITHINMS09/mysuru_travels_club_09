@@ -114,8 +114,12 @@ export const api = {
 
   updates: {
     getAll: () => fetchAPI('/updates'),
+    getAdminAll: (token: string) => fetchAPI('/updates/admin', { token }),
+    getStats: (token: string) => fetchAPI('/updates/stats', { token }),
     create: (data: any, token: string) => fetchAPI('/updates', { method: 'POST', body: JSON.stringify(data), token }),
+    update: (id: string, data: any, token: string) => fetchAPI(`/updates/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
     delete: (id: string, token: string) => fetchAPI(`/updates/${id}`, { method: 'DELETE', token }),
+    incrementView: (id: string) => fetchAPI(`/updates/${id}/view`, { method: 'POST' }),
   },
 
   upload: {
@@ -127,6 +131,16 @@ export const api = {
         body: formData,
       });
       if (!res.ok) throw new Error('Upload failed');
+      return res.json();
+    },
+    video: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/upload/video`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Video upload failed');
       return res.json();
     }
   },

@@ -232,7 +232,10 @@ export default function AdminDashboard() {
   });
 
   const [isAddingUpdate, setIsAddingUpdate] = useState(false);
-  const [updateForm, setUpdateForm] = useState({ title: '', description: '', videoUrl: '' });
+  const [editingUpdate, setEditingUpdate] = useState<any>(null);
+  const [updateForm, setUpdateForm] = useState({ title: '', description: '', videoUrl: '', thumbnailUrl: '', fileSize: 0, duration: 0, status: 'PUBLISHED', category: '' });
+  const [updateStats, setUpdateStats] = useState({ total: 0, published: 0, drafts: 0, totalViews: 0 });
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   const [isAddingBlog, setIsAddingBlog] = useState(false);
   const [editingBlog, setEditingBlog] = useState<any>(null);
@@ -325,7 +328,7 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       setLoading(true);
-      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData, whatsappSettingsData] = await Promise.all([
+      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData, updatesStatsData, whatsappSettingsData] = await Promise.all([
         api.auth.dashboard(token),
         api.trips.getAll(),
         api.bookings.getAll(token),
@@ -333,7 +336,8 @@ export default function AdminDashboard() {
         api.crew.getAll(),
         api.settings.getAll(),
         api.votes.getDestinations(),
-        api.updates.getAll(),
+        api.updates.getAdminAll(token),
+        api.updates.getStats(token),
         api.whatsappSettings.get()
       ]);
 
@@ -347,7 +351,10 @@ export default function AdminDashboard() {
       setBlogs(blogsData.blogs || blogsData);
       setCrew(crewData || []);
       setSettings(settingsData || {});
-      
+      setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
+      setUpdates(updatesData || []);
+      setUpdateStats(updatesStatsData || { total: 0, published: 0, drafts: 0, totalViews: 0 });
+
       setWhatsAppSettings(whatsappSettingsData || {});
       setWhatsAppForm({
         messageTemplate: whatsappSettingsData?.messageTemplate || '',
@@ -621,13 +628,48 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('tripnova_admin_token');
       if (!token) return;
-      const res = await api.updates.create(updateForm, token);
-      setUpdates([res, ...updates]);
+      if (editingUpdate) {
+        const res = await api.updates.update(editingUpdate.id, updateForm, token);
+        setUpdates(updates.map(u => u.id === editingUpdate.id ? res : u));
+        toast.success('Video update modified successfully');
+      } else {
+        const res = await api.updates.create(updateForm, token);
+        setUpdates([res, ...updates]);
+        toast.success('Video update added successfully');
+      }
       setIsAddingUpdate(false);
-      setUpdateForm({ title: '', description: '', videoUrl: '' });
-      toast.success('Video update added successfully');
+      setEditingUpdate(null);
+      setUpdateForm({ title: '', description: '', videoUrl: '', thumbnailUrl: '', fileSize: 0, duration: 0, status: 'PUBLISHED', category: '' });
+      fetchData(); // Refresh stats
     } catch (err) {
-      toast.error('Failed to add update');
+      toast.error('Failed to save update');
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Video size must be less than 100MB');
+      return;
+    }
+
+    try {
+      setIsUploadingVideo(true);
+      const res = await api.upload.video(file);
+      setUpdateForm({
+        ...updateForm,
+        videoUrl: res.url,
+        thumbnailUrl: res.thumbnailUrl,
+        fileSize: res.size,
+        duration: res.duration
+      });
+      toast.success('Video uploaded successfully!');
+    } catch (error) {
+      toast.error('Failed to upload video');
+    } finally {
+      setIsUploadingVideo(false);
     }
   };
 
@@ -1631,6 +1673,25 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Total Videos</div>
+                    <div className="text-2xl font-black text-indigo-600">{updateStats.total}</div>
+                  </div>
+                  <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Published</div>
+                    <div className="text-2xl font-black text-green-600">{updateStats.published}</div>
+                  </div>
+                  <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Drafts</div>
+                    <div className="text-2xl font-black text-amber-500">{updateStats.drafts}</div>
+                  </div>
+                  <div className="glass-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">Total Views</div>
+                    <div className="text-2xl font-black text-violet-600">{updateStats.totalViews}</div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {updates.length === 0 ? (
                     <div className="sm:col-span-2 lg:col-span-3 glass-card bg-white p-12 text-center text-slate-400 font-bold border-dashed border-2 border-slate-200">No videos uploaded yet.</div>
@@ -1638,29 +1699,65 @@ export default function AdminDashboard() {
                     updates.map(update => (
                       <div key={update.id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
                         <div className="aspect-[9/16] bg-slate-900 w-full relative">
-                          <video src={update.videoUrl} autoPlay muted loop className="w-full h-full object-cover opacity-80" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                          <video src={update.videoUrl} poster={update.thumbnailUrl || undefined} preload="none" autoPlay muted loop playsInline className="w-full h-full object-cover opacity-80" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                          
+                          <div className="absolute top-4 left-4">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold tracking-widest uppercase ${update.status === 'PUBLISHED' ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
+                              {update.status}
+                            </span>
+                          </div>
+
                           <div className="absolute bottom-0 left-0 p-4 w-full">
+                            <div className="flex items-center gap-2 mb-2">
+                              {update.category && <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[10px] font-bold text-white uppercase tracking-wider">{update.category}</span>}
+                              {update.views > 0 && <span className="text-white/80 text-xs font-bold flex items-center gap-1"><HiOutlineEye className="w-3 h-3"/> {update.views}</span>}
+                            </div>
                             <h4 className="text-white font-bold text-lg leading-tight mb-1">{update.title}</h4>
                             <p className="text-white/70 text-xs line-clamp-2">{update.description}</p>
                           </div>
                         </div>
-                        <button 
-                          onClick={async () => {
-                            if (!confirm('Delete this video?')) return;
-                            try {
-                              const token = localStorage.getItem('tripnova_admin_token') || '';
-                              await api.updates.delete(update.id, token);
-                              setUpdates(updates.filter(u => u.id !== update.id));
-                              toast.success('Video deleted');
-                            } catch (e) {
-                              toast.error('Failed to delete video');
-                            }
-                          }}
-                          className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        >
-                          <HiOutlineTrash className="w-4 h-4" />
-                        </button>
+                        
+                        <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => {
+                              setEditingUpdate(update);
+                              setUpdateForm({
+                                title: update.title,
+                                description: update.description || '',
+                                videoUrl: update.videoUrl,
+                                thumbnailUrl: update.thumbnailUrl || '',
+                                fileSize: update.fileSize || 0,
+                                duration: update.duration || 0,
+                                status: update.status || 'PUBLISHED',
+                                category: update.category || ''
+                              });
+                              setIsAddingUpdate(true);
+                            }}
+                            className="p-2 bg-white text-slate-800 rounded-xl hover:bg-slate-100 transition-colors shadow-lg"
+                            title="Edit Video"
+                          >
+                            <HiOutlinePencil className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!confirm('Delete this video?')) return;
+                              try {
+                                const token = localStorage.getItem('tripnova_admin_token') || '';
+                                await api.updates.delete(update.id, token);
+                                setUpdates(updates.filter(u => u.id !== update.id));
+                                fetchData();
+                                toast.success('Video deleted');
+                              } catch (e) {
+                                toast.error('Failed to delete video');
+                              }
+                            }}
+                            className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors shadow-lg"
+                            title="Delete Video"
+                          >
+                            <HiOutlineTrash className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -2349,35 +2446,80 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveUpdate} className="space-y-4">
+            <form onSubmit={handleSaveUpdate} className="space-y-4 max-h-[80vh] overflow-y-auto px-2">
               <div>
                 <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Title</label>
                 <input 
                   required
                   value={updateForm.title}
                   onChange={e => setUpdateForm({...updateForm, title: e.target.value})}
-                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 w-full"
                 />
               </div>
+
               <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Video URL</label>
-                <input 
-                  required
-                  value={updateForm.videoUrl}
-                  onChange={e => setUpdateForm({...updateForm, videoUrl: e.target.value})}
-                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
-                  placeholder="https://..."
-                />
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Video Upload</label>
+                <div className="border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <input 
+                    type="file" 
+                    accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,video/x-matroska" 
+                    onChange={handleVideoUpload}
+                    disabled={isUploadingVideo}
+                    className="block w-full text-sm text-slate-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-bold
+                      file:bg-violet-50 file:text-violet-700
+                      hover:file:bg-violet-100 disabled:opacity-50 cursor-pointer"
+                  />
+                  {isUploadingVideo && <p className="text-xs font-bold text-violet-600 mt-2 animate-pulse">Uploading and compressing video... please wait (up to 100MB)</p>}
+                  {updateForm.videoUrl && !isUploadingVideo && (
+                    <div className="mt-3 w-full rounded-xl overflow-hidden aspect-video bg-black">
+                      <video src={updateForm.videoUrl} controls className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Category</label>
+                  <input 
+                    value={updateForm.category}
+                    onChange={e => setUpdateForm({...updateForm, category: e.target.value})}
+                    placeholder="e.g. Travel, Review, Guide"
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Status</label>
+                  <select 
+                    value={updateForm.status}
+                    onChange={e => setUpdateForm({...updateForm, status: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 w-full font-bold"
+                  >
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Draft</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Description</label>
                 <textarea 
                   value={updateForm.description}
                   onChange={e => setUpdateForm({...updateForm, description: e.target.value})}
-                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-24 resize-none"
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-24 resize-none w-full"
                 />
               </div>
-              <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Update</button>
+              
+              <button 
+                type="submit" 
+                disabled={isUploadingVideo || !updateForm.videoUrl} 
+                className="btn-primary w-full py-3.5 mt-4 disabled:opacity-50"
+              >
+                {editingUpdate ? 'Save Changes' : 'Publish Video'}
+              </button>
             </form>
           </motion.div>
         </div>
