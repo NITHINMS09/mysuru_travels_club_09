@@ -172,7 +172,7 @@ export default function AdminDashboard() {
   const [votes, setVotes] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>({});
   const [whatsAppSettings, setWhatsAppSettings] = useState<any>({});
-  const [whatsAppForm, setWhatsAppForm] = useState({ messageTemplate: '', imageUrl: '' });
+  const [whatsAppForm, setWhatsAppForm] = useState({ messageTitle: '', messageTemplate: '', imageUrl: '', isActive: true });
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<any>(null);
   const [isAddingTrip, setIsAddingTrip] = useState(false);
@@ -357,8 +357,10 @@ export default function AdminDashboard() {
 
       setWhatsAppSettings(whatsappSettingsData || {});
       setWhatsAppForm({
+        messageTitle: whatsappSettingsData?.messageTitle || 'Booking Confirmation',
         messageTemplate: whatsappSettingsData?.messageTemplate || '',
-        imageUrl: whatsappSettingsData?.imageUrl || ''
+        imageUrl: whatsappSettingsData?.imageUrl || '',
+        isActive: whatsappSettingsData?.isActive ?? true
       });
 
       setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
@@ -444,6 +446,33 @@ export default function AdminDashboard() {
     try {
       await api.bookings.updateStatus(id, status, token, notes);
       toast.success(`Booking ${status.toLowerCase()} successfully`);
+      
+      if (status === 'CONFIRMED' && whatsAppSettings?.isActive && whatsAppSettings.messageTemplate) {
+        const booking = bookings.find(b => b.id === id);
+        if (booking) {
+          let text = whatsAppSettings.messageTemplate
+            .replace(/{CustomerName}/g, booking.customerName || 'Customer')
+            .replace(/{TripName}/g, booking.trip?.title || 'Trip')
+            .replace(/{BookingID}/g, booking.referenceId || booking.id)
+            .replace(/{MobileNumber}/g, booking.phone || '')
+            .replace(/{TripDate}/g, booking.trip?.date ? new Date(booking.trip.date).toLocaleDateString() : '')
+            .replace(/{SeatCount}/g, booking.seats?.toString() || '1')
+            .replace(/{AmountPaid}/g, booking.totalAmount?.toString() || '0')
+            .replace(/{PickupLocation}/g, booking.pickupLocation || 'your selected point');
+
+          if (whatsAppSettings.imageUrl) {
+            text += `\n\n${whatsAppSettings.imageUrl}`;
+          }
+
+          const phone = booking.phone?.replace(/[^0-9]/g, '') || '';
+          const finalPhone = phone.length === 10 ? `91${phone}` : phone;
+          
+          if (finalPhone) {
+            window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(text)}`, '_blank');
+          }
+        }
+      }
+
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update booking');
@@ -594,6 +623,26 @@ export default function AdminDashboard() {
       toast.success('WhatsApp Settings saved!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Failed to save settings');
+    }
+  };
+
+  const resetWhatsAppSettings = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    if (!confirm('Are you sure you want to reset the template to default?')) return;
+    try {
+      const toastId = toast.loading('Resetting WhatsApp template...');
+      const res = await api.whatsappSettings.reset(token);
+      setWhatsAppSettings(res);
+      setWhatsAppForm({
+        messageTitle: res.messageTitle,
+        messageTemplate: res.messageTemplate,
+        imageUrl: res.imageUrl || '',
+        isActive: res.isActive
+      });
+      toast.success('WhatsApp Template reset!', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reset settings');
     }
   };
 
@@ -2025,15 +2074,40 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="space-y-8">
                     <div className="glass-card bg-white p-6 border-slate-200/80 shadow-md">
-                      <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><FaWhatsapp className="w-5.5 h-5.5 text-green-500"/> Message Template</h4>
-                      <p className="text-xs text-slate-500 mb-4 font-medium">Use variables like {'{CustomerName}'}, {'{TripName}'}, {'{MobileNumber}'}, {'{SeatCount}'}, {'{AmountPaid}'}</p>
-                      
-                      <textarea 
-                        rows={10} 
-                        className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 mb-4 font-mono text-sm"
-                        value={whatsAppForm.messageTemplate}
-                        onChange={(e) => setWhatsAppForm({...whatsAppForm, messageTemplate: e.target.value})}
-                      />
+                      <div className="flex justify-between items-center mb-6">
+                        <h4 className="font-bold text-lg flex items-center gap-2 font-outfit text-slate-800"><FaWhatsapp className="w-5.5 h-5.5 text-green-500"/> Message Template</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500">Active</span>
+                          <button 
+                            type="button" 
+                            onClick={() => setWhatsAppForm({...whatsAppForm, isActive: !whatsAppForm.isActive})}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${whatsAppForm.isActive ? 'bg-green-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${whatsAppForm.isActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1 block">Message Title</label>
+                        <input 
+                          value={whatsAppForm.messageTitle}
+                          onChange={(e) => setWhatsAppForm({...whatsAppForm, messageTitle: e.target.value})}
+                          className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 w-full"
+                          placeholder="e.g. Booking Confirmation"
+                        />
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1 block">Message Content</label>
+                        <p className="text-xs text-slate-500 mb-2 font-medium">Use variables: {'{CustomerName}'}, {'{TripName}'}, {'{BookingID}'}, {'{MobileNumber}'}, {'{TripDate}'}, {'{SeatCount}'}, {'{AmountPaid}'}, {'{PickupLocation}'}</p>
+                        <textarea 
+                          rows={10} 
+                          className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 w-full font-mono text-sm"
+                          value={whatsAppForm.messageTemplate}
+                          onChange={(e) => setWhatsAppForm({...whatsAppForm, messageTemplate: e.target.value})}
+                        />
+                      </div>
                     </div>
 
                     <div className="glass-card bg-white p-6 border-slate-200/80 shadow-md">
@@ -2056,7 +2130,10 @@ export default function AdminDashboard() {
                       <input type="file" accept="image/*" onChange={handleWhatsAppImageUpload} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
                     </div>
 
-                    <button onClick={saveWhatsAppSettings} className="btn-primary py-4 px-8 w-full shadow-lg">Save WhatsApp Settings</button>
+                    <div className="flex gap-4">
+                      <button onClick={saveWhatsAppSettings} className="btn-primary py-4 px-8 flex-1 shadow-lg">Save Template</button>
+                      <button onClick={resetWhatsAppSettings} className="px-8 py-4 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl font-bold transition-all shadow-md">Reset Default</button>
+                    </div>
                   </div>
 
                   <div className="glass-card bg-slate-50 p-6 border-slate-200/80 shadow-inner">
@@ -2067,9 +2144,12 @@ export default function AdminDashboard() {
                           {whatsAppForm.messageTemplate
                             .replace(/{CustomerName}/g, 'John Doe')
                             .replace(/{TripName}/g, 'Kashmir Adventure')
+                            .replace(/{BookingID}/g, 'BKG-XYZ123')
                             .replace(/{MobileNumber}/g, '9876543210')
+                            .replace(/{TripDate}/g, '25 Oct 2026')
                             .replace(/{SeatCount}/g, '2')
-                            .replace(/{AmountPaid}/g, '15,000')}
+                            .replace(/{AmountPaid}/g, '15,000')
+                            .replace(/{PickupLocation}/g, 'Mysuru Bus Stand')}
                         </div>
                         {whatsAppForm.imageUrl && (
                           <div className="mt-2 text-blue-500 underline text-xs break-all">

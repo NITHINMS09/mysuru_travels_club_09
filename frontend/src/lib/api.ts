@@ -110,6 +110,7 @@ export const api = {
   whatsappSettings: {
     get: () => fetchAPI('/whatsapp-settings'),
     update: (data: any, token: string) => fetchAPI('/whatsapp-settings', { method: 'POST', body: JSON.stringify(data), token }),
+    reset: (token: string) => fetchAPI('/whatsapp-settings/reset', { method: 'POST', token }),
   },
 
   updates: {

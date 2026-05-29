@@ -321,8 +321,10 @@ model UpdateVideo {
 
 model WhatsAppSettings {
   id              String   @id @default(cuid())
+  messageTitle    String   @default("Booking Confirmation")
   messageTemplate String   @db.Text
   imageUrl        String?
+  isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
