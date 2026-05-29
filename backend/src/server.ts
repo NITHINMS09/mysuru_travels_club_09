@@ -30,6 +30,7 @@ import settingsRoutes from './routes/settings';
 import uploadRoutes from './routes/upload';
 import marketplaceRoutes from './routes/marketplace';
 import updateRoutes from './routes/updates';
+import whatsappSettingsRoutes from './routes/whatsapp-settings';
 import path from 'path';
 
 const app = express();
@@ -98,6 +99,7 @@ app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/crew', crewRoutes);
 app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/whatsapp-settings', whatsappSettingsRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
 app.use('/api/v1/updates', updateRoutes);

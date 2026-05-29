@@ -171,6 +171,8 @@ export default function AdminDashboard() {
   const [crew, setCrew] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>({});
+  const [whatsAppSettings, setWhatsAppSettings] = useState<any>({});
+  const [whatsAppForm, setWhatsAppForm] = useState({ messageTemplate: '', imageUrl: '' });
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<any>(null);
   const [isAddingTrip, setIsAddingTrip] = useState(false);
@@ -322,7 +324,7 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       setLoading(true);
-      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData] = await Promise.all([
+      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData, whatsappSettingsData] = await Promise.all([
         api.auth.dashboard(token),
         api.trips.getAll(),
         api.bookings.getAll(token),
@@ -330,7 +332,8 @@ export default function AdminDashboard() {
         api.crew.getAll(),
         api.settings.getAll(),
         api.votes.getDestinations(),
-        api.updates.getAll()
+        api.updates.getAll(),
+        api.whatsappSettings.get()
       ]);
 
       setStats(statsData.stats);
@@ -343,6 +346,13 @@ export default function AdminDashboard() {
       setBlogs(blogsData.blogs || blogsData);
       setCrew(crewData || []);
       setSettings(settingsData || {});
+      
+      setWhatsAppSettings(whatsappSettingsData || {});
+      setWhatsAppForm({
+        messageTemplate: whatsappSettingsData?.messageTemplate || '',
+        imageUrl: whatsappSettingsData?.imageUrl || ''
+      });
+
       setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
       setUpdates(updatesData);
 
@@ -428,7 +438,26 @@ export default function AdminDashboard() {
       setBookings(bookings.map(b => b.id === id ? { ...b, status, adminNotes: notes || b.adminNotes } : b));
       toast.success(`Booking ${status}`);
       fetchData();
-    } catch (err) { toast.error('Failed to update booking'); }
+    } catch (err) {
+      toast.error('Failed to update booking status');
+    }
+  };
+
+  const generateWhatsAppLink = (booking: any) => {
+    let text = whatsAppSettings?.messageTemplate || `Hello {CustomerName}, Your payment for {TripName} has been verified.`;
+    text = text
+      .replace(/{CustomerName}/g, booking.travelerName || '')
+      .replace(/{TripName}/g, booking.trip?.title || '')
+      .replace(/{MobileNumber}/g, booking.phone || '')
+      .replace(/{SeatCount}/g, booking.seatCount?.toString() || '')
+      .replace(/{AmountPaid}/g, booking.totalAmount?.toString() || '');
+    
+    if (whatsAppSettings?.imageUrl) {
+      text += `\n\n${whatsAppSettings.imageUrl}`;
+    }
+
+    const phone = (booking.phone || '').replace(/\D/g, '');
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   };
 
   const deleteCrew = async (id: string) => {
@@ -489,6 +518,42 @@ export default function AdminDashboard() {
       fetchData();
     } catch (err) {
       toast.error('Failed to delete explorer records');
+    }
+  };
+
+  const handleWhatsAppImageUpload = async (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const toastId = toast.loading('Uploading image...');
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}/api/v1/upload/single`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      setWhatsAppForm(prev => ({ ...prev, imageUrl: data.url }));
+      toast.success('Image uploaded successfully', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'Upload failed', { id: toastId });
+    }
+  };
+
+  const saveWhatsAppSettings = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    try {
+      const toastId = toast.loading('Saving WhatsApp settings...');
+      const res = await api.whatsappSettings.update(whatsAppForm, token);
+      setWhatsAppSettings(res);
+      toast.success('WhatsApp Settings saved!', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save settings');
     }
   };
 
@@ -627,6 +692,7 @@ export default function AdminDashboard() {
     { label: 'Updates', icon: HiOutlineVideoCamera, color: 'text-rose-500' },
     { label: 'Votes', icon: HiOutlineThumbUp, color: 'text-rose-500' },
     { label: 'Settings', icon: HiOutlineCog, color: 'text-cyan-600' },
+    { label: 'WhatsApp Settings', icon: FaWhatsapp, color: 'text-green-500' },
   ];
 
   // SVG Chart data formatting
@@ -1048,26 +1114,36 @@ export default function AdminDashboard() {
                               )}
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex gap-2">
-                                {booking.status === 'CONFIRMED' && (
-                                  <a 
-                                    href={`https://wa.me/${booking.phone.replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(booking.travelerName)}%2C%20Your%20payment%20for%20${encodeURIComponent(booking.trip?.title || 'your trip')}%20has%20been%20verified.%20Please%20reply%20with%20your%20pickup%20location.%20Thank%20you%20for%20choosing%20Mysuru%20Travel%20Club.`}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="p-1 text-slate-400 hover:text-green-500 transition-colors"
-                                    title="Send WhatsApp Message"
-                                  >
-                                    <FaWhatsapp className="w-5.5 h-5.5" />
-                                  </a>
-                                )}
-                                <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="p-1 text-slate-400 hover:text-green-600 transition-colors" title="Confirm Booking"><HiOutlineCheckCircle className="w-5.5 h-5.5" /></button>
-                                <button onClick={() => {
-                                  const reason = prompt("Enter reason for rejection (optional):");
-                                  if (reason !== null) updateBookingStatus(booking.id, 'REJECTED', reason);
-                                }} className="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Reject Booking"><HiOutlineXCircle className="w-5.5 h-5.5" /></button>
-                              </div>
-                            </td>
-                          </tr>
+                                <div className="flex flex-col gap-2">
+                                  {(booking.status === 'PENDING_VERIFICATION' || booking.status === 'PENDING') && (
+                                    <>
+                                      <button onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-md hover:bg-green-100 flex items-center justify-center gap-1 font-medium transition-colors text-xs border border-green-200">
+                                        <HiOutlineCheckCircle className="w-4 h-4" /> Verify Payment
+                                      </button>
+                                      <button onClick={() => {
+                                        const reason = prompt("Enter reason for rejection (optional):");
+                                        if (reason !== null) updateBookingStatus(booking.id, 'REJECTED', reason);
+                                      }} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 flex items-center justify-center gap-1 font-medium transition-colors text-xs border border-red-200">
+                                        <HiOutlineXCircle className="w-4 h-4" /> Reject Payment
+                                      </button>
+                                    </>
+                                  )}
+                                  {booking.status === 'CONFIRMED' && (
+                                    <div className="flex gap-2 w-full">
+                                      <a 
+                                        href={generateWhatsAppLink(booking)}
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center justify-center gap-1 font-bold transition-colors text-xs shadow-sm"
+                                        title="Send WhatsApp Message"
+                                      >
+                                        <FaWhatsapp className="w-4 h-4" /> Send WhatsApp
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
                         ))}
                         {filteredBookings.length === 0 && (
                           <tr>
@@ -1744,6 +1820,82 @@ export default function AdminDashboard() {
 
                   <button type="submit" className="btn-primary py-4 px-8 w-full md:w-auto">Save All Settings</button>
                 </form>
+              </motion.div>
+            )}
+
+            {activeTab === 'WhatsApp Settings' && (
+              <motion.div key="whatsappSettings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black font-outfit text-slate-800">WhatsApp Settings</h3>
+                  <p className="text-slate-500 text-sm font-semibold">Configure the payment verification message</p>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-8">
+                    <div className="glass-card bg-white p-6 border-slate-200/80 shadow-md">
+                      <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><FaWhatsapp className="w-5.5 h-5.5 text-green-500"/> Message Template</h4>
+                      <p className="text-xs text-slate-500 mb-4 font-medium">Use variables like {'{CustomerName}'}, {'{TripName}'}, {'{MobileNumber}'}, {'{SeatCount}'}, {'{AmountPaid}'}</p>
+                      
+                      <textarea 
+                        rows={10} 
+                        className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 mb-4 font-mono text-sm"
+                        value={whatsAppForm.messageTemplate}
+                        onChange={(e) => setWhatsAppForm({...whatsAppForm, messageTemplate: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="glass-card bg-white p-6 border-slate-200/80 shadow-md">
+                      <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><HiOutlineDocumentText className="w-5.5 h-5.5 text-violet-600"/> Upload Image</h4>
+                      <p className="text-xs text-slate-500 mb-4 font-medium">Upload a promotional or confirmation poster (JPG, PNG). The image URL will be appended to the WhatsApp message text to generate a preview.</p>
+                      
+                      {whatsAppForm.imageUrl && (
+                        <div className="mb-4 relative rounded-lg overflow-hidden border border-slate-200" style={{ height: '200px' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={whatsAppForm.imageUrl} alt="WhatsApp Poster" className="object-cover w-full h-full" />
+                          <button 
+                            onClick={() => setWhatsAppForm({...whatsAppForm, imageUrl: ''})}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                          >
+                            <HiOutlineTrash />
+                          </button>
+                        </div>
+                      )}
+
+                      <input type="file" accept="image/*" onChange={handleWhatsAppImageUpload} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+                    </div>
+
+                    <button onClick={saveWhatsAppSettings} className="btn-primary py-4 px-8 w-full shadow-lg">Save WhatsApp Settings</button>
+                  </div>
+
+                  <div className="glass-card bg-slate-50 p-6 border-slate-200/80 shadow-inner">
+                    <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><HiOutlineEye className="w-5.5 h-5.5 text-blue-600"/> Live Preview</h4>
+                    <div className="bg-[#EFEAE2] p-4 rounded-xl max-w-sm mx-auto shadow-md" style={{ backgroundImage: 'url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-solid-color-background.jpg")', backgroundSize: 'cover' }}>
+                      <div className="bg-white p-3 rounded-lg shadow-sm mb-2 rounded-tr-none text-sm text-slate-800 max-w-[90%] ml-auto relative">
+                        <div className="whitespace-pre-wrap font-sans">
+                          {whatsAppForm.messageTemplate
+                            .replace(/{CustomerName}/g, 'John Doe')
+                            .replace(/{TripName}/g, 'Kashmir Adventure')
+                            .replace(/{MobileNumber}/g, '9876543210')
+                            .replace(/{SeatCount}/g, '2')
+                            .replace(/{AmountPaid}/g, '15,000')}
+                        </div>
+                        {whatsAppForm.imageUrl && (
+                          <div className="mt-2 text-blue-500 underline text-xs break-all">
+                            {whatsAppForm.imageUrl}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-right text-slate-400 mt-1">10:42 AM</div>
+                      </div>
+                      {whatsAppForm.imageUrl && (
+                        <div className="bg-white p-1 rounded-lg shadow-sm mb-2 rounded-tr-none max-w-[90%] ml-auto relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={whatsAppForm.imageUrl} alt="Preview" className="rounded-md w-full h-auto" />
+                          <div className="text-[10px] text-right text-slate-400 mt-1 absolute bottom-2 right-2 bg-black/40 text-white px-1 rounded">10:42 AM</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

@@ -104,6 +104,12 @@ export const api = {
     getAll: () => fetchAPI('/settings'),
     update: (settings: any, token: string) => fetchAPI('/settings', { method: 'POST', body: JSON.stringify({ settings }), token }),
   },
+
+  whatsappSettings: {
+    get: () => fetchAPI('/whatsapp-settings'),
+    update: (data: any, token: string) => fetchAPI('/whatsapp-settings', { method: 'POST', body: JSON.stringify(data), token }),
+  },
+
   updates: {
     getAll: () => fetchAPI('/updates'),
     create: (data: any, token: string) => fetchAPI('/updates', { method: 'POST', body: JSON.stringify(data), token }),

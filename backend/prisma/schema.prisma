@@ -311,3 +311,10 @@ model UpdateVideo {
   updatedAt   DateTime @updatedAt
 }
 
+model WhatsAppSettings {
+  id              String   @id @default(cuid())
+  messageTemplate String   @db.Text
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
