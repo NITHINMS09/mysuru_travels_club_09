@@ -21,8 +21,8 @@ import MarketplaceManager from '@/components/admin/MarketplaceManager';
 import dynamic from 'next/dynamic';
 import { io } from 'socket.io-client';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
-import 'react-quill/dist/quill.snow.css';
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+import 'react-quill-new/dist/quill.snow.css';
 
 const socket = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000');
 
