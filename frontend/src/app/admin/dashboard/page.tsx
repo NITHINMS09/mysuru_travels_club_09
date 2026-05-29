@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink
 } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
     contact: '',
     instagram: '',
     description: '',
-    order: '0',
+    displayOrder: '0',
     isVisible: 'true'
   });
 
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
         contact: '',
         instagram: '',
         description: '',
-        order: '0',
+        displayOrder: '0',
         isVisible: 'true'
       });
     }
