@@ -18,6 +18,9 @@ export interface InstagramSettings {
   error: string | null;
   clientId?: string;
   clientSecret?: string;
+  apiType?: 'GRAPH_API' | 'BASIC_DISPLAY';
+  businessAccountId?: string;
+  facebookPageId?: string;
 }
 
 // Utility to get or create site settings
@@ -62,6 +65,9 @@ export class InstagramService {
     const error = await getSettingValue('instagram_error', '');
     const clientId = await getSettingValue('instagram_client_id', '');
     const clientSecret = await getSettingValue('instagram_client_secret', '');
+    const apiType = await getSettingValue('instagram_api_type', 'GRAPH_API') as 'GRAPH_API' | 'BASIC_DISPLAY';
+    const businessAccountId = await getSettingValue('instagram_business_account_id', '');
+    const facebookPageId = await getSettingValue('instagram_facebook_page_id', '');
 
     return {
       connected,
@@ -80,7 +86,10 @@ export class InstagramService {
       isDemo,
       error: error || null,
       clientId,
-      clientSecret: clientSecret ? '••••••••••••••••' : ''
+      clientSecret: clientSecret ? '••••••••••••••••' : '',
+      apiType,
+      businessAccountId,
+      facebookPageId
     };
   }
 
@@ -99,6 +108,7 @@ export class InstagramService {
     if (settings.clientSecret !== undefined && settings.clientSecret !== '••••••••••••••••') {
       await setSettingValue('instagram_client_secret', settings.clientSecret);
     }
+    if (settings.apiType !== undefined) await setSettingValue('instagram_api_type', settings.apiType);
 
     return this.getSettings();
   }
@@ -125,7 +135,15 @@ export class InstagramService {
   /**
    * Connects a real Instagram account with a long-lived access token
    */
-  static async connectReal(accessToken: string, username: string, accountType: string, profilePic?: string): Promise<InstagramSettings> {
+  static async connectReal(
+    accessToken: string,
+    username: string,
+    accountType: string,
+    apiType: 'GRAPH_API' | 'BASIC_DISPLAY' = 'GRAPH_API',
+    businessAccountId: string = '',
+    facebookPageId: string = '',
+    profilePic?: string
+  ): Promise<InstagramSettings> {
     await setSettingValue('instagram_connected', 'true');
     await setSettingValue('instagram_is_demo', 'false');
     await setSettingValue('instagram_access_token', accessToken);
@@ -134,6 +152,9 @@ export class InstagramService {
     await setSettingValue('instagram_account_type', accountType);
     await setSettingValue('instagram_connection_status', 'CONNECTED');
     await setSettingValue('instagram_error', '');
+    await setSettingValue('instagram_api_type', apiType);
+    await setSettingValue('instagram_business_account_id', businessAccountId);
+    await setSettingValue('instagram_facebook_page_id', facebookPageId);
     
     // Set token expiration (approx 60 days from now)
     const expiresAt = new Date();
@@ -160,6 +181,9 @@ export class InstagramService {
     await setSettingValue('instagram_token_expires_at', '');
     await setSettingValue('instagram_error', '');
     await setSettingValue('instagram_last_sync_time', '');
+    await setSettingValue('instagram_api_type', 'GRAPH_API');
+    await setSettingValue('instagram_business_account_id', '');
+    await setSettingValue('instagram_facebook_page_id', '');
 
     // Delete all cached media on disconnection
     await prisma.instagramMedia.deleteMany({});
@@ -320,7 +344,12 @@ export class InstagramService {
     // 2. Fetch media from Instagram API
     const fields = 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp';
     const limit = Math.max(10, settings.syncLimit * 2); // Fetch extra items to allow filtering on backend
-    const url = `https://graph.instagram.com/me/media?fields=${fields}&limit=${limit}&access_token=${token}`;
+    const apiType = await getSettingValue('instagram_api_type', 'GRAPH_API');
+    const businessAccountId = await getSettingValue('instagram_business_account_id', '');
+
+    const url = apiType === 'GRAPH_API'
+      ? `https://graph.facebook.com/v23.0/${businessAccountId}/media?fields=${fields}&limit=${limit}&access_token=${token}`
+      : `https://graph.instagram.com/me/media?fields=${fields}&limit=${limit}&access_token=${token}`;
 
     const response = await fetch(url);
     if (!response.ok) {

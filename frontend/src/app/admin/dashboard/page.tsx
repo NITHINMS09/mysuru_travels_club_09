@@ -209,6 +209,7 @@ export default function AdminDashboard() {
   const [instaClientId, setInstaClientId] = useState('');
   const [instaClientSecret, setInstaClientSecret] = useState('');
   const [refreshingToken, setRefreshingToken] = useState(false);
+  const [instaApiType, setInstaApiType] = useState<'GRAPH_API' | 'BASIC_DISPLAY'>('GRAPH_API');
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -434,6 +435,7 @@ export default function AdminDashboard() {
         setInstagramSettings(res);
         setInstaClientId(res.clientId || '');
         setInstaClientSecret(res.clientSecret || '');
+        setInstaApiType(res.apiType || 'GRAPH_API');
       }
     } catch (err) {
       console.error(err);
@@ -563,9 +565,14 @@ export default function AdminDashboard() {
       return;
     }
     const redirectUri = window.location.origin + '/admin/instagram-callback';
-    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`;
+    
+    // Switch login redirection URL between Facebook Graph API (v23.0) and Basic Display API
+    const authUrl = instaApiType === 'GRAPH_API'
+      ? `https://www.facebook.com/v23.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code`
+      : `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`;
+
     window.open(authUrl, '_blank');
-    toast.success('Opened Instagram Login Redirect.');
+    toast.success(`Opened ${instaApiType === 'GRAPH_API' ? 'Facebook Login' : 'Instagram Login'} Redirect.`);
   };
 
   const deleteTrip = async (id: string) => {
@@ -2584,7 +2591,19 @@ export default function AdminDashboard() {
                       
                       <div className="space-y-4">
                         <div>
-                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram Client ID</label>
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram API Integration Type</label>
+                          <select 
+                            value={instaApiType}
+                            onChange={(e: any) => setInstaApiType(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                          >
+                            <option value="GRAPH_API">Instagram Graph API (Professional/Business/Creator Account - Recommended)</option>
+                            <option value="BASIC_DISPLAY">Instagram Basic Display API (Personal/Legacy Account)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram / Facebook App ID</label>
                           <input 
                             type="text"
                             value={instaClientId}
@@ -2595,7 +2614,7 @@ export default function AdminDashboard() {
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram Client Secret</label>
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">App Client Secret</label>
                           <input 
                             type="password"
                             value={instaClientSecret}
@@ -2616,10 +2635,11 @@ export default function AdminDashboard() {
                             try {
                               const res = await api.instagram.updateSettings({
                                 clientId: instaClientId,
-                                clientSecret: instaClientSecret
+                                clientSecret: instaClientSecret,
+                                apiType: instaApiType
                               }, token);
                               setInstagramSettings(res);
-                              toast.success('Instagram Client credentials updated successfully');
+                              toast.success('Instagram App credentials and integration type updated!');
                             } catch (e: any) {
                               toast.error('Failed to update credentials');
                             }
