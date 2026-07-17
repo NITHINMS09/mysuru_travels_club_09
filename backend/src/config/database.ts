@@ -10,4 +10,8 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
+
 export default prisma;

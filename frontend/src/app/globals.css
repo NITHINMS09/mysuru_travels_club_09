@@ -321,4 +321,40 @@ h1, h2, h3, h4, h5, h6 {
   background-color: rgba(9, 9, 11, 0.75) !important;
 }
 
+/* Mobile Optimization */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
+/* Ensure no horizontal overflow */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Minimum touch targets */
+button, a, input, select, textarea {
+  min-height: 44px;
+}
+
+input, select, textarea {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+/* Smooth iOS scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

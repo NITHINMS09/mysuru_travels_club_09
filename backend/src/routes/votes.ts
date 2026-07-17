@@ -14,6 +14,7 @@ router.get('/destinations', async (_req, res) => {
         comments: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json(destinations);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

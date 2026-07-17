@@ -41,6 +41,7 @@ router.get('/', async (req, res) => {
       amenities: JSON.parse(listing.amenities || '[]')
     }));
 
+    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
     res.json({
       listings: formattedListings,
       pagination: {

@@ -84,7 +84,7 @@ router.get('/:id', async (req, res) => {
     res.json(update);
   } catch (error) {
     console.error('Fetch single update error:', error);
-    res.status(550).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

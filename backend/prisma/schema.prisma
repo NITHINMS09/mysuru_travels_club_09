@@ -72,6 +72,9 @@ model Trip {
   @@index([status])
   @@index([featured])
   @@index([destination])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([category])
 }
 
 model Booking {
@@ -110,6 +113,9 @@ model Booking {
   @@index([email])
   @@index([bookingRef])
   @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([phone])
 }
 
 model Payment {
@@ -127,6 +133,7 @@ model Payment {
   updatedAt          DateTime      @updatedAt
 
   @@index([razorpayOrderId])
+  @@index([status])
 }
 
 model PaymentHistory {
@@ -194,6 +201,8 @@ model Blog {
   views      Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([published])
 }
 
 model VoteDestination {
@@ -281,6 +290,9 @@ model MarketplaceListing {
   isAvailable Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isAvailable])
 }
 
 model Visitor {

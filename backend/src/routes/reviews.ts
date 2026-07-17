@@ -17,6 +17,7 @@ router.get('/trip/:tripId', async (req, res) => {
       _avg: { rating: true },
       _count: true,
     });
+    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
     res.json({ reviews, average: avg._avg.rating || 0, count: avg._count });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

@@ -63,6 +63,12 @@ router.get('/', async (req, res) => {
     const [trips, total] = await Promise.all([
       prisma.trip.findMany({
         where,
+        orderBy: [
+          { status: 'desc' }, // UPCOMING -> ONGOING -> COMPLETED
+          { startDate: 'asc' },
+        ],
+        skip: (currentPage - 1) * pageSize,
+        take: pageSize,
         include: {
           _count: { select: { reviews: true, bookings: true } },
         },
@@ -82,22 +88,7 @@ router.get('/', async (req, res) => {
       return acc;
     }, {});
 
-    const tripsWithRating = trips.map((trip) => ({
-      ...trip,
-      avgRating: avgRatingsMap[trip.id] || 0,
-    }));
-
-    const upcomingTrips = tripsWithRating.filter((trip) => new Date(trip.startDate) > now);
-    const ongoingTrips = tripsWithRating.filter((trip) => new Date(trip.startDate) <= now && new Date(trip.endDate) >= now);
-    const completedTrips = tripsWithRating.filter((trip) => new Date(trip.endDate) < now);
-
-    upcomingTrips.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-    ongoingTrips.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
-    completedTrips.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
-
-    const sortedTrips = [...upcomingTrips, ...ongoingTrips, ...completedTrips];
-    const paginatedTrips = sortedTrips.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    const formattedTrips = paginatedTrips.map((trip) => formatTrip(trip, trip.avgRating || 0));
+    const formattedTrips = trips.map((trip) => formatTrip(trip, avgRatingsMap[trip.id] || 0));
 
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 

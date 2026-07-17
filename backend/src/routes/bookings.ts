@@ -73,81 +73,105 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Validate trip exists and has seats
-    const trip = await prisma.trip.findUnique({ where: { id: tripId } });
-    if (!trip) {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (trip.availableSeats < parsedSeatCount) {
-      res.status(400).json({ error: 'Not enough seats available' });
-      return;
-    }
-
     const bookingRef = `TN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
-    const finalAmount = trip.price * parsedSeatCount;
-    const expectedPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
-      ? trip.partialPaymentAmount * parsedSeatCount
-      : null;
-    const requestedPaymentAmount = parseFloat(paymentAmount);
 
-    if (paymentType === 'PARTIAL') {
-      if (!trip.partialPaymentEnabled || !expectedPartialAmount) {
+    let booking;
+    try {
+      booking = await prisma.$transaction(async (tx) => {
+        // Validate trip exists and has seats
+        const trip = await tx.trip.findUnique({ where: { id: tripId } });
+        if (!trip) {
+          throw new Error('TRIP_NOT_FOUND');
+        }
+        if (trip.availableSeats < parsedSeatCount) {
+          throw new Error('NOT_ENOUGH_SEATS');
+        }
+
+        const finalAmount = trip.price * parsedSeatCount;
+        const expectedPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
+          ? trip.partialPaymentAmount * parsedSeatCount
+          : null;
+        const requestedPaymentAmount = parseFloat(paymentAmount);
+
+        if (paymentType === 'PARTIAL') {
+          if (!trip.partialPaymentEnabled || !expectedPartialAmount) {
+            throw new Error('PARTIAL_PAYMENT_NOT_AVAILABLE');
+          }
+          if (Number.isNaN(requestedPaymentAmount) || Math.abs(requestedPaymentAmount - expectedPartialAmount) > 0.01) {
+            throw new Error('INVALID_PARTIAL_AMOUNT');
+          }
+        } else if (!Number.isNaN(requestedPaymentAmount) && Math.abs(requestedPaymentAmount - finalAmount) > 0.01) {
+          throw new Error('INVALID_FULL_AMOUNT');
+        }
+
+        let user = await tx.user.findUnique({ where: { mobileNumber: phone } });
+        if (!user) {
+          user = await tx.user.create({
+            data: {
+              fullName: travelerName,
+              mobileNumber: phone,
+            }
+          });
+        } else if (user.fullName !== travelerName) {
+          await tx.user.update({ where: { id: user.id }, data: { fullName: travelerName } });
+        }
+
+        const createdBooking = await tx.booking.create({
+          data: {
+            userId: user.id,
+            tripId,
+            travelerName,
+            email: email || null,
+            phone,
+            age: age ? parseInt(age) : null,
+            gender: gender || null,
+            emergencyName: emergencyName || null,
+            emergencyPhone: emergencyPhone || null,
+            idProofUrl: idProofUrl || null,
+            seatCount: parsedSeatCount,
+            specialRequests: specialRequests || null,
+            totalAmount: finalAmount,
+            bookingRef,
+            isManualPayment,
+            pickupPoint,
+            status: 'PENDING',
+            paidAmount: 0,
+            paymentStatus: 'PENDING_PAYMENT',
+          },
+          include: { trip: { select: { title: true, destination: true, startDate: true } } },
+        });
+
+        // Decrement available seats
+        await tx.trip.update({
+          where: { id: tripId },
+          data: { availableSeats: { decrement: parsedSeatCount } },
+        });
+
+        return createdBooking;
+      });
+    } catch (err: any) {
+      if (err.message === 'TRIP_NOT_FOUND') {
+        res.status(404).json({ error: 'Trip not found' });
+        return;
+      }
+      if (err.message === 'NOT_ENOUGH_SEATS') {
+        res.status(400).json({ error: 'Not enough seats available' });
+        return;
+      }
+      if (err.message === 'PARTIAL_PAYMENT_NOT_AVAILABLE') {
         res.status(400).json({ error: 'Partial payment is not available for this trip' });
         return;
       }
-      if (Number.isNaN(requestedPaymentAmount) || Math.abs(requestedPaymentAmount - expectedPartialAmount) > 0.01) {
+      if (err.message === 'INVALID_PARTIAL_AMOUNT') {
         res.status(400).json({ error: 'Invalid partial payment amount for this trip' });
         return;
       }
-    } else if (!Number.isNaN(requestedPaymentAmount) && Math.abs(requestedPaymentAmount - finalAmount) > 0.01) {
-      res.status(400).json({ error: 'Invalid full payment amount for this trip' });
-      return;
+      if (err.message === 'INVALID_FULL_AMOUNT') {
+        res.status(400).json({ error: 'Invalid full payment amount for this trip' });
+        return;
+      }
+      throw err;
     }
-
-    let user = await prisma.user.findUnique({ where: { mobileNumber: phone } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          fullName: travelerName,
-          mobileNumber: phone,
-        }
-      });
-    } else if (user.fullName !== travelerName) {
-      // Update name if different, optionally
-      await prisma.user.update({ where: { id: user.id }, data: { fullName: travelerName } });
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        userId: user.id,
-        tripId,
-        travelerName,
-        email: email || null,
-        phone,
-        age: age ? parseInt(age) : null,
-        gender: gender || null,
-        emergencyName: emergencyName || null,
-        emergencyPhone: emergencyPhone || null,
-        idProofUrl: idProofUrl || null,
-        seatCount: parsedSeatCount,
-        specialRequests: specialRequests || null,
-        totalAmount: finalAmount,
-        bookingRef,
-        isManualPayment,
-        pickupPoint,
-        status: 'PENDING',
-        paidAmount: 0,
-        paymentStatus: 'PENDING_PAYMENT',
-      },
-      include: { trip: { select: { title: true, destination: true, startDate: true } } },
-    });
-
-    // Decrement available seats
-    await prisma.trip.update({
-      where: { id: tripId },
-      data: { availableSeats: { decrement: parsedSeatCount } },
-    });
 
     res.status(201).json({ booking });
   } catch (error) {
@@ -608,7 +632,7 @@ router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => 
 });
 
 // GET all payments for a booking
-router.get('/:id/payments', async (req, res) => {
+router.get('/:id/payments', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     const payments = await prisma.paymentHistory.findMany({
       where: { bookingId: req.params.id },

@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
@@ -34,6 +35,7 @@ import whatsappSettingsRoutes from './routes/whatsapp-settings';
 import userRoutes from './routes/users';
 import instagramRoutes from './routes/instagram';
 import socialUpdateRoutes from './routes/socialUpdates';
+import paymentsRouter from './routes/payments';
 import { InstagramService } from './services/instagramService';
 import path from 'path';
 
@@ -57,6 +59,7 @@ initializeLocationSocket(io);
 
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(compression());
 
 const allowedOrigins = [
   'https://mysuru-travels-club-09.vercel.app',
@@ -110,6 +113,7 @@ app.use('/api/v1/updates', updateRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/instagram', instagramRoutes);
 app.use('/api/v1/social-updates', socialUpdateRoutes);
+app.use('/api/v1/payments', paymentsRouter);
 
 // Static folders
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -137,5 +141,14 @@ prisma.$connect()
     console.error('❌ Failed to connect to PostgreSQL database:', error);
     process.exit(1);
   });
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  httpServer.close(() => {
+    console.log('Server closed.');
+    process.exit(0);
+  });
+});
 
 export { app, io };

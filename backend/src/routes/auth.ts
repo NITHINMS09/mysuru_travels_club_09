@@ -109,6 +109,17 @@ router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
 router.get('/users', authenticateAdmin, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
+      select: {
+        email: true,
+        travelerName: true,
+        phone: true,
+        age: true,
+        gender: true,
+        emergencyName: true,
+        emergencyPhone: true,
+        totalAmount: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' }
     });
 

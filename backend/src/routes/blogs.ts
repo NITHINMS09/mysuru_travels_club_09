@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
       ...blog,
       tags: typeof blog.tags === 'string' ? blog.tags.split(',') : blog.tags
     }));
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json({ blogs: formattedBlogs, pagination: { total, page: parseInt(page as string), pages: Math.ceil(total / parseInt(limit as string)) } });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

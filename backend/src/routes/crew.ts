@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
         { createdAt: 'desc' }
       ]
     });
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(crew);
   } catch (error) {
     console.error('Get crew error:', error);
