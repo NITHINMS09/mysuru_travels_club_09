@@ -76,8 +76,8 @@ router.post('/connect', authenticateAdmin, async (req: AuthRequest, res) => {
   const dbClientId = await prisma.siteSetting.findUnique({ where: { key: 'instagram_client_id' } }).then(s => s?.value);
   const dbClientSecret = await prisma.siteSetting.findUnique({ where: { key: 'instagram_client_secret' } }).then(s => s?.value);
 
-  const clientId = dbClientId || process.env.INSTAGRAM_CLIENT_ID;
-  const clientSecret = dbClientSecret || process.env.INSTAGRAM_CLIENT_SECRET;
+  const clientId = dbClientId || process.env.INSTAGRAM_APP_ID || process.env.INSTAGRAM_CLIENT_ID;
+  const clientSecret = dbClientSecret || process.env.INSTAGRAM_APP_SECRET || process.env.INSTAGRAM_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     return res.status(400).json({ 

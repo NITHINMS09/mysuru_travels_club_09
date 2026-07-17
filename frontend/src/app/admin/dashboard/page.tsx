@@ -564,6 +564,10 @@ export default function AdminDashboard() {
       toast.error('Please configure your Instagram Client ID first');
       return;
     }
+    if (clientId.includes('@')) {
+      toast.error('The App ID cannot be an email address. Please configure your Meta App ID (a numeric string) first.');
+      return;
+    }
     const redirectUri = window.location.origin + '/admin/instagram-callback';
     
     // Switch login redirection URL between Facebook Graph API (v23.0) and Basic Display API
@@ -2632,6 +2636,10 @@ export default function AdminDashboard() {
                           onClick={async () => {
                             const token = localStorage.getItem('tripnova_admin_token');
                             if (!token) return;
+                            if (instaClientId.includes('@')) {
+                              toast.error('The App ID (Client ID) cannot be an email address. Please enter a numeric Meta App ID.');
+                              return;
+                            }
                             try {
                               const res = await api.instagram.updateSettings({
                                 clientId: instaClientId,
