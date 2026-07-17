@@ -53,7 +53,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-4 group">
             <div className="relative flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
               <img 
-                src="https://cdn.corenexis.com/files/c/7115481720.png" 
+                src="/logo.png" 
                 alt="Mysuru Travel Club Logo" 
                 className="h-10 md:h-12 w-auto object-contain drop-shadow-md"
               />

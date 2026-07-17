@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import Image from 'next/image';
+import OptimizedImage from './OptimizedImage';
 import Link from 'next/link';
 import { HiOutlineCalendar, HiOutlineClock, HiOutlineUserGroup, HiOutlineLocationMarker, HiOutlineArrowRight } from 'react-icons/hi';
 
@@ -54,17 +54,13 @@ export default function TripCard({ trip }: TripCardProps) {
     >
       {/* Image Section */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
-        {trip.coverImage ? (
-          <Image
-            src={trip.coverImage}
-            alt={trip.title}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">No Cover Image</div>
-        )}
+        <OptimizedImage
+          src={trip.coverImage}
+          alt={trip.title}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent opacity-90" />
         
         {/* Category Badge */}

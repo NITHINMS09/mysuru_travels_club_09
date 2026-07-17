@@ -5,6 +5,7 @@ import type { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config';
 import { sendNotification } from '../utils/notifier';
@@ -163,17 +164,51 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       return;
     }
 
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    const isCloudinaryConfigured = 
+      config.cloudinary.cloudName && 
+      config.cloudinary.cloudName !== 'your_cloud_name_here' &&
+      config.cloudinary.apiKey && 
+      config.cloudinary.apiKey !== 'your_api_key_here' &&
+      config.cloudinary.apiSecret && 
+      config.cloudinary.apiSecret !== 'your_api_secret_here';
 
-    // Upload to cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      resource_type: 'auto',
-      folder: 'tripnova_payments',
-    });
+    let screenshotUrl = '';
 
-    const screenshotUrl = result.secure_url;
+    if (isCloudinaryConfigured) {
+      try {
+        // Convert buffer to base64
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+        // Upload to cloudinary
+        const result = await cloudinary.uploader.upload(dataURI, {
+          resource_type: 'auto',
+          folder: 'tripnova_payments',
+        });
+
+        screenshotUrl = result.secure_url;
+      } catch (cloudinaryError) {
+        console.warn('Cloudinary upload failed, falling back to local storage:', cloudinaryError);
+      }
+    }
+
+    if (!screenshotUrl) {
+      // Local storage fallback
+      const uploadDir = path.join(__dirname, '../../uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      const fileExt = path.extname(req.file.originalname) || `.${req.file.mimetype.split('/')[1]}` || '.png';
+      const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExt}`;
+      const filePath = path.join(uploadDir, filename);
+      
+      await fs.promises.writeFile(filePath, req.file.buffer);
+      
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${config.port}`;
+      screenshotUrl = `${protocol}://${host}/uploads/${filename}`;
+    }
 
     // Fetch the booking details to fall back to its totalAmount if needed
     const bookingToUpdate = await prisma.booking.findUnique({ where: { id: req.params.id } });

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import OptimizedImage from '@/components/shared/OptimizedImage';
 import { motion } from 'framer-motion';
 import { 
   HiOutlineCheckCircle, HiOutlineClock, HiOutlineDocumentText, 
@@ -288,7 +288,7 @@ function StatusContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 shadow-inner">
                       <div className="text-center">
                         <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 w-36 h-36 mx-auto relative overflow-hidden mb-2">
-                          <img src="https://cdn.corenexis.com/files/c/8845266720.png" alt="UPI QR Code" className="w-full h-full object-contain" />
+                          <img src="/qr-payment.jpeg" alt="UPI QR Code" className="w-full h-full object-contain" />
                         </div>
                         <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Pay via UPI: <b>9632463347</b></p>
                       </div>
@@ -342,9 +342,7 @@ function StatusContent() {
 
             <div className="w-full md:w-64 shrink-0 bg-slate-50 rounded-2xl border border-slate-200/60 p-3 sm:p-4">
               <div className="relative h-32 rounded-xl overflow-hidden mb-4 border border-slate-200/60">
-                {booking.trip?.coverImage && (
-                  <Image src={booking.trip.coverImage} alt={booking.trip.title} fill className="object-cover" />
-                )}
+                <OptimizedImage src={booking.trip?.coverImage} alt={booking.trip?.title} fill className="object-cover" />
               </div>
               <h3 className="font-bold text-[#FFFFFF] text-sm mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{booking.trip?.title}</h3>
               <p className="text-xs text-slate-500 mb-4">{booking.trip?.destination}</p>

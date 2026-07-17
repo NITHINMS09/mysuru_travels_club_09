@@ -91,7 +91,7 @@ router.post('/connect', authenticateAdmin, async (req: AuthRequest, res) => {
     let longLivedToken = '';
     let username = 'instagram_user';
     let accountType = 'BUSINESS';
-    let profilePic = 'https://cdn.corenexis.com/files/c/8845266721.png';
+    let profilePic = '/logo.png';
     let businessAccountId = '';
     let facebookPageId = '';
 

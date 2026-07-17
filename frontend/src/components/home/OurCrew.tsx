@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import OptimizedImage from '../shared/OptimizedImage';
 import { HiOutlineUserGroup, HiOutlineMail, HiOutlinePhone } from 'react-icons/hi';
 import { FaInstagram } from 'react-icons/fa';
 import api from '@/lib/api';
@@ -82,18 +82,14 @@ export default function OurCrew() {
             >
               {/* Profile Image Container */}
               <div className="relative h-60 w-full overflow-hidden">
-                {member.image ? (
-                  <Image 
-                    src={member.image} 
-                    alt={member.name} 
-                    fill 
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-108"
-                    priority={i < 4}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300 font-bold">No Image</div>
-                )}
+                <OptimizedImage 
+                  src={member.image} 
+                  alt={member.name} 
+                  fill 
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                  priority={i < 4}
+                />
                 {/* Gradient overlays */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white/20 via-transparent to-transparent opacity-45" />
               </div>

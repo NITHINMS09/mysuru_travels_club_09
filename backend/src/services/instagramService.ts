@@ -50,7 +50,7 @@ export class InstagramService {
   static async getSettings(): Promise<InstagramSettings> {
     const connected = (await getSettingValue('instagram_connected', 'false')) === 'true';
     const username = await getSettingValue('instagram_username', '');
-    const profilePicture = await getSettingValue('instagram_profile_picture', 'https://cdn.corenexis.com/files/c/8845266721.png');
+    const profilePicture = await getSettingValue('instagram_profile_picture', '/logo.png');
     const accountType = await getSettingValue('instagram_account_type', 'PERSONAL');
     const connectionStatus = await getSettingValue('instagram_connection_status', 'DISCONNECTED');
     const lastSyncStr = await getSettingValue('instagram_last_sync_time', '');
@@ -120,7 +120,7 @@ export class InstagramService {
     await setSettingValue('instagram_connected', 'true');
     await setSettingValue('instagram_is_demo', 'true');
     await setSettingValue('instagram_username', 'mysurutravels_insta');
-    await setSettingValue('instagram_profile_picture', 'https://cdn.corenexis.com/files/c/8845266721.png');
+    await setSettingValue('instagram_profile_picture', '/logo.png');
     await setSettingValue('instagram_account_type', 'CREATOR');
     await setSettingValue('instagram_connection_status', 'CONNECTED');
     await setSettingValue('instagram_error', '');
@@ -148,7 +148,7 @@ export class InstagramService {
     await setSettingValue('instagram_is_demo', 'false');
     await setSettingValue('instagram_access_token', accessToken);
     await setSettingValue('instagram_username', username);
-    await setSettingValue('instagram_profile_picture', profilePic || 'https://cdn.corenexis.com/files/c/8845266721.png');
+    await setSettingValue('instagram_profile_picture', profilePic || '/logo.png');
     await setSettingValue('instagram_account_type', accountType);
     await setSettingValue('instagram_connection_status', 'CONNECTED');
     await setSettingValue('instagram_error', '');
@@ -174,7 +174,7 @@ export class InstagramService {
     await setSettingValue('instagram_connected', 'false');
     await setSettingValue('instagram_is_demo', 'false');
     await setSettingValue('instagram_username', '');
-    await setSettingValue('instagram_profile_picture', 'https://cdn.corenexis.com/files/c/8845266721.png');
+    await setSettingValue('instagram_profile_picture', '/logo.png');
     await setSettingValue('instagram_account_type', 'PERSONAL');
     await setSettingValue('instagram_connection_status', 'DISCONNECTED');
     await setSettingValue('instagram_access_token', '');
@@ -229,7 +229,7 @@ export class InstagramService {
       {
         instagramId: 'mock_reel_1',
         mediaType: 'VIDEO',
-        mediaUrl: 'https://cdn.corenexis.com/files/c/2458694080.mp4', // Premium video clip
+        mediaUrl: '/videos/hero-bg.mp4', // Premium video clip
         thumbnailUrl: 'https://images.unsplash.com/photo-1590050752117-238cb0612b1b?q=80&w=600&auto=format&fit=crop', // Royal Palace View
         permalink: 'https://www.instagram.com/reel/C_PalaceIlluminationDemo/',
         caption: 'Experience the magical illumination of the majestic Mysore Palace! 🏰✨ The golden light sparkles across the heritage city every Sunday evening. A must-see on our Mysuru heritage tour! #MysuruTourism #HeritageCity #MysorePalace #IncredibleIndia',
@@ -238,7 +238,7 @@ export class InstagramService {
       {
         instagramId: 'mock_reel_2',
         mediaType: 'VIDEO',
-        mediaUrl: 'https://cdn.corenexis.com/files/c/2458694080.mp4',
+        mediaUrl: '/videos/hero-bg.mp4',
         thumbnailUrl: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?q=80&w=600&auto=format&fit=crop', // Nature hills safari view
         permalink: 'https://www.instagram.com/reel/C_ChamundiHillsMorning/',
         caption: 'Chasing sunrises at Chamundi Hills! 🌅☁️ Panoramic views of Mysuru wrapped in early morning mist. Feel the cool breeze at Nandi Bull temple! Join our upcoming weekend expedition. #ChamundiHills #SunsetViews #SunriseChaser #MysuruTravels',
@@ -256,7 +256,7 @@ export class InstagramService {
       {
         instagramId: 'mock_reel_4',
         mediaType: 'VIDEO',
-        mediaUrl: 'https://cdn.corenexis.com/files/c/2458694080.mp4',
+        mediaUrl: '/videos/hero-bg.mp4',
         thumbnailUrl: 'https://images.unsplash.com/photo-1549366021-9f761d450615?q=80&w=600&auto=format&fit=crop', // Safari elephant
         permalink: 'https://www.instagram.com/reel/C_KabiniWildlifeSafari/',
         caption: 'A majestic encounter in the heart of Kabini Forest! 🐘🌿 Spotting elephants, deers, and the elusive black panther during our open-jeep wildlife safari. Book your jungle gateway now! #KabiniSafari #WildlifePhotography #ElephantsOfIndia #JungleVibes',
@@ -274,7 +274,7 @@ export class InstagramService {
       {
         instagramId: 'mock_reel_6',
         mediaType: 'VIDEO',
-        mediaUrl: 'https://cdn.corenexis.com/files/c/2458694080.mp4',
+        mediaUrl: '/videos/hero-bg.mp4',
         thumbnailUrl: 'https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?q=80&w=600&auto=format&fit=crop', // Waterfall
         permalink: 'https://www.instagram.com/reel/C_ChunchanakatteFalls/',
         caption: 'Mist, roar, and magic at Chunchanakatte Falls! 🌊🌲 The Cauvery River cascading down in full glory. The perfect spot for photography and weekend relaxation. Our travelers loved this hidden gem! #ChunchanakatteFalls #WaterfallsOfKarnataka #NatureLovers #TravelGram',

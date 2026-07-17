@@ -111,6 +111,10 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/instagram', instagramRoutes);
 app.use('/api/v1/social-updates', socialUpdateRoutes);
 
+// Static folders
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/public', express.static(path.join(__dirname, '../public')));
+
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);

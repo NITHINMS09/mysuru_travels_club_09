@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'mysuru-travels-club-09.onrender.com',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5000',
+      },
     ],
   },
 };

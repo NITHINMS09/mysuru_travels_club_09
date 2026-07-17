@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import OptimizedImage from '@/components/shared/OptimizedImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineCalendar, HiOutlineClock,
@@ -197,7 +197,7 @@ export default function TripDetails() {
 
       {/* Hero Header */}
       <div className="relative h-[60vh] w-full">
-        <Image src={trip.coverImage} alt={trip.title} fill className="object-cover" />
+        <OptimizedImage src={trip.coverImage} alt={trip.title} fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
           <div className="max-w-7xl mx-auto">
@@ -343,7 +343,7 @@ export default function TripDetails() {
 
                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
                           <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 w-48 h-48 mx-auto relative overflow-hidden mb-4">
-                            <img src="https://cdn.corenexis.com/files/c/8845266720.png" alt="UPI QR Code" className="w-full h-full object-contain" />
+                            <img src="/qr-payment.jpeg" alt="UPI QR Code" className="w-full h-full object-contain" />
                           </div>
                           <div className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Pay via UPI / Mobile</div>
                           <div className="text-3xl font-black text-slate-900 mb-2">9632463347</div>

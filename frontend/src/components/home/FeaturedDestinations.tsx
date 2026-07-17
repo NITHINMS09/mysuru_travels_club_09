@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import OptimizedImage from '../shared/OptimizedImage';
 import { HiOutlineArrowRight } from 'react-icons/hi';
 import api from '@/lib/api';
 import Link from 'next/link';
@@ -80,7 +80,7 @@ export default function FeaturedDestinations() {
                 href={`/trips?search=${dest.name}`}
                 className="relative block w-full h-full min-h-[300px] overflow-hidden rounded-3xl group cursor-pointer"
               >
-                <Image
+                <OptimizedImage
                   src={dest.image}
                   alt={dest.name}
                   fill
