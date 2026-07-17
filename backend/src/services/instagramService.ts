@@ -16,6 +16,8 @@ export interface InstagramSettings {
   syncFrequencyHours: number;
   isDemo: boolean;
   error: string | null;
+  clientId?: string;
+  clientSecret?: string;
 }
 
 // Utility to get or create site settings
@@ -58,6 +60,8 @@ export class InstagramService {
     const syncFrequencyHours = parseInt(await getSettingValue('instagram_sync_frequency', '6'), 10);
     const isDemo = (await getSettingValue('instagram_is_demo', 'false')) === 'true';
     const error = await getSettingValue('instagram_error', '');
+    const clientId = await getSettingValue('instagram_client_id', '');
+    const clientSecret = await getSettingValue('instagram_client_secret', '');
 
     return {
       connected,
@@ -74,7 +78,9 @@ export class InstagramService {
       syncLimit,
       syncFrequencyHours,
       isDemo,
-      error: error || null
+      error: error || null,
+      clientId,
+      clientSecret: clientSecret ? '••••••••••••••••' : ''
     };
   }
 
@@ -89,6 +95,10 @@ export class InstagramService {
     if (settings.syncVideos !== undefined) await setSettingValue('instagram_sync_videos', settings.syncVideos ? 'true' : 'false');
     if (settings.syncLimit !== undefined) await setSettingValue('instagram_sync_limit', settings.syncLimit.toString());
     if (settings.syncFrequencyHours !== undefined) await setSettingValue('instagram_sync_frequency', settings.syncFrequencyHours.toString());
+    if (settings.clientId !== undefined) await setSettingValue('instagram_client_id', settings.clientId);
+    if (settings.clientSecret !== undefined && settings.clientSecret !== '••••••••••••••••') {
+      await setSettingValue('instagram_client_secret', settings.clientSecret);
+    }
 
     return this.getSettings();
   }

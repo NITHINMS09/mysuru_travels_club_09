@@ -73,12 +73,15 @@ router.post('/connect', authenticateAdmin, async (req: AuthRequest, res) => {
     return res.status(400).json({ error: 'Code and redirectUri are required' });
   }
 
-  const clientId = process.env.INSTAGRAM_CLIENT_ID;
-  const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+  const dbClientId = await prisma.siteSetting.findUnique({ where: { key: 'instagram_client_id' } }).then(s => s?.value);
+  const dbClientSecret = await prisma.siteSetting.findUnique({ where: { key: 'instagram_client_secret' } }).then(s => s?.value);
+
+  const clientId = dbClientId || process.env.INSTAGRAM_CLIENT_ID;
+  const clientSecret = dbClientSecret || process.env.INSTAGRAM_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     return res.status(400).json({ 
-      error: 'Instagram Client ID and Client Secret are not configured in backend server .env file.' 
+      error: 'Instagram Client ID and Client Secret are not configured. Please set them in the Social Integration panel.' 
     });
   }
 

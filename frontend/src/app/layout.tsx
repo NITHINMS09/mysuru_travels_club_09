@@ -3,6 +3,8 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
+import PWARegister from "@/components/shared/PWARegister";
+import AppPrompt from "@/components/shared/AppPrompt";
 import SmoothScroller from "@/components/shared/SmoothScroller";
 import FloatingWidgets from "@/components/shared/FloatingWidgets";
 import VisitorTracker from "@/components/VisitorTracker";
@@ -30,6 +32,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="font-inter antialiased bg-[#f8fafc] text-[#0f172a] selection:bg-primary-500 selection:text-white" suppressHydrationWarning>
+        <PWARegister />
+        <AppPrompt />
         <SmoothScroller />
         <Suspense>
           <VisitorTracker />

@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink, HiOutlineShare
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink, HiOutlineShare, HiOutlinePhone
 } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -205,6 +205,9 @@ export default function AdminDashboard() {
   const [instagramSettings, setInstagramSettings] = useState<any>(null);
   const [syncingInstagram, setSyncingInstagram] = useState(false);
   const [connectingDemo, setConnectingDemo] = useState(false);
+  const [appPromptEnabled, setAppPromptEnabled] = useState(false);
+  const [instaClientId, setInstaClientId] = useState('');
+  const [instaClientSecret, setInstaClientSecret] = useState('');
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -391,6 +394,7 @@ export default function AdminDashboard() {
           api.whatsappSettings.get()
         ]);
         setSettings(settingsData || {});
+        setAppPromptEnabled(settingsData?.app_prompt_enabled === 'true');
         if (settingsData.banned_emails) {
           try {
             setBannedEmails(JSON.parse(settingsData.banned_emails));
@@ -427,6 +431,8 @@ export default function AdminDashboard() {
       else if (tabName === 'Social Integration') {
         const res = await api.instagram.getSettings(token);
         setInstagramSettings(res);
+        setInstaClientId(res.clientId || '');
+        setInstaClientSecret(res.clientSecret || '');
       }
     } catch (err) {
       console.error(err);
@@ -535,11 +541,15 @@ export default function AdminDashboard() {
   };
 
   const handleConnectRealInstagram = () => {
-    const clientId = 'YOUR_INSTAGRAM_CLIENT_ID';
+    const clientId = instaClientId;
+    if (!clientId) {
+      toast.error('Please configure your Instagram Client ID first');
+      return;
+    }
     const redirectUri = window.location.origin + '/admin/instagram-callback';
     const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`;
     window.open(authUrl, '_blank');
-    toast.success('Opened Instagram Login Redirect. Configure client details in your server .env file.');
+    toast.success('Opened Instagram Login Redirect.');
   };
 
   const deleteTrip = async (id: string) => {
@@ -2258,6 +2268,53 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* PWA & Mobile App Prompt Settings */}
+                  <div className="glass-card bg-white p-6 border border-slate-200/80 shadow-md">
+                    <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><HiOutlinePhone className="w-5.5 h-5.5 text-violet-600"/> PWA & Mobile App Settings</h4>
+                    
+                    <div className="flex items-center gap-2 mb-6">
+                      <span className="text-xs font-bold text-slate-500">Enable App Download Prompt Popup</span>
+                      <input 
+                        type="hidden" 
+                        name="app_prompt_enabled" 
+                        value={appPromptEnabled ? 'true' : 'false'} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setAppPromptEnabled(!appPromptEnabled)}
+                        className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${appPromptEnabled ? 'bg-amber-500' : 'bg-slate-300'}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${appPromptEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Popup Title</label>
+                        <input name="app_prompt_title" defaultValue={settings.app_prompt_title || 'Experience Travels on the Go'} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Popup Description</label>
+                        <input name="app_prompt_description" defaultValue={settings.app_prompt_description || 'Download our mobile app or add it to your home screen for real-time alerts and offline maps.'} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Google Play Store Link</label>
+                        <input name="app_prompt_play_store" defaultValue={settings.app_prompt_play_store || ''} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://play.google.com/..." />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Apple App Store Link</label>
+                        <input name="app_prompt_app_store" defaultValue={settings.app_prompt_app_store || ''} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://apps.apple.com/..." />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Direct APK Download Link</label>
+                        <input name="app_prompt_apk_link" defaultValue={settings.app_prompt_apk_link || ''} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://mysurutravels.com/..." />
+                      </div>
+                    </div>
+                  </div>
+
                   <button type="submit" className="btn-primary py-4 px-8 w-full md:w-auto">Save All Settings</button>
                 </form>
               </motion.div>
@@ -2465,6 +2522,60 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* Meta API Credentials Card */}
+                    <div className="glass-card bg-white p-6 border border-slate-200/80 shadow-md rounded-3xl space-y-4">
+                      <h4 className="font-bold text-lg font-outfit text-slate-800">Meta API Credentials</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed">Set up your Instagram Basic Display App credentials. Get these from your Facebook Meta Developer Console.</p>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram Client ID</label>
+                          <input 
+                            type="text"
+                            value={instaClientId}
+                            onChange={(e) => setInstaClientId(e.target.value)}
+                            placeholder="e.g. 18247927492..."
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">Instagram Client Secret</label>
+                          <input 
+                            type="password"
+                            value={instaClientSecret}
+                            onChange={(e) => setInstaClientSecret(e.target.value)}
+                            placeholder="••••••••••••••••"
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                          />
+                        </div>
+
+                        <div className="bg-slate-50/50 border border-slate-200/85 p-3 rounded-2xl text-[10px] text-slate-500 font-medium">
+                          <strong>Redirect URI:</strong> <span className="font-mono">{window.location.origin}/admin/instagram-callback</span>
+                        </div>
+
+                        <button 
+                          onClick={async () => {
+                            const token = localStorage.getItem('tripnova_admin_token');
+                            if (!token) return;
+                            try {
+                              const res = await api.instagram.updateSettings({
+                                clientId: instaClientId,
+                                clientSecret: instaClientSecret
+                              }, token);
+                              setInstagramSettings(res);
+                              toast.success('Instagram Client credentials updated successfully');
+                            } catch (e: any) {
+                              toast.error('Failed to update credentials');
+                            }
+                          }}
+                          className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                        >
+                          Save Credentials
+                        </button>
+                      </div>
                     </div>
                   </div>
 
