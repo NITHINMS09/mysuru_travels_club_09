@@ -208,6 +208,7 @@ export default function AdminDashboard() {
   const [appPromptEnabled, setAppPromptEnabled] = useState(false);
   const [instaClientId, setInstaClientId] = useState('');
   const [instaClientSecret, setInstaClientSecret] = useState('');
+  const [refreshingToken, setRefreshingToken] = useState(false);
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -512,6 +513,21 @@ export default function AdminDashboard() {
       toast.error(e.message || 'Synchronization failed');
     } finally {
       setSyncingInstagram(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    setRefreshingToken(true);
+    try {
+      const res = await api.instagram.refreshToken(token);
+      setInstagramSettings(res.settings);
+      toast.success('Instagram access token successfully refreshed!');
+    } catch (e: any) {
+      toast.error(e.message || 'Token refresh failed');
+    } finally {
+      setRefreshingToken(false);
     }
   };
 
@@ -2482,17 +2498,54 @@ export default function AdminDashboard() {
                           </div>
 
                           {instagramSettings.error && (
-                            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs text-left font-medium">
-                              <strong>Error:</strong> {instagramSettings.error}
+                            <div className="p-3 bg-red-50 border border-red-200 text-red-750 rounded-2xl text-xs text-left font-medium space-y-2">
+                              <div><strong>Connection/Sync Error:</strong> {instagramSettings.error}</div>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={handleSyncInstagram}
+                                  disabled={syncingInstagram}
+                                  className="px-2.5 py-1 bg-red-650 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  {syncingInstagram ? 'Syncing...' : 'Retry Sync'}
+                                </button>
+                                {!instagramSettings.isDemo && (
+                                  <button 
+                                    onClick={handleConnectRealInstagram}
+                                    className="px-2.5 py-1 bg-slate-905 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                                  >
+                                    Reconnect
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           )}
 
-                          <button 
-                            onClick={handleDisconnectInstagram}
-                            className="w-full py-3 bg-red-550 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-sm transition-colors border border-red-200 cursor-pointer"
-                          >
-                            Disconnect Account
-                          </button>
+                          <div className="grid grid-cols-1 gap-2 pt-2">
+                            {!instagramSettings.isDemo && (
+                              <>
+                                <button 
+                                  onClick={handleRefreshToken}
+                                  disabled={refreshingToken}
+                                  className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                >
+                                  {refreshingToken ? 'Refreshing...' : 'Refresh Token'}
+                                </button>
+                                <button 
+                                  onClick={handleConnectRealInstagram}
+                                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl text-xs transition-all cursor-pointer border border-slate-200"
+                                >
+                                  Reconnect Account
+                                </button>
+                              </>
+                            )}
+
+                            <button 
+                              onClick={handleDisconnectInstagram}
+                              className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-xs transition-colors border border-red-200 cursor-pointer"
+                            >
+                              Disconnect Account
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-6 text-center py-4">

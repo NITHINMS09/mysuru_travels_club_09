@@ -396,6 +396,27 @@ export class InstagramService {
   }
 
   /**
+   * Manually refreshes the long-lived access token
+   */
+  static async refreshAccessToken(): Promise<boolean> {
+    const token = await getSettingValue('instagram_access_token', '');
+    if (!token) throw new Error('No access token available to refresh');
+
+    try {
+      await this.refreshLongLivedToken(token);
+      await setSettingValue('instagram_error', '');
+      await setSettingValue('instagram_connection_status', 'CONNECTED');
+      await setSettingValue('instagram_last_sync_time', new Date().toISOString());
+      return true;
+    } catch (err: any) {
+      console.error('Refresh Token Error:', err);
+      await setSettingValue('instagram_error', err.message || 'Token refresh failed');
+      await setSettingValue('instagram_connection_status', 'TOKEN_REFRESH_FAILED');
+      return false;
+    }
+  }
+
+  /**
    * Background Interval Auto Sync scheduler
    */
   static startAutoSyncScheduler(): void {

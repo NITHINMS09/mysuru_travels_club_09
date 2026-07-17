@@ -138,7 +138,33 @@ router.post('/connect', authenticateAdmin, async (req: AuthRequest, res) => {
     res.json({ success: true, settings });
   } catch (err: any) {
     console.error('Connect Real Instagram error:', err);
+    await prisma.siteSetting.upsert({
+      where: { key: 'instagram_error' },
+      update: { value: err.message || 'Real Instagram connection failed' },
+      create: { key: 'instagram_error', value: err.message || 'Real Instagram connection failed', category: 'instagram' }
+    });
+    await prisma.siteSetting.upsert({
+      where: { key: 'instagram_connection_status' },
+      update: { value: 'CONNECTION_FAILED' },
+      create: { key: 'instagram_connection_status', value: 'CONNECTION_FAILED', category: 'instagram' }
+    });
     res.status(500).json({ error: err.message || 'Real Instagram connection failed' });
+  }
+});
+
+// POST refresh token (admin protected)
+router.post('/refresh-token', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const success = await InstagramService.refreshAccessToken();
+    const settings = await InstagramService.getSettings();
+    if (success) {
+      res.json({ success: true, settings });
+    } else {
+      res.status(400).json({ error: 'Token refresh failed', settings });
+    }
+  } catch (err: any) {
+    console.error('Refresh Instagram token error:', err);
+    res.status(500).json({ error: err.message || 'Token refresh failed' });
   }
 });
 
