@@ -388,3 +388,19 @@ model InstagramMedia {
 
   @@map("InstagramMedia")
 }
+
+model SocialUpdate {
+  id           String   @id @default(cuid())
+  url          String   @db.Text
+  type         String   // 'REEL', 'POST', 'VIDEO', 'ANNOUNCEMENT', 'REVIEW'
+  title        String
+  description  String   @db.Text
+  category     String   // 'reels', 'videos', 'announcements', 'reviews', 'trips'
+  thumbnailUrl String?  @db.Text
+  isFeatured   Boolean  @default(false)
+  orderIndex   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("SocialUpdate")
+}

@@ -210,6 +210,23 @@ export default function AdminDashboard() {
   const [instaClientSecret, setInstaClientSecret] = useState('');
   const [refreshingToken, setRefreshingToken] = useState(false);
   const [instaApiType, setInstaApiType] = useState<'GRAPH_API' | 'BASIC_DISPLAY'>('GRAPH_API');
+  const [socialUpdates, setSocialUpdates] = useState<any[]>([]);
+  const [socialModalOpen, setSocialModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkUrls, setBulkUrls] = useState('');
+  const [bulkCategory, setBulkCategory] = useState('reels');
+  const [socialForm, setSocialForm] = useState({
+    id: '',
+    url: '',
+    title: '',
+    description: '',
+    category: 'reels',
+    thumbnailUrl: '',
+    isFeatured: false,
+    orderIndex: 0
+  });
+  const [socialFilter, setSocialFilter] = useState('all');
+  const [socialSearch, setSocialSearch] = useState('');
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -437,6 +454,10 @@ export default function AdminDashboard() {
         setInstaClientSecret(res.clientSecret || '');
         setInstaApiType(res.apiType || 'GRAPH_API');
       }
+      else if (tabName === 'Social Media Updates') {
+        const res = await api.socialUpdates.getAll({ limit: 100 });
+        setSocialUpdates(res.updates || []);
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch data for ' + tabName);
@@ -555,6 +576,123 @@ export default function AdminDashboard() {
       toast.success('Sync limit count updated');
     } catch (e: any) {
       toast.error('Failed to update sync limit');
+    }
+  };
+
+  const handleSaveSocialUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+
+    try {
+      if (socialForm.id) {
+        // Edit
+        await api.socialUpdates.update(socialForm.id, socialForm, token);
+        toast.success('Social media update updated successfully!');
+      } else {
+        // Create
+        await api.socialUpdates.create(socialForm, token);
+        toast.success('Social media update published successfully!');
+      }
+
+      setSocialModalOpen(false);
+      // Reload
+      const res = await api.socialUpdates.getAll({ limit: 100 });
+      setSocialUpdates(res.updates || []);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save social update');
+    }
+  };
+
+  const handleDeleteSocialUpdate = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this social media update?')) return;
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+
+    try {
+      await api.socialUpdates.delete(id, token);
+      toast.success('Social update deleted successfully!');
+      // Reload
+      const res = await api.socialUpdates.getAll({ limit: 100 });
+      setSocialUpdates(res.updates || []);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete update');
+    }
+  };
+
+  const handleReorderSocialUpdate = async (id: string, direction: 'up' | 'down') => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+
+    const index = socialUpdates.findIndex(item => item.id === id);
+    if (index === -1) return;
+
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === socialUpdates.length - 1) return;
+
+    const newUpdates = [...socialUpdates];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap items
+    const temp = newUpdates[index];
+    newUpdates[index] = newUpdates[targetIdx];
+    newUpdates[targetIdx] = temp;
+
+    // Map order indexes
+    const payload = newUpdates.map((item, idx) => ({
+      id: item.id,
+      orderIndex: idx
+    }));
+
+    try {
+      setSocialUpdates(newUpdates);
+      await api.socialUpdates.reorder(payload, token);
+      toast.success('Order synchronized successfully');
+    } catch (e) {
+      toast.error('Failed to reorder items');
+    }
+  };
+
+  const handleBulkUploadSocialUpdates = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+
+    const urls = bulkUrls.split('\n').map(u => u.trim()).filter(Boolean);
+    if (urls.length === 0) {
+      toast.error('Please enter at least one URL');
+      return;
+    }
+
+    try {
+      let count = 0;
+      for (const url of urls) {
+        // extract a title from URL structure or generic title
+        let autoTitle = `Media Update - ${url.substring(0, 30)}`;
+        if (url.includes('instagram.com/reel/')) {
+          autoTitle = `Reel: ${url.split('/reel/')[1]?.substring(0, 10) || 'Clip'}`;
+        } else if (url.includes('youtube.com/shorts/')) {
+          autoTitle = `Shorts: ${url.split('/shorts/')[1]?.substring(0, 10) || 'Video'}`;
+        }
+        
+        await api.socialUpdates.create({
+          url,
+          title: autoTitle,
+          description: `Shared via our social updates aggregator. View full details on the main page.`,
+          category: bulkCategory,
+          isFeatured: false,
+          orderIndex: 0
+        }, token);
+        count++;
+      }
+
+      toast.success(`Successfully uploaded ${count} media links in bulk!`);
+      setBulkUrls('');
+      setBulkModalOpen(false);
+      // Reload
+      const res = await api.socialUpdates.getAll({ limit: 100 });
+      setSocialUpdates(res.updates || []);
+    } catch (err: any) {
+      toast.error(err.message || 'Bulk upload failed');
     }
   };
 
@@ -967,6 +1105,7 @@ export default function AdminDashboard() {
     { label: 'Updates', icon: HiOutlineVideoCamera, color: 'text-rose-500' },
     { label: 'Votes', icon: HiOutlineThumbUp, color: 'text-rose-500' },
     { label: 'Social Integration', icon: HiOutlineShare, color: 'text-amber-500' },
+    { label: 'Social Media Updates', icon: HiOutlineShare, color: 'text-rose-600' },
     { label: 'Settings', icon: HiOutlineCog, color: 'text-cyan-600' },
     { label: 'WhatsApp Settings', icon: FaWhatsapp, color: 'text-green-500' },
   ];
@@ -2779,6 +2918,374 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {activeTab === 'Social Media Updates' && (
+              <motion.div key="socialUpdates" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black font-outfit text-slate-800">Social Media Updates</h3>
+                    <p className="text-slate-500 text-sm mt-1">Manage manual social feeds, reels, reviews and announcements directly.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setBulkUrls('');
+                        setBulkCategory('reels');
+                        setBulkModalOpen(true);
+                      }}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-2xl text-xs transition-all shadow-sm cursor-pointer"
+                    >
+                      Bulk Import
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setSocialForm({
+                          id: '',
+                          url: '',
+                          title: '',
+                          description: '',
+                          category: 'reels',
+                          thumbnailUrl: '',
+                          isFeatured: false,
+                          orderIndex: 0
+                        });
+                        setSocialModalOpen(true);
+                      }}
+                      className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs transition-all shadow-md cursor-pointer"
+                    >
+                      Add Media Update
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters Row */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-between bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
+                  <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 sm:pb-0">
+                    {['all', 'reels', 'videos', 'announcements', 'reviews', 'trips'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSocialFilter(cat)}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                          socialFilter === cat
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search updates..."
+                    value={socialSearch}
+                    onChange={(e) => setSocialSearch(e.target.value)}
+                    className="w-full sm:max-w-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-amber-400 focus:bg-white transition-all text-slate-800 font-semibold"
+                  />
+                </div>
+
+                {/* Grid List */}
+                {socialUpdates.filter(item => {
+                  if (socialFilter !== 'all' && item.category !== socialFilter) return false;
+                  if (socialSearch && !item.title.toLowerCase().includes(socialSearch.toLowerCase()) && !item.description.toLowerCase().includes(socialSearch.toLowerCase())) return false;
+                  return true;
+                }).length === 0 ? (
+                  <div className="text-center py-20 bg-white border border-slate-200/60 rounded-3xl p-8 max-w-md mx-auto shadow-sm">
+                    <HiOutlineShare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <h3 className="font-bold text-lg text-slate-800 mb-1">No Updates Published</h3>
+                    <p className="text-xs text-slate-400">Add a new manual update or run a bulk copy-paste upload of Instagram reels or YouTube Shorts URLs.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {socialUpdates
+                      .filter(item => {
+                        if (socialFilter !== 'all' && item.category !== socialFilter) return false;
+                        if (socialSearch && !item.title.toLowerCase().includes(socialSearch.toLowerCase()) && !item.description.toLowerCase().includes(socialSearch.toLowerCase())) return false;
+                        return true;
+                      })
+                      .map((item, idx) => {
+                        return (
+                          <div 
+                            key={item.id} 
+                            className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                          >
+                            <div className="relative aspect-video bg-slate-100 overflow-hidden">
+                              {item.thumbnailUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-350 text-xs font-semibold">No Thumbnail</div>
+                              )}
+                              {item.isFeatured && (
+                                <span className="absolute top-3 left-3 bg-amber-500 text-slate-900 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border border-amber-400">
+                                  Featured
+                                </span>
+                              )}
+                              <span className="absolute top-3 right-3 bg-slate-900/60 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest">
+                                {item.type}
+                              </span>
+                            </div>
+
+                            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-100 inline-block">
+                                  {item.category}
+                                </span>
+                                <h4 className="font-extrabold text-sm text-slate-800 line-clamp-1">{item.title}</h4>
+                                <p className="text-slate-400 text-[11px] line-clamp-3 leading-relaxed">{item.description}</p>
+                              </div>
+
+                              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                                <div className="flex gap-1.5">
+                                  <button
+                                    onClick={() => handleReorderSocialUpdate(item.id, 'up')}
+                                    disabled={idx === 0}
+                                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 disabled:opacity-30 cursor-pointer"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    onClick={() => handleReorderSocialUpdate(item.id, 'down')}
+                                    disabled={idx === socialUpdates.length - 1}
+                                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 disabled:opacity-30 cursor-pointer"
+                                  >
+                                    ↓
+                                  </button>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => {
+                                      setSocialForm({
+                                        id: item.id,
+                                        url: item.url,
+                                        title: item.title,
+                                        description: item.description,
+                                        category: item.category,
+                                        thumbnailUrl: item.thumbnailUrl || '',
+                                        isFeatured: item.isFeatured,
+                                        orderIndex: item.orderIndex
+                                      });
+                                      setSocialModalOpen(true);
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteSocialUpdate(item.id)}
+                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* MODAL: Add / Edit Update */}
+            {socialModalOpen && (
+              <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 relative"
+                >
+                  <button 
+                    onClick={() => setSocialModalOpen(false)}
+                    className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    <HiOutlineX className="w-4 h-4" />
+                  </button>
+
+                  {/* Form Block */}
+                  <form onSubmit={handleSaveSocialUpdate} className="space-y-4">
+                    <h3 className="font-black text-xl text-slate-800 font-outfit mb-4">
+                      {socialForm.id ? 'Edit Social Update' : 'New Social Media Update'}
+                    </h3>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Media URL (Instagram / YouTube shorts)</label>
+                      <input 
+                        type="text"
+                        value={socialForm.url}
+                        onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })}
+                        placeholder="https://www.instagram.com/reel/..."
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Title</label>
+                      <input 
+                        type="text"
+                        value={socialForm.title}
+                        onChange={(e) => setSocialForm({ ...socialForm, title: e.target.value })}
+                        required
+                        placeholder="Update Title"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Category</label>
+                      <select 
+                        value={socialForm.category}
+                        onChange={(e) => setSocialForm({ ...socialForm, category: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      >
+                        <option value="reels">Reels</option>
+                        <option value="videos">Videos</option>
+                        <option value="announcements">Announcements</option>
+                        <option value="reviews">Reviews</option>
+                        <option value="trips">Trips</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Custom Thumbnail URL (Optional)</label>
+                      <input 
+                        type="text"
+                        value={socialForm.thumbnailUrl}
+                        onChange={(e) => setSocialForm({ ...socialForm, thumbnailUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Description</label>
+                      <textarea 
+                        value={socialForm.description}
+                        onChange={(e) => setSocialForm({ ...socialForm, description: e.target.value })}
+                        rows={3}
+                        placeholder="Update description detail..."
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 py-2">
+                      <span className="text-xs font-bold text-slate-700">Set as Featured Update</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setSocialForm({ ...socialForm, isFeatured: !socialForm.isFeatured })}
+                        className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${socialForm.isFeatured ? 'bg-amber-500' : 'bg-slate-300'}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${socialForm.isFeatured ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      Publish Update
+                    </button>
+                  </form>
+
+                  {/* Preview Card Block */}
+                  <div className="flex flex-col justify-center bg-slate-50/50 border border-slate-100 rounded-3xl p-6 space-y-4">
+                    <h4 className="font-extrabold text-sm text-slate-650 tracking-wider uppercase font-outfit">Live Preview</h4>
+                    
+                    <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                      <div className="relative aspect-video bg-slate-200 flex items-center justify-center overflow-hidden">
+                        {socialForm.thumbnailUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={socialForm.thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                        ) : socialForm.url && socialForm.url.includes('youtube.com/shorts/') ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={`https://img.youtube.com/vi/${socialForm.url.split('/shorts/')[1]?.split('?')[0]}/hqdefault.jpg`} alt="YT Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">No media preview</div>
+                        )}
+                        <span className="absolute top-2 left-2 bg-amber-500 text-slate-900 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">
+                          {socialForm.isFeatured ? 'Featured' : 'Standard'}
+                        </span>
+                        <span className="absolute top-2 right-2 bg-slate-900/70 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">
+                          {socialForm.url.includes('youtube.com/shorts/') ? 'VIDEO' : socialForm.url.includes('instagram.com') ? 'REEL' : 'POST'}
+                        </span>
+                      </div>
+
+                      <div className="p-4 space-y-2">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 inline-block">
+                          {socialForm.category}
+                        </span>
+                        <h5 className="font-black text-xs text-slate-800 line-clamp-1">{socialForm.title || 'Untitled Update'}</h5>
+                        <p className="text-slate-400 text-[10px] line-clamp-2 leading-relaxed">{socialForm.description || 'No description added yet.'}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-100/50 p-3.5 rounded-2xl text-[10px] text-slate-500 leading-relaxed font-medium">
+                      💡 <strong>Smart Auto-detect:</strong> Pasting a YouTube Shorts URL automatically pulls its official high-definition cover thumbnail and sets the media format to Video!
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* MODAL: Bulk Upload */}
+            {bulkModalOpen && (
+              <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-2xl w-full max-w-xl relative"
+                >
+                  <button 
+                    onClick={() => setBulkModalOpen(false)}
+                    className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    <HiOutlineX className="w-4 h-4" />
+                  </button>
+
+                  <div className="space-y-4">
+                    <h3 className="font-black text-xl text-slate-800 font-outfit">
+                      Bulk Social Updates Import
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium">Paste multiple social media links (Instagram reels, YouTube shorts, reviews) one per line. They will be automatically parsed, categorized, and added to the social feed.</p>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Select Category for these URLs</label>
+                      <select 
+                        value={bulkCategory}
+                        onChange={(e) => setBulkCategory(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      >
+                        <option value="reels">Reels</option>
+                        <option value="videos">Videos</option>
+                        <option value="announcements">Announcements</option>
+                        <option value="reviews">Reviews</option>
+                        <option value="trips">Trips</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Pasted URLs (One per line)</label>
+                      <textarea 
+                        value={bulkUrls}
+                        onChange={(e) => setBulkUrls(e.target.value)}
+                        rows={6}
+                        placeholder="https://www.instagram.com/reel/C_Reel1/&#10;https://youtube.com/shorts/Shorts1/&#10;https://www.instagram.com/reel/C_Reel2/"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-mono rounded-xl p-3 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      />
+                    </div>
+
+                    <button 
+                      onClick={handleBulkUploadSocialUpdates}
+                      className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      Import & Publish Links
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>

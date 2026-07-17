@@ -157,6 +157,21 @@ export const api = {
     getFeed: () => fetchAPI('/instagram/feed'),
   },
 
+  socialUpdates: {
+    getAll: (params: { category?: string; type?: string; search?: string; page?: number; limit?: number }) => {
+      const filteredParams = Object.entries(params)
+        .filter(([_, v]) => v !== undefined && v !== '')
+        .reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {});
+      const q = new URLSearchParams(filteredParams).toString();
+      return fetchAPI(`/social-updates?${q}`);
+    },
+    getById: (id: string) => fetchAPI(`/social-updates/${id}`),
+    create: (data: any, token: string) => fetchAPI('/social-updates', { method: 'POST', body: JSON.stringify(data), token }),
+    update: (id: string, data: any, token: string) => fetchAPI(`/social-updates/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+    delete: (id: string, token: string) => fetchAPI(`/social-updates/${id}`, { method: 'DELETE', token }),
+    reorder: (orders: { id: string; orderIndex: number }[], token: string) => fetchAPI('/social-updates/reorder', { method: 'POST', body: JSON.stringify({ orders }), token }),
+  },
+
   upload: {
     single: async (file: File) => {
       const formData = new FormData();

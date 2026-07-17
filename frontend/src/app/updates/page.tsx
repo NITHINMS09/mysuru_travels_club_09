@@ -1,144 +1,88 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineVideoCamera, HiOutlinePhotograph, HiOutlineStar, 
-  HiOutlineCalendar, HiOutlineExternalLink, HiOutlinePlay, HiOutlineX 
+  HiOutlineCalendar, HiOutlineExternalLink, HiOutlinePlay, HiOutlineX,
+  HiOutlineSearch, HiOutlineChatAlt2, HiOutlineSpeakerphone
 } from 'react-icons/hi';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
+// Helper to extract Youtube Shorts ID
+function getYouTubeShortsId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
+// Helper to extract Instagram Reel Shortcode
+function getInstagramReelShortcode(url: string): string | null {
+  const match = url.match(/(?:instagram\.com\/p\/|instagram\.com\/reel\/|instagram\.com\/tv\/)([a-zA-Z0-9__-]+)/);
+  return match ? match[1] : null;
+}
+
 export default function UpdatesPage() {
-  const router = useRouter();
-  const [feed, setFeed] = useState<any[]>([]);
-  const [trips, setTrips] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeVideo, setActiveVideo] = useState<any | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [activeItem, setActiveItem] = useState<any | null>(null);
+  
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'reels' | 'videos' | 'announcements' | 'reviews' | 'trips'>('all');
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const LIMIT = 9;
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
+  const loadData = async (pageNum: number, isLoadMore = false) => {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
 
-  useEffect(() => {
-    const loadUpdatesData = async () => {
-      try {
-        const [feedData, tripsData] = await Promise.all([
-          api.instagram.getFeed().catch(() => []),
-          api.trips.getAll().catch(() => ({ trips: [] }))
-        ]);
-        setFeed(feedData || []);
-        setTrips(tripsData.trips || []);
-      } catch (err) {
-        console.error('Failed to load updates page datasets:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUpdatesData();
-  }, []);
+    try {
+      // Map filter state to API filters
+      const categoryFilter = activeFilter === 'all' ? undefined : activeFilter;
+      const typeFilter = activeFilter === 'reels' ? 'REEL' : activeFilter === 'videos' ? 'VIDEO' : undefined;
 
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
+      const res = await api.socialUpdates.getAll({
+        category: categoryFilter,
+        type: typeFilter,
+        search: searchQuery || undefined,
+        page: pageNum,
+        limit: LIMIT
+      });
+
+      if (isLoadMore) {
+        setUpdates(prev => [...prev, ...(res.updates || [])]);
       } else {
-        videoRef.current.play().catch(() => {});
+        setUpdates(res.updates || []);
       }
-      setIsPlaying(!isPlaying);
+
+      setHasMore(res.pagination ? pageNum < res.pagination.totalPages : false);
+    } catch (err) {
+      console.error('Failed to load manual updates:', err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
+  // Reload when search query or filter changes
+  useEffect(() => {
+    setPage(1);
+    loadData(1, false);
+  }, [searchQuery, activeFilter]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadData(nextPage, true);
   };
-
-  // Compile items in a chronological or pseudo-chronological aggregated list
-  const getAggregatedItems = () => {
-    const items: any[] = [];
-
-    // 1. Add Instagram posts/reels
-    feed.forEach(item => {
-      const isReel = item.mediaType === 'VIDEO' && item.permalink.includes('/reel/');
-      items.push({
-        id: `insta_${item.id}`,
-        type: isReel ? 'reel' : 'post',
-        date: new Date(item.timestamp),
-        title: isReel ? 'New Reel Uploaded' : 'Instagram Update',
-        content: item.caption,
-        mediaUrl: item.mediaUrl,
-        thumbnailUrl: item.thumbnailUrl,
-        link: item.permalink,
-        raw: item
-      });
-    });
-
-    // 2. Add upcoming trips as announcements (take first 3 upcoming ones)
-    const upcomingTrips = trips
-      .filter(t => new Date(t.startDate) > new Date())
-      .slice(0, 3);
-    
-    upcomingTrips.forEach(trip => {
-      items.push({
-        id: `trip_${trip.id}`,
-        type: 'announcement',
-        date: new Date(trip.createdAt || Date.now()),
-        title: `Upcoming Expedition: ${trip.title}`,
-        content: `Embark on a new adventure to ${trip.destination}! Starting from ₹${trip.price.toLocaleString()}. Book your spots before slots are sold out.`,
-        mediaUrl: trip.coverImage,
-        link: `/trips/${trip.id}`,
-        slotsLeft: trip.maxGroupSize || 12
-      });
-    });
-
-    // 3. Add simulated high-quality reviews from Mysore explorers (since review query might be empty)
-    const mockReviews = [
-      {
-        id: 'rev_1',
-        type: 'review',
-        date: new Date(Date.now() - 3600000 * 36),
-        title: 'Superb Heritage Experience!',
-        author: 'Arjun K.',
-        tripName: 'Mysuru Palaces & Gardens',
-        rating: 5,
-        content: 'Loved the tour! The guides were extremely knowledgeable, pacing was perfect, and the Mysore Dosa walk was a delicious highlight.'
-      },
-      {
-        id: 'rev_2',
-        type: 'review',
-        date: new Date(Date.now() - 3600000 * 70),
-        title: 'Highly Recommended Safari Tour',
-        author: 'Sneha Rao',
-        tripName: 'Kabini Wildlife Expedition',
-        rating: 5,
-        content: 'Everything was organized flawlessly. Spotted elephants, deers, and wild gaur. Accommodation and vehicles were clean and premium.'
-      }
-    ];
-
-    mockReviews.forEach(rev => {
-      items.push(rev);
-    });
-
-    // Sort items newest first
-    return items.sort((a, b) => b.date.getTime() - a.date.getTime());
-  };
-
-  if (loading) {
-    return (
-      <div className="pt-24 pb-20 bg-slate-50 min-h-screen px-4 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const aggregatedItems = getAggregatedItems();
 
   return (
-    <div className="pt-20 sm:pt-24 pb-20 bg-[#f8fafc] min-h-screen text-slate-900 overflow-x-hidden">
+    <div className="pt-24 sm:pt-28 pb-20 bg-[#f8fafc] min-h-screen text-slate-900 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Banner Area */}
@@ -150,65 +94,90 @@ export default function UpdatesPage() {
             Updates & Announcements
           </h1>
           <p className="text-slate-500 text-sm sm:text-base font-medium">
-            Live stories, trip rollouts, traveler feedback, and direct media feeds synced automatically from our social channels.
+            Live reels, expedition launches, customer logs, and announcments synced directly from our team.
           </p>
         </div>
 
-        {/* Dynamic Wall Grid */}
-        {aggregatedItems.length === 0 ? (
+        {/* Filters and Search Panel */}
+        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-sm mb-12">
+          {/* Scrollable Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 shrink-0">
+            {(['all', 'reels', 'videos', 'announcements', 'reviews', 'trips'] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                  activeFilter === cat
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-550 hover:bg-slate-50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-md">
+            <HiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search updates, reels, announcements..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-2xl text-xs outline-none focus:border-amber-400 focus:bg-white transition-all text-slate-800 font-semibold"
+            />
+          </div>
+        </div>
+
+        {/* Dynamic Updates Feed */}
+        {loading && page === 1 ? (
+          <div className="pt-24 pb-20 bg-transparent flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : updates.length === 0 ? (
           <div className="text-center py-20 bg-white border border-slate-200/60 rounded-3xl p-8 max-w-md mx-auto shadow-sm">
-            <HiOutlineCalendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="font-bold text-lg text-slate-800 mb-1">No Updates Available</h3>
-            <p className="text-xs text-slate-400">Settings have not been connected or synchronized yet. Connect Instagram in the Admin Panel to fetch feeds.</p>
+            <HiOutlineCalendar className="w-12 h-12 text-slate-350 mx-auto mb-4" />
+            <h3 className="font-bold text-lg text-slate-800 mb-1">No Updates Found</h3>
+            <p className="text-xs text-slate-400">There are no updates matching your search filters. Check back soon for fresh scenic reels and trip rollouts.</p>
           </div>
         ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 lg:gap-8 space-y-6 lg:space-y-8">
-            {aggregatedItems.map((item) => (
-              <div 
-                key={item.id} 
-                className="break-inside-avoid bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
-              >
-                {/* Media Preview (Reel / Post / Announcement) */}
-                {item.mediaUrl && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {updates.map((item) => {
+              const ytId = getYouTubeShortsId(item.url);
+              const instaShortcode = getInstagramReelShortcode(item.url);
+
+              return (
+                <div 
+                  key={item.id} 
+                  className="bg-white border border-slate-200/60 rounded-[2.25rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                >
+                  {/* Media Banner */}
                   <div 
-                    onClick={() => {
-                      if (item.type === 'reel') {
-                        setActiveVideo(item.raw);
-                        setIsPlaying(true);
-                      } else if (item.link) {
-                        window.open(item.link, '_blank');
-                      }
-                    }}
-                    className="relative w-full aspect-video md:aspect-[4/3] bg-slate-100 overflow-hidden cursor-pointer group"
+                    onClick={() => setActiveItem(item)}
+                    className="relative w-full aspect-video bg-slate-100 overflow-hidden cursor-pointer group"
                   >
-                    {item.type === 'announcement' ? (
-                      <Image 
-                        src={item.mediaUrl} 
-                        alt={item.title} 
-                        fill 
-                        className="object-cover group-hover:scale-103 transition-transform duration-500" 
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img 
-                        src={item.thumbnailUrl || item.mediaUrl} 
-                        alt={item.title} 
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" 
-                      />
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={item.thumbnailUrl || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop')} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" 
+                    />
                     
                     {/* Media Type Badge Overlay */}
-                    <div className="absolute top-4 right-4 bg-slate-900/60 backdrop-blur-sm text-white p-2 rounded-full border border-white/10 z-10">
-                      {item.type === 'reel' ? (
+                    <div className="absolute top-4 right-4 bg-slate-900/70 backdrop-blur-sm text-white p-2 rounded-full border border-white/10 z-10">
+                      {item.type === 'REEL' ? (
                         <HiOutlineVideoCamera className="w-4 h-4 text-amber-400" />
-                      ) : item.type === 'post' ? (
-                        <HiOutlinePhotograph className="w-4 h-4 text-sky-400" />
+                      ) : item.type === 'VIDEO' ? (
+                        <HiOutlinePlay className="w-4 h-4 text-rose-500" />
+                      ) : item.type === 'REVIEW' ? (
+                        <HiOutlineChatAlt2 className="w-4 h-4 text-cyan-400" />
                       ) : (
-                        <HiOutlineCalendar className="w-4 h-4 text-emerald-400" />
+                        <HiOutlineSpeakerphone className="w-4 h-4 text-green-400" />
                       )}
                     </div>
 
-                    {item.type === 'reel' && (
+                    {(item.type === 'REEL' || item.type === 'VIDEO') && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors">
                         <div className="w-12 h-12 bg-white/95 rounded-full flex items-center justify-center text-slate-900 shadow-md group-hover:scale-110 transition-transform">
                           <HiOutlinePlay className="w-6 h-6 ml-0.5" />
@@ -216,95 +185,82 @@ export default function UpdatesPage() {
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Content Details */}
-                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    {/* Badge / Timestamp */}
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                        item.type === 'reel' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                        item.type === 'post' ? 'bg-sky-50 border-sky-100 text-sky-700' :
-                        item.type === 'review' ? 'bg-indigo-50 border-indigo-100 text-indigo-700' :
-                        'bg-emerald-50 border-emerald-100 text-emerald-700'
-                      }`}>
-                        {item.type}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        {new Date(item.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                      </span>
+                  {/* Content Details */}
+                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-100 inline-block">
+                          {item.category}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                          {new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                        </span>
+                      </div>
+
+                      <h3 className="font-extrabold text-base text-slate-900 font-outfit leading-snug line-clamp-2">
+                        {item.title}
+                      </h3>
+
+                      {item.type === 'REVIEW' && (
+                        <div className="flex items-center gap-0.5 text-amber-500 py-1">
+                          {[...Array(5)].map((_, i) => (
+                            <HiOutlineStar key={i} className="w-3.5 h-3.5 fill-amber-500" />
+                          ))}
+                        </div>
+                      )}
+
+                      <p className="text-slate-450 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                        {item.description}
+                      </p>
                     </div>
 
-                    {/* Title */}
-                    <h3 className="font-extrabold text-base text-slate-900 font-outfit leading-snug">
-                      {item.title}
-                    </h3>
-
-                    {/* Review Rating Stars */}
-                    {item.type === 'review' && (
-                      <div className="flex items-center gap-1 text-amber-500 py-1">
-                        {[...Array(item.rating)].map((_, i) => (
-                          <HiOutlineStar key={i} className="w-4 h-4 fill-amber-500" />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Text Description */}
-                    <p className="text-slate-500 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                      {item.content}
-                    </p>
-
-                    {item.type === 'review' && (
-                      <div className="pt-2 text-xs font-bold text-slate-700">
-                        — {item.author} <span className="text-slate-400 font-medium">on {item.tripName}</span>
+                    {item.url && (
+                      <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-end">
+                        <button 
+                          onClick={() => setActiveItem(item)}
+                          className="flex items-center gap-1 text-xs font-black text-slate-900 hover:text-amber-600 transition-colors"
+                        >
+                          {item.type === 'VIDEO' ? 'Watch Video' : item.type === 'REEL' ? 'Watch Reel' : 'View Post'} 
+                          <HiOutlineExternalLink className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     )}
                   </div>
-
-                  {/* Actions Bar */}
-                  {item.link && (
-                    <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-end">
-                      {item.type === 'announcement' ? (
-                        <button 
-                          onClick={() => router.push(item.link)}
-                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
-                        >
-                          Book Expedition
-                        </button>
-                      ) : (
-                        <a 
-                          href={item.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors"
-                        >
-                          View Instagram Post <HiOutlineExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Load More Trigger */}
+        {hasMore && (
+          <div className="mt-12 text-center">
+            <button 
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer"
+            >
+              {loadingMore ? 'Loading Updates...' : 'Load More Updates'}
+            </button>
           </div>
         )}
       </div>
 
-      {/* LIGHTBOX MODAL: Play reels directly */}
+      {/* LIGHTBOX MODAL: Play reels/videos directly */}
       <AnimatePresence>
-        {activeVideo && (
+        {activeItem && (
           <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl w-full max-w-4xl border border-white/10 flex flex-col md:flex-row relative animate-fade-in"
+              className="bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl w-full max-w-4xl border border-white/10 flex flex-col md:flex-row relative"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
               <button 
-                onClick={() => setActiveVideo(null)}
+                onClick={() => setActiveItem(null)}
                 className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
               >
                 <HiOutlineX className="w-5 h-5" />
@@ -312,74 +268,61 @@ export default function UpdatesPage() {
 
               {/* Video Player */}
               <div className="md:w-3/5 aspect-video md:aspect-auto md:h-[70vh] bg-black relative flex items-center justify-center group/video">
-                <video 
-                  ref={videoRef}
-                  src={activeVideo.mediaUrl}
-                  poster={activeVideo.thumbnailUrl}
-                  autoPlay
-                  loop
-                  playsInline
-                  onClick={togglePlay}
-                  className="w-full h-full object-contain cursor-pointer"
-                />
-
-                {/* Video controls */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={togglePlay} 
-                      className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      {isPlaying ? 'Pause' : 'Play'}
-                    </button>
-                    <button 
-                      onClick={toggleMute} 
-                      className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      {isMuted ? 'Unmute' : 'Mute'}
-                    </button>
-                  </div>
-                </div>
+                {getYouTubeShortsId(activeItem.url) ? (
+                  <iframe 
+                    src={`https://www.youtube.com/embed/${getYouTubeShortsId(activeItem.url)}?autoplay=1`} 
+                    className="w-full h-full border-0"
+                    allow="autoplay; encrypted-media; picture-in-picture" 
+                    allowFullScreen
+                  />
+                ) : getInstagramReelShortcode(activeItem.url) ? (
+                  <iframe 
+                    src={`https://www.instagram.com/p/${getInstagramReelShortcode(activeItem.url)}/embed/`} 
+                    className="w-full h-full border-0 bg-white"
+                    allowFullScreen
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img 
+                    src={activeItem.thumbnailUrl || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop'} 
+                    alt={activeItem.title} 
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
 
               {/* Video Details */}
               <div className="md:w-2/5 p-6 sm:p-8 flex flex-col justify-between space-y-6 h-full md:max-h-[70vh] overflow-y-auto">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-slate-800 p-0.5">
-                      <img 
-                        src="https://cdn.corenexis.com/files/c/8845266721.png" 
-                        alt="Profile" 
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-black text-sm text-white">mysurutravels_insta</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        Instagram Reel
-                      </p>
-                    </div>
+                  <div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-white/10 px-2.5 py-0.5 rounded border border-white/10 inline-block mb-2">
+                      {activeItem.category}
+                    </span>
+                    <h3 className="font-black text-lg text-white font-outfit">{activeItem.title}</h3>
                   </div>
 
                   <p className="text-slate-350 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                    {activeVideo.caption || 'No caption available.'}
+                    {activeItem.description || 'No description available.'}
                   </p>
                 </div>
 
                 <div className="pt-6 border-t border-white/10 space-y-4">
                   <div className="flex justify-between text-[10px] text-slate-450 font-bold uppercase tracking-widest">
-                    <span>Posted Date</span>
-                    <span>{new Date(activeVideo.timestamp).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                    <span>Published On</span>
+                    <span>{new Date(activeItem.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
                   </div>
 
-                  <a 
-                    href={activeVideo.permalink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-full py-3 bg-white text-slate-900 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-all cursor-pointer"
-                  >
-                    View on Instagram <HiOutlineExternalLink className="w-4 h-4" />
-                  </a>
+                  {activeItem.url && (
+                    <a 
+                      href={activeItem.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-white text-slate-900 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                      {activeItem.url.includes('youtube.com') ? 'Watch on YouTube' : activeItem.url.includes('instagram.com') ? 'Watch on Instagram' : 'View Source'}
+                      <HiOutlineExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                 </div>
               </div>
             </motion.div>

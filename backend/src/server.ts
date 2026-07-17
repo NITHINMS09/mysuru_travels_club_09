@@ -33,6 +33,7 @@ import updateRoutes from './routes/updates';
 import whatsappSettingsRoutes from './routes/whatsapp-settings';
 import userRoutes from './routes/users';
 import instagramRoutes from './routes/instagram';
+import socialUpdateRoutes from './routes/socialUpdates';
 import { InstagramService } from './services/instagramService';
 import path from 'path';
 
@@ -108,6 +109,7 @@ app.use('/api/v1/marketplace', marketplaceRoutes);
 app.use('/api/v1/updates', updateRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/instagram', instagramRoutes);
+app.use('/api/v1/social-updates', socialUpdateRoutes);
 
 // Error handling
 app.use(notFoundHandler);
