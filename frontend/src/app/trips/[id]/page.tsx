@@ -54,6 +54,8 @@ export default function TripDetails() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [paymentOption, setPaymentOption] = useState<'full' | 'partial'>('full');
+  const [partialAmount, setPartialAmount] = useState<string>('');
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -156,10 +158,17 @@ export default function TripDetails() {
       toast.error('Please upload a payment screenshot');
       return;
     }
+    const payAmount = paymentOption === 'full' ? pricing.total : (parseFloat(partialAmount) || 0);
+    if (isNaN(payAmount) || payAmount <= 0 || payAmount > pricing.total) {
+      toast.error(`Please enter a valid payment amount between ₹1 and ₹${pricing.total}`);
+      return;
+    }
     setBookingLoading(true);
     try {
       const formData = new FormData();
       formData.append('screenshot', screenshot);
+      formData.append('amount', payAmount.toString());
+      formData.append('notes', paymentOption === 'partial' ? `Initial partial payment of ₹${payAmount}` : 'Initial full payment');
       await api.bookings.uploadScreenshot(createdBookingId, formData);
       toast.success('Verification submitted successfully!');
       setStep(3);
@@ -285,15 +294,62 @@ export default function TripDetails() {
                     {step === 2 && (
                       <motion.div key="step2" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-6">
                         <div className="text-center">
-                          <p className="text-slate-500 font-medium mb-4">Pay the amount and upload the payment screenshot below.</p>
+                          <p className="text-slate-500 font-medium mb-4">Choose a payment plan and upload the payment screenshot below.</p>
                         </div>
+                        
+                        <div className="flex gap-4">
+                          <button 
+                            type="button" 
+                            onClick={() => setPaymentOption('full')}
+                            className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                              paymentOption === 'full' 
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-sm' 
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            Pay Full Amount
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setPaymentOption('partial');
+                              setPartialAmount(Math.round(pricing.total * 0.3).toString());
+                            }}
+                            className={`flex-1 py-3 px-4 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                              paymentOption === 'partial' 
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-sm' 
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            Pay Partial Amount
+                          </button>
+                        </div>
+
+                        {paymentOption === 'partial' && (
+                          <div className="space-y-1.5 mb-6 text-left">
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Amount to Pay Now (₹)</label>
+                            <input 
+                              type="number"
+                              value={partialAmount}
+                              onChange={(e) => setPartialAmount(e.target.value)}
+                              max={pricing.total}
+                              min={1}
+                              className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-3.5 outline-none focus:border-slate-400 focus:bg-white transition-all text-sm animate-fade-in"
+                              placeholder={`Enter amount (max ₹${pricing.total})`}
+                            />
+                            <p className="text-[10px] text-slate-400">Minimum payment of ₹1 is required to secure booking.</p>
+                          </div>
+                        )}
+
                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
                           <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 w-48 h-48 mx-auto relative overflow-hidden mb-4">
                             <img src="https://cdn.corenexis.com/files/c/8845266720.png" alt="UPI QR Code" className="w-full h-full object-contain" />
                           </div>
                           <div className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Pay via UPI / Mobile</div>
                           <div className="text-3xl font-black text-slate-900 mb-2">9632463347</div>
-                          <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">Amount: <b className="text-[#00C853]">₹{pricing.total.toLocaleString()}</b></div>
+                          <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">
+                            Amount: <b className="text-[#00C853]">₹{(paymentOption === 'full' ? pricing.total : (parseFloat(partialAmount) || 0)).toLocaleString()}</b>
+                          </div>
                         </div>
 
                         <div>

@@ -43,6 +43,8 @@ model Trip {
   startDate     DateTime
   endDate       DateTime
   price         Float
+  partialPaymentEnabled Boolean   @default(false)
+  partialPaymentAmount Float?
   originalPrice Float?
   totalSeats    Int
   availableSeats Int
@@ -88,6 +90,8 @@ model Booking {
   specialRequests  String?
   status           String        @default("PENDING")
   totalAmount      Float
+  paidAmount       Float         @default(0.0)
+  paymentStatus    String        @default("PENDING_PAYMENT")
   bookingRef       String        @unique
   paymentScreenshot String?
   isManualPayment  Boolean       @default(false)
@@ -99,6 +103,7 @@ model Booking {
   updatedAt        DateTime      @updatedAt
 
   payment Payment?
+  paymentHistory PaymentHistory[]
   notifications NotificationLog[]
 
   @@index([tripId])
@@ -122,6 +127,22 @@ model Payment {
   updatedAt          DateTime      @updatedAt
 
   @@index([razorpayOrderId])
+}
+
+model PaymentHistory {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount      Float
+  date        DateTime @default(now())
+  method      String   @default("MANUAL")
+  screenshot  String?
+  status      String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bookingId])
 }
 
 model Review {

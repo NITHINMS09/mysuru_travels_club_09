@@ -136,6 +136,26 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
     });
 
     const screenshotUrl = result.secure_url;
+
+    // Fetch the booking details to fall back to its totalAmount if needed
+    const bookingToUpdate = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!bookingToUpdate) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    const amount = parseFloat(req.body.amount || bookingToUpdate.totalAmount.toString());
+
+    // Create a pending PaymentHistory entry
+    await prisma.paymentHistory.create({
+      data: {
+        bookingId: req.params.id,
+        amount,
+        screenshot: screenshotUrl,
+        method: 'UPI',
+        status: 'PENDING',
+        notes: req.body.notes || 'Submitted by customer'
+      }
+    });
     
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
@@ -170,6 +190,7 @@ router.get('/', authenticateAdmin, async (req: AuthRequest, res) => {
         include: {
           trip: { select: { title: true, destination: true } },
           payment: true,
+          paymentHistory: { orderBy: { createdAt: 'desc' } },
           notifications: { orderBy: { createdAt: 'desc' }, take: 1 }
         },
       }),
@@ -194,6 +215,7 @@ router.get('/ref/:ref', async (req, res) => {
       include: {
         trip: { select: { title: true, destination: true, startDate: true, endDate: true, coverImage: true } },
         payment: true,
+        paymentHistory: { orderBy: { createdAt: 'desc' } },
       },
     });
     if (!booking) {
@@ -224,6 +246,48 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
 
     const updateData: any = { status };
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+
+    if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
+      // Find all pending payments for this booking
+      const pendingPayments = await prisma.paymentHistory.findMany({
+        where: { bookingId: req.params.id, status: 'PENDING' }
+      });
+      
+      let amountToVerify = 0;
+      if (pendingPayments.length > 0) {
+        // Mark them as verified
+        await prisma.paymentHistory.updateMany({
+          where: { bookingId: req.params.id, status: 'PENDING' },
+          data: { status: 'VERIFIED' }
+        });
+        amountToVerify = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+      } else {
+        // If there are no payments at all (e.g. legacy booking), default to full totalAmount
+        if (currentBooking.paidAmount === 0) {
+          await prisma.paymentHistory.create({
+            data: {
+              bookingId: req.params.id,
+              amount: currentBooking.totalAmount,
+              method: currentBooking.isManualPayment ? 'MANUAL' : 'RAZORPAY',
+              status: 'VERIFIED',
+              notes: 'Auto-verified on confirmation'
+            }
+          });
+          amountToVerify = currentBooking.totalAmount;
+        }
+      }
+      
+      const newPaidAmount = currentBooking.paidAmount + amountToVerify;
+      const newPaymentStatus = newPaidAmount >= currentBooking.totalAmount ? 'FULLY_PAID' : (newPaidAmount > 0 ? 'PARTIALLY_PAID' : 'PENDING_PAYMENT');
+      
+      updateData.paidAmount = newPaidAmount;
+      updateData.paymentStatus = newPaymentStatus;
+    } else if (status === 'REJECTED') {
+      await prisma.paymentHistory.updateMany({
+        where: { bookingId: req.params.id, status: 'PENDING' },
+        data: { status: 'REJECTED', notes: adminNotes || 'Rejected by admin' }
+      });
+    }
 
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
@@ -402,6 +466,144 @@ router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => 
     res.json({ message: `Successfully executed bulk ${action.toLowerCase()}` });
   } catch (error) {
     console.error('Bulk update error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET all payments for a booking
+router.get('/:id/payments', async (req, res) => {
+  try {
+    const payments = await prisma.paymentHistory.findMany({
+      where: { bookingId: req.params.id },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ADD a payment to a booking (direct entry by admin)
+router.post('/:id/payments', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { amount, method, notes, date } = req.body;
+    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    const paymentAmount = parseFloat(amount);
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      res.status(400).json({ error: 'Invalid payment amount' });
+      return;
+    }
+
+    // Create verified payment history
+    const payment = await prisma.paymentHistory.create({
+      data: {
+        bookingId: req.params.id,
+        amount: paymentAmount,
+        method: method || 'MANUAL',
+        status: 'VERIFIED',
+        notes: notes || 'Recorded by admin',
+        date: date ? new Date(date) : new Date()
+      }
+    });
+
+    // Update booking paidAmount and paymentStatus
+    const newPaidAmount = booking.paidAmount + paymentAmount;
+    let newPaymentStatus = 'PENDING_PAYMENT';
+    if (newPaidAmount >= booking.totalAmount) {
+      newPaymentStatus = 'FULLY_PAID';
+    } else if (newPaidAmount > 0) {
+      newPaymentStatus = 'PARTIALLY_PAID';
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: {
+        paidAmount: newPaidAmount,
+        paymentStatus: newPaymentStatus,
+        status: newPaidAmount >= booking.totalAmount ? 'CONFIRMED' : booking.status
+      }
+    });
+
+    await prisma.adminLog.create({
+      data: {
+        adminName: req.admin?.email || 'System',
+        action: 'PAYMENT_ADD',
+        details: `Added manual payment of ₹${paymentAmount} to booking ${booking.bookingRef}`
+      }
+    });
+
+    res.json({ payment, booking: updatedBooking });
+  } catch (error) {
+    console.error('Add payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// VERIFY or REJECT a specific payment transaction (admin)
+router.patch('/payments/:paymentHistoryId/status', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { status, notes } = req.body; // 'VERIFIED' or 'REJECTED'
+    if (status !== 'VERIFIED' && status !== 'REJECTED') {
+      res.status(400).json({ error: 'Invalid transaction status' });
+      return;
+    }
+
+    const payment = await prisma.paymentHistory.findUnique({
+      where: { id: req.params.paymentHistoryId },
+      include: { booking: true }
+    });
+
+    if (!payment) {
+      res.status(404).json({ error: 'Payment transaction not found' });
+      return;
+    }
+
+    if (payment.status !== 'PENDING') {
+      res.status(400).json({ error: 'Payment transaction is already processed' });
+      return;
+    }
+
+    const updatedPayment = await prisma.paymentHistory.update({
+      where: { id: req.params.paymentHistoryId },
+      data: { status, notes }
+    });
+
+    let updatedBooking = payment.booking;
+    if (status === 'VERIFIED') {
+      const newPaidAmount = payment.booking.paidAmount + payment.amount;
+      let newPaymentStatus = 'PENDING_PAYMENT';
+      if (newPaidAmount >= payment.booking.totalAmount) {
+        newPaymentStatus = 'FULLY_PAID';
+      } else if (newPaidAmount > 0) {
+        newPaymentStatus = 'PARTIALLY_PAID';
+      }
+
+      updatedBooking = await prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: {
+          paidAmount: newPaidAmount,
+          paymentStatus: newPaymentStatus,
+          status: 'CONFIRMED'
+        }
+      });
+    }
+
+    await prisma.adminLog.create({
+      data: {
+        adminName: req.admin?.email || 'System',
+        action: `PAYMENT_${status}`,
+        details: `Marked payment ${payment.id} for booking ${payment.booking.bookingRef} as ${status}`
+      }
+    });
+
+    res.json({ payment: updatedPayment, booking: updatedBooking });
+  } catch (error) {
+    console.error('Process payment status error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

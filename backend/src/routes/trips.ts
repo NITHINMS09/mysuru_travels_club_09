@@ -36,18 +36,40 @@ router.get('/', async (req, res) => {
       prisma.trip.count({ where }),
     ]);
 
-    // Calculate average rating for each trip
-    const tripsWithRating = await Promise.all(
-      trips.map(async (trip) => {
-        const avgRating = await prisma.review.aggregate({
-          where: { tripId: trip.id },
-          _avg: { rating: true },
-        });
-        return { ...trip, avgRating: avgRating._avg.rating || 0 };
-      })
-    );
+    // Calculate average rating for each trip using a single grouped query (solves N+1 query problem)
+    const tripIds = trips.map(t => t.id);
+    const avgRatings = tripIds.length > 0 ? await prisma.review.groupBy({
+      by: ['tripId'],
+      where: { tripId: { in: tripIds } },
+      _avg: { rating: true },
+    }) : [];
 
-    const formattedTrips = tripsWithRating.map(trip => ({
+    const avgRatingsMap = avgRatings.reduce((acc: Record<string, number>, curr) => {
+      acc[curr.tripId] = curr._avg.rating || 0;
+      return acc;
+    }, {});
+
+    const tripsWithRating = trips.map(trip => ({
+      ...trip,
+      avgRating: avgRatingsMap[trip.id] || 0
+    }));
+
+    // Sort trips: Ongoing first, then Upcoming (nearest departure first), then Completed at the bottom
+    const now = new Date();
+    const ongoingTrips = tripsWithRating.filter(t => new Date(t.startDate) <= now && new Date(t.endDate) >= now);
+    const upcomingTrips = tripsWithRating.filter(t => new Date(t.startDate) > now);
+    const completedTrips = tripsWithRating.filter(t => new Date(t.endDate) < now);
+
+    // Sort upcoming by startDate ascending (nearest first)
+    upcomingTrips.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    // Sort ongoing by startDate ascending
+    ongoingTrips.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    // Sort completed by endDate descending (most recent completed first)
+    completedTrips.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+
+    const sortedTrips = [...ongoingTrips, ...upcomingTrips, ...completedTrips];
+
+    const formattedTrips = sortedTrips.map(trip => ({
       ...trip,
       images: typeof trip.images === 'string' ? trip.images.split(',') : trip.images,
       included: typeof trip.included === 'string' ? trip.included.split(',') : trip.included,

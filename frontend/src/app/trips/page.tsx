@@ -10,21 +10,35 @@ export default function TripsPage() {
   const [trips, setTrips] = useState<any[]>([]);
   const [filteredTrips, setFilteredTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const categories = ['All', 'Adventure', 'Leisure', 'Biking', 'Relaxation', 'Cultural'];
 
-  useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const data = await api.trips.getAll();
-        setTrips(data.trips || []);
-        setFilteredTrips(data.trips || []);
-      } catch (error) {
-        console.error('Failed to fetch trips:', error);
-        // Fallback demo data
+  const fetchTrips = async (pageNum = 1, append = false) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      const params: any = { page: pageNum.toString(), limit: '9' };
+      const data = await api.trips.getAll(params);
+      
+      const newTrips = data.trips || [];
+      if (append) {
+        setTrips(prev => [...prev, ...newTrips]);
+      } else {
+        setTrips(newTrips);
+      }
+      setTotalPages(data.pagination?.pages || 1);
+      setPage(pageNum);
+    } catch (error) {
+      console.error('Failed to fetch trips:', error);
+      // Fallback demo data if API fails
+      if (pageNum === 1) {
         const demoTrips = [
           {
             id: '1',
@@ -35,6 +49,7 @@ export default function TripsPage() {
             price: 18500,
             originalPrice: 22000,
             startDate: new Date(Date.now() + 86400000 * 10).toISOString(),
+            endDate: new Date(Date.now() + 86400000 * 15).toISOString(),
             availableSeats: 8,
             totalSeats: 12,
             category: 'Adventure',
@@ -48,7 +63,8 @@ export default function TripsPage() {
             destination: 'Indonesia',
             price: 45000,
             originalPrice: 55000,
-            startDate: new Date(Date.now() + 86400000 * 25).toISOString(),
+            startDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+            endDate: new Date(Date.now() + 86400000 * 5).toISOString(),
             availableSeats: 5,
             totalSeats: 10,
             category: 'Leisure',
@@ -62,7 +78,8 @@ export default function TripsPage() {
             destination: 'Ladakh',
             price: 32000,
             originalPrice: 38000,
-            startDate: new Date(Date.now() + 86400000 * 40).toISOString(),
+            startDate: new Date(Date.now() - 86400000 * 10).toISOString(),
+            endDate: new Date(Date.now() - 86400000 * 5).toISOString(),
             availableSeats: 12,
             totalSeats: 20,
             category: 'Biking',
@@ -70,12 +87,15 @@ export default function TripsPage() {
           }
         ];
         setTrips(demoTrips);
-        setFilteredTrips(demoTrips);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchTrips();
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips(1, false);
   }, []);
 
   useEffect(() => {
@@ -94,6 +114,24 @@ export default function TripsPage() {
     
     setFilteredTrips(result);
   }, [search, activeCategory, trips]);
+
+  const now = new Date();
+  
+  const ongoingTrips = filteredTrips.filter(t => {
+    const start = new Date(t.startDate);
+    const end = new Date(t.endDate);
+    return now >= start && now <= end;
+  });
+
+  const upcomingTrips = filteredTrips.filter(t => {
+    const start = new Date(t.startDate);
+    return now < start;
+  });
+
+  const completedTrips = filteredTrips.filter(t => {
+    const end = new Date(t.endDate);
+    return now > end;
+  });
 
   return (
     <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen text-slate-900">
@@ -174,17 +212,70 @@ export default function TripsPage() {
             ))}
           </div>
         ) : filteredTrips.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredTrips.map((trip) => (
-              <motion.div
-                key={trip.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                layout
-              >
-                <TripCard trip={trip} />
-              </motion.div>
-            ))}
+          <div className="space-y-16">
+            
+            {/* Ongoing Trips Section */}
+            {ongoingTrips.length > 0 && (
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-800 mb-6 flex items-center gap-2 font-outfit uppercase tracking-wider">
+                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
+                  Ongoing Adventures
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                  {ongoingTrips.map((trip) => (
+                    <motion.div key={trip.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} layout>
+                      <TripCard trip={trip} />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Trips Section */}
+            {upcomingTrips.length > 0 && (
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-800 mb-6 font-outfit uppercase tracking-wider">
+                  Upcoming Expeditions
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                  {upcomingTrips.map((trip) => (
+                    <motion.div key={trip.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} layout>
+                      <TripCard trip={trip} />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Completed Trips Section */}
+            {completedTrips.length > 0 && (
+              <div className="opacity-80 hover:opacity-100 transition-opacity duration-300">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-500 mb-6 font-outfit uppercase tracking-wider">
+                  Completed Journeys
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                  {completedTrips.map((trip) => (
+                    <motion.div key={trip.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} layout>
+                      <TripCard trip={trip} />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {page < totalPages && (
+              <div className="text-center mt-12 pt-4">
+                <button
+                  onClick={() => fetchTrips(page + 1, true)}
+                  disabled={loadingMore}
+                  className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More Adventures'}
+                </button>
+              </div>
+            )}
+
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center">

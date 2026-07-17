@@ -197,6 +197,9 @@ export default function AdminDashboard() {
   const [selectedBookingScreenshot, setSelectedBookingScreenshot] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
+  const [adminPayAmount, setAdminPayAmount] = useState('');
+  const [adminPayMethod, setAdminPayMethod] = useState('CASH');
+  const [adminPayNotes, setAdminPayNotes] = useState('');
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -325,106 +328,127 @@ export default function AdminDashboard() {
     }
   }, [editingAdmin]);
 
-  const fetchData = useCallback(async () => {
+  const fetchTabData = useCallback(async (tabName: string) => {
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
+    
     try {
-      setLoading(true);
-      const [statsData, tripsData, bookingsData, blogsData, crewData, settingsData, votesData, updatesData, updatesStatsData, whatsappSettingsData] = await Promise.all([
-        api.auth.dashboard(token),
-        api.trips.getAll(),
-        api.bookings.getAll(token),
-        api.blogs.getAll(),
-        api.crew.getAll(),
-        api.settings.getAll(),
-        api.votes.getDestinations(),
-        api.updates.getAdminAll(token),
-        api.updates.getStats(token),
-        api.whatsappSettings.get()
-      ]);
-
-      setStats(statsData.stats);
-      setRecentBookings(statsData.recentBookings || []);
-      setMonthlyRevenue(statsData.monthlyRevenue || []);
-      setBookingsByStatus(statsData.bookingsByStatus || []);
+      if (tabName === 'Overview' && !stats) setLoading(true);
+      else if (tabName === 'Trips' && trips.length === 0) setLoading(true);
+      else if (tabName === 'Bookings' && bookings.length === 0) setLoading(true);
+      else if (tabName === 'Users' && users.length === 0) setLoading(true);
+      else if (tabName === 'Admins' && admins.length === 0) setLoading(true);
+      else if (tabName === 'Crew' && crew.length === 0) setLoading(true);
+      else if (tabName === 'Settings' && Object.keys(settings).length === 0) setLoading(true);
+      else if (tabName === 'Updates' && updates.length === 0) setLoading(true);
       
-      setTrips(tripsData.trips);
-      setBookings(bookingsData.bookings);
-      setBlogs(blogsData.blogs || blogsData);
-      setCrew(crewData || []);
-      setSettings(settingsData || {});
-      setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
-      setUpdates(updatesData || []);
-      setUpdateStats(updatesStatsData || { total: 0, published: 0, drafts: 0, totalViews: 0 });
-
-      setWhatsAppSettings(whatsappSettingsData || {});
-      setWhatsAppForm({
-        messageTitle: whatsappSettingsData?.messageTitle || 'Booking Confirmation',
-        messageTemplate: whatsappSettingsData?.messageTemplate || '',
-        imageUrl: whatsappSettingsData?.imageUrl || '',
-        isActive: whatsappSettingsData?.isActive ?? true
-      });
-
-      setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
-      setUpdates(updatesData);
-
-      if (settingsData.banned_emails) {
-        try {
-          setBannedEmails(JSON.parse(settingsData.banned_emails));
-        } catch(e) {
+      if (tabName === 'Overview') {
+        const [statsData, visitorData] = await Promise.all([
+          api.auth.dashboard(token),
+          fetchAPI('/analytics/stats', { token }).catch(() => null)
+        ]);
+        setStats(statsData.stats);
+        setRecentBookings(statsData.recentBookings || []);
+        setMonthlyRevenue(statsData.monthlyRevenue || []);
+        setBookingsByStatus(statsData.bookingsByStatus || []);
+        if (visitorData) setVisitorStats(visitorData);
+      }
+      else if (tabName === 'Trips') {
+        const tripsData = await api.trips.getAll();
+        setTrips(tripsData.trips || []);
+      }
+      else if (tabName === 'Bookings') {
+        const bookingsData = await api.bookings.getAll(token);
+        setBookings(bookingsData.bookings || []);
+      }
+      else if (tabName === 'Users') {
+        const usersRes = await api.users.getAll(token);
+        setUsers(usersRes.users || []);
+        if (usersRes.stats) {
+          setStats((prev: any) => ({ ...prev, userStats: usersRes.stats }));
+        }
+      }
+      else if (tabName === 'Admins') {
+        const user = localStorage.getItem('tripnova_admin_user');
+        const parsedAdmin = user ? JSON.parse(user) : null;
+        if (parsedAdmin?.role === 'SUPER_ADMIN') {
+          const adminsRes = await api.auth.getAdmins(token);
+          setAdmins(adminsRes.admins || []);
+        }
+      }
+      else if (tabName === 'Crew') {
+        const crewData = await api.crew.getAll();
+        setCrew(crewData || []);
+      }
+      else if (tabName === 'Settings') {
+        const [settingsData, whatsappSettingsData] = await Promise.all([
+          api.settings.getAll(),
+          api.whatsappSettings.get()
+        ]);
+        setSettings(settingsData || {});
+        if (settingsData.banned_emails) {
+          try {
+            setBannedEmails(JSON.parse(settingsData.banned_emails));
+          } catch(e) {
+            setBannedEmails([]);
+          }
+        } else {
           setBannedEmails([]);
         }
-      } else {
-        setBannedEmails([]);
+        setWhatsAppSettings(whatsappSettingsData || {});
+        setWhatsAppForm({
+          messageTitle: whatsappSettingsData?.messageTitle || 'Booking Confirmation',
+          messageTemplate: whatsappSettingsData?.messageTemplate || '',
+          imageUrl: whatsappSettingsData?.imageUrl || '',
+          isActive: whatsappSettingsData?.isActive ?? true
+        });
       }
-
-      // Fetch users
-      const usersRes = await api.users.getAll(token);
-      setUsers(usersRes.users || []);
-      if (usersRes.stats) {
-        setStats((prev: any) => ({ ...prev, userStats: usersRes.stats }));
+      else if (tabName === 'Updates') {
+        const [updatesData, updatesStatsData] = await Promise.all([
+          api.updates.getAdminAll(token),
+          api.updates.getStats(token)
+        ]);
+        setUpdates(updatesData || []);
+        setUpdateStats(updatesStatsData || { total: 0, published: 0, drafts: 0, totalViews: 0 });
       }
-
-      // Fetch admins if SUPER_ADMIN
-      const user = localStorage.getItem('tripnova_admin_user');
-      const parsedAdmin = user ? JSON.parse(user) : null;
-      if (parsedAdmin?.role === 'SUPER_ADMIN') {
-        const adminsRes = await api.auth.getAdmins(token);
-        setAdmins(adminsRes.admins || []);
+      else if (tabName === 'Votes') {
+        const votesData = await api.votes.getDestinations();
+        setVotes(Array.isArray(votesData) ? votesData : votesData.destinations || []);
       }
-      
-      const fetchVisitorStats = async () => {
-        try {
-          const data = await fetchAPI('/analytics/stats', {
-            token
-          });
-          setVisitorStats(data);
-        } catch (e) {
-          console.error('Failed to fetch visitor stats');
-        }
-      };
-      await fetchVisitorStats();
-
+      else if (tabName === 'Blogs') {
+        const blogsData = await api.blogs.getAll();
+        setBlogs(blogsData.blogs || blogsData);
+      }
     } catch (err) {
-      toast.error('Failed to fetch data');
+      console.error(err);
+      toast.error('Failed to fetch data for ' + tabName);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [stats, trips.length, bookings.length, users.length, admins.length, crew.length, settings, updates.length]);
+
+  const fetchData = useCallback(async () => {
+    await fetchTabData(activeTab);
+  }, [activeTab, fetchTabData]);
 
   useEffect(() => {
     const token = localStorage.getItem('tripnova_admin_token');
     const user = localStorage.getItem('tripnova_admin_user');
     if (!token) { router.push('/admin/login'); return; }
     setAdmin(user ? JSON.parse(user) : null);
-    fetchData();
+  }, [router]);
 
+  useEffect(() => {
+    fetchTabData(activeTab);
+  }, [activeTab, fetchTabData]);
+
+  useEffect(() => {
     (window as any).startLiveTracking = (tripId: string, lat: number, lng: number) => {
       socket.emit('start_live_tracking', { tripId, lat, lng });
       toast.success('Live Location Started!');
       fetchData();
     };
-  }, [router, fetchData]);
+  }, [fetchData]);
 
   const handleLogout = () => {
     localStorage.removeItem('tripnova_admin_token');
@@ -1232,6 +1256,7 @@ export default function AdminDashboard() {
                           <th className="px-6 py-4.5">Mobile Number</th>
                           <th className="px-6 py-4.5">Trip Name</th>
                           <th className="px-6 py-4.5">Seats</th>
+                          <th className="px-6 py-4.5">Paid / Total (Pending)</th>
                           <th className="px-6 py-4.5">Payment Screenshot</th>
                           <th className="px-6 py-4.5">Booking Date</th>
                           <th className="px-6 py-4.5">Status</th>
@@ -1260,6 +1285,16 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4 text-slate-600">{booking.phone}</td>
                             <td className="px-6 py-4 text-slate-600">{booking.trip?.title}</td>
                             <td className="px-6 py-4 text-slate-600 font-bold">{booking.seatCount}</td>
+                            <td className="px-6 py-4 text-slate-600 font-medium whitespace-nowrap">
+                              <div className="font-bold text-slate-800">
+                                <span className="text-[#00C853]">₹{(booking.paidAmount || 0).toLocaleString()}</span>
+                                {" / "}
+                                <span>₹{booking.totalAmount?.toLocaleString()}</span>
+                              </div>
+                              <div className="text-[10px] text-rose-500 font-extrabold">
+                                Pending: ₹{(booking.totalAmount - (booking.paidAmount || 0)).toLocaleString()}
+                              </div>
+                            </td>
                             <td className="px-6 py-4">
                               {booking.paymentScreenshot ? (
                                 <div className="flex items-center gap-2">
@@ -2310,8 +2345,14 @@ export default function AdminDashboard() {
                 <span className="font-bold text-slate-800">{selectedBookingScreenshot.trip?.title}</span>
               </div>
               <div>
-                <span className="text-[10px] font-extrabold text-slate-450 uppercase block">Amount Paid</span>
-                <span className="font-bold text-slate-800">₹{selectedBookingScreenshot.totalAmount?.toLocaleString()}</span>
+                <span className="text-[10px] font-extrabold text-slate-450 uppercase block">Total Price / Paid / Pending</span>
+                <span className="font-bold text-slate-800">
+                  ₹{selectedBookingScreenshot.totalAmount?.toLocaleString()}
+                  {" / "}
+                  <span className="text-[#00C853]">₹{(selectedBookingScreenshot.paidAmount || 0).toLocaleString()}</span>
+                  {" / "}
+                  <span className="text-rose-500">₹{(selectedBookingScreenshot.totalAmount - (selectedBookingScreenshot.paidAmount || 0)).toLocaleString()}</span>
+                </span>
               </div>
               <div>
                 <span className="text-[10px] font-extrabold text-slate-450 uppercase block">Status</span>
@@ -2319,10 +2360,83 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Payment history list */}
+            {selectedBookingScreenshot.paymentHistory && selectedBookingScreenshot.paymentHistory.length > 0 && (
+              <div className="mb-6 border-t border-slate-100 pt-4">
+                <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-3">Payment Submissions</h4>
+                <div className="space-y-3">
+                  {selectedBookingScreenshot.paymentHistory.map((ph: any) => (
+                    <div key={ph.id} className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-slate-800">Amount: ₹{ph.amount.toLocaleString()} ({ph.method})</p>
+                        <p className="text-slate-400 text-[10px]">Date: {new Date(ph.date || ph.createdAt).toLocaleDateString()}</p>
+                        {ph.notes && <p className="text-slate-450 text-[10px] italic">Notes: {ph.notes}</p>}
+                        {ph.screenshot && (
+                          <a href={ph.screenshot.startsWith('http') ? ph.screenshot : `${getApiBaseClean()}${ph.screenshot}`} target="_blank" rel="noopener noreferrer" className="text-violet-600 font-bold hover:underline block mt-1">
+                            View Screenshot Proof
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {ph.status === 'PENDING' ? (
+                          <>
+                            <button 
+                              onClick={async () => {
+                                const token = localStorage.getItem('tripnova_admin_token');
+                                if (!token) return;
+                                try {
+                                  await api.bookings.updateStatus(selectedBookingScreenshot.id, 'CONFIRMED', token, adminNotes);
+                                  toast.success('Payment verified!');
+                                  setSelectedBookingScreenshot(null);
+                                  fetchData();
+                                } catch (e: any) {
+                                  toast.error(e.message);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors cursor-pointer"
+                            >
+                              Verify
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                if (!adminNotes.trim()) {
+                                  toast.error('Please enter a rejection reason in Admin Notes');
+                                  return;
+                                }
+                                const token = localStorage.getItem('tripnova_admin_token');
+                                if (!token) return;
+                                try {
+                                  await api.bookings.updateStatus(selectedBookingScreenshot.id, 'REJECTED', token, adminNotes);
+                                  toast.success('Payment rejected');
+                                  setSelectedBookingScreenshot(null);
+                                  fetchData();
+                                } catch (e: any) {
+                                  toast.error(e.message);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-100 transition-colors cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                            ph.status === 'VERIFIED' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                          }`}>
+                            {ph.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mb-6">
-              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Admin Notes (Required for Rejection)</label>
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Admin Notes (Used for verification/rejection)</label>
               <textarea 
-                placeholder="Reason for rejection or internal notes..." 
+                placeholder="Internal notes or rejection reasons..." 
                 className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-violet-400 bg-slate-50/50 resize-none" 
                 rows={2}
                 value={adminNotes}
@@ -2337,9 +2451,9 @@ export default function AdminDashboard() {
                   setSelectedBookingScreenshot(null);
                   setAdminNotes('');
                 }} 
-                className="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10"
+                className="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10 cursor-pointer"
               >
-                <HiOutlineCheckCircle className="w-5 h-5" /> Verify Payment
+                <HiOutlineCheckCircle className="w-5 h-5" /> Confirm Overall Booking
               </button>
               <button 
                 onClick={() => {
@@ -2351,10 +2465,80 @@ export default function AdminDashboard() {
                   setSelectedBookingScreenshot(null);
                   setAdminNotes('');
                 }} 
-                className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <HiOutlineXCircle className="w-5 h-5" /> Reject Payment
+                <HiOutlineXCircle className="w-5 h-5" /> Reject Overall Booking
               </button>
+            </div>
+
+            {/* Record Manual Payment Form */}
+            <div className="border-t border-slate-100 pt-4 mt-6">
+              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-3">Record Direct / Manual Payment</h4>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-[10px] text-slate-450 font-bold block mb-1">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 5000" 
+                    value={adminPayAmount} 
+                    onChange={e => setAdminPayAmount(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-400 bg-slate-50"
+                  />
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-[10px] text-slate-450 font-bold block mb-1">Method</label>
+                  <select 
+                    value={adminPayMethod} 
+                    onChange={e => setAdminPayMethod(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-400 bg-white font-semibold text-slate-700"
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                  </select>
+                </div>
+                <div className="flex-[2] min-w-[180px]">
+                  <label className="text-[10px] text-slate-450 font-bold block mb-1">Notes</label>
+                  <input 
+                    type="text" 
+                    placeholder="Payment details / notes" 
+                    value={adminPayNotes} 
+                    onChange={e => setAdminPayNotes(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-400 bg-slate-50"
+                  />
+                </div>
+                <button 
+                  onClick={async () => {
+                    if (!adminPayAmount || parseFloat(adminPayAmount) <= 0) {
+                      toast.error('Please enter a valid amount');
+                      return;
+                    }
+                    const token = localStorage.getItem('tripnova_admin_token');
+                    if (!token) return;
+                    try {
+                      await fetchAPI(`/bookings/${selectedBookingScreenshot.id}/payments`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          amount: parseFloat(adminPayAmount),
+                          method: adminPayMethod,
+                          notes: adminPayNotes
+                        }),
+                        token
+                      });
+                      toast.success('Manual payment recorded successfully!');
+                      setAdminPayAmount('');
+                      setAdminPayNotes('');
+                      setSelectedBookingScreenshot(null);
+                      fetchData();
+                    } catch (e: any) {
+                      toast.error(e.message);
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer shadow-md"
+                >
+                  Record
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
