@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Hero from '@/components/home/Hero';
 
 const LatestUpdates = dynamic(() => import('@/components/home/LatestUpdates'), { ssr: false });
+const InstagramFeed = dynamic(() => import('@/components/home/InstagramFeed'), { ssr: false });
 const OurCrew = dynamic(() => import('@/components/home/OurCrew'), { ssr: false });
 const MarketplaceCategories = dynamic(() => import('@/components/home/MarketplaceCategories'), { ssr: false });
 const UpcomingTrips = dynamic(() => import('@/components/home/UpcomingTrips'), { ssr: false });
@@ -18,6 +19,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Hero />
       <LatestUpdates />
+      <InstagramFeed />
       <OurCrew />
       <MarketplaceCategories />
       <UpcomingTrips />

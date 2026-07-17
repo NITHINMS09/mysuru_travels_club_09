@@ -32,6 +32,8 @@ import marketplaceRoutes from './routes/marketplace';
 import updateRoutes from './routes/updates';
 import whatsappSettingsRoutes from './routes/whatsapp-settings';
 import userRoutes from './routes/users';
+import instagramRoutes from './routes/instagram';
+import { InstagramService } from './services/instagramService';
 import path from 'path';
 
 const app = express();
@@ -105,6 +107,7 @@ app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
 app.use('/api/v1/updates', updateRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/instagram', instagramRoutes);
 
 // Error handling
 app.use(notFoundHandler);
@@ -116,6 +119,7 @@ const PORT = config.port;
 prisma.$connect()
   .then(() => {
     console.log(`🔌 Successfully connected to PostgreSQL database`);
+    InstagramService.startAutoSyncScheduler();
     httpServer.listen(PORT, () => {
       console.log(`\n🚀 TripNova Backend Server running on port ${PORT}`);
       console.log(`📡 Socket.io ready for connections`);

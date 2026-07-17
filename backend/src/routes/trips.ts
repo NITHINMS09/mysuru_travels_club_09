@@ -5,30 +5,64 @@ import type { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+const formatTrip = (trip: any, avgRating = 0) => ({
+  ...trip,
+  images: typeof trip.images === 'string' ? trip.images.split(',') : trip.images,
+  included: typeof trip.included === 'string' ? trip.included.split(',') : trip.included,
+  excluded: typeof trip.excluded === 'string' ? trip.excluded.split(',') : trip.excluded,
+  itinerary: typeof trip.itinerary === 'string' ? JSON.parse(trip.itinerary) : trip.itinerary,
+  pickupPoints: typeof trip.pickupPoints === 'string' ? JSON.parse(trip.pickupPoints) : trip.pickupPoints,
+  avgRating,
+});
+
+const normalizeTripPayload = (data: any) => {
+  const normalized = { ...data };
+
+  normalized.partialPaymentEnabled =
+    normalized.partialPaymentEnabled === true || normalized.partialPaymentEnabled === 'true';
+
+  if (normalized.partialPaymentAmount !== undefined && normalized.partialPaymentAmount !== null && normalized.partialPaymentAmount !== '') {
+    normalized.partialPaymentAmount = parseFloat(normalized.partialPaymentAmount);
+    if (Number.isNaN(normalized.partialPaymentAmount)) {
+      normalized.partialPaymentAmount = null;
+    }
+  } else {
+    normalized.partialPaymentAmount = null;
+  }
+
+  if (!normalized.partialPaymentEnabled) {
+    normalized.partialPaymentAmount = null;
+  }
+
+  return normalized;
+};
+
 // GET all trips (public)
 router.get('/', async (req, res) => {
   try {
-    const { status, featured, category, search, page = '1', limit = '12' } = req.query;
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const { status, featured, category, search, upcomingOnly, page = '1', limit = '12' } = req.query;
+    const currentPage = Math.max(parseInt(page as string, 10) || 1, 1);
+    const pageSize = Math.max(parseInt(limit as string, 10) || 12, 1);
     const where: any = {};
+    const now = new Date();
 
     if (status) where.status = status;
     if (featured === 'true') where.featured = true;
     if (category) where.category = category;
     if (search) {
       where.OR = [
-        { title: { contains: search as string } },
-        { destination: { contains: search as string } },
-        { description: { contains: search as string } },
+        { title: { contains: search as string, mode: 'insensitive' } },
+        { destination: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } },
       ];
+    }
+    if (upcomingOnly === 'true') {
+      where.startDate = { gt: now };
     }
 
     const [trips, total] = await Promise.all([
       prisma.trip.findMany({
         where,
-        skip,
-        take: parseInt(limit as string),
-        orderBy: { startDate: 'asc' },
         include: {
           _count: { select: { reviews: true, bookings: true } },
         },
@@ -36,8 +70,7 @@ router.get('/', async (req, res) => {
       prisma.trip.count({ where }),
     ]);
 
-    // Calculate average rating for each trip using a single grouped query (solves N+1 query problem)
-    const tripIds = trips.map(t => t.id);
+    const tripIds = trips.map((trip) => trip.id);
     const avgRatings = tripIds.length > 0 ? await prisma.review.groupBy({
       by: ['tripId'],
       where: { tripId: { in: tripIds } },
@@ -49,41 +82,31 @@ router.get('/', async (req, res) => {
       return acc;
     }, {});
 
-    const tripsWithRating = trips.map(trip => ({
+    const tripsWithRating = trips.map((trip) => ({
       ...trip,
-      avgRating: avgRatingsMap[trip.id] || 0
+      avgRating: avgRatingsMap[trip.id] || 0,
     }));
 
-    // Sort trips: Ongoing first, then Upcoming (nearest departure first), then Completed at the bottom
-    const now = new Date();
-    const ongoingTrips = tripsWithRating.filter(t => new Date(t.startDate) <= now && new Date(t.endDate) >= now);
-    const upcomingTrips = tripsWithRating.filter(t => new Date(t.startDate) > now);
-    const completedTrips = tripsWithRating.filter(t => new Date(t.endDate) < now);
+    const upcomingTrips = tripsWithRating.filter((trip) => new Date(trip.startDate) > now);
+    const ongoingTrips = tripsWithRating.filter((trip) => new Date(trip.startDate) <= now && new Date(trip.endDate) >= now);
+    const completedTrips = tripsWithRating.filter((trip) => new Date(trip.endDate) < now);
 
-    // Sort upcoming by startDate ascending (nearest first)
     upcomingTrips.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-    // Sort ongoing by startDate ascending
-    ongoingTrips.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-    // Sort completed by endDate descending (most recent completed first)
+    ongoingTrips.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
     completedTrips.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
 
-    const sortedTrips = [...ongoingTrips, ...upcomingTrips, ...completedTrips];
+    const sortedTrips = [...upcomingTrips, ...ongoingTrips, ...completedTrips];
+    const paginatedTrips = sortedTrips.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const formattedTrips = paginatedTrips.map((trip) => formatTrip(trip, trip.avgRating || 0));
 
-    const formattedTrips = sortedTrips.map(trip => ({
-      ...trip,
-      images: typeof trip.images === 'string' ? trip.images.split(',') : trip.images,
-      included: typeof trip.included === 'string' ? trip.included.split(',') : trip.included,
-      excluded: typeof trip.excluded === 'string' ? trip.excluded.split(',') : trip.excluded,
-      itinerary: typeof trip.itinerary === 'string' ? JSON.parse(trip.itinerary) : trip.itinerary,
-      pickupPoints: typeof trip.pickupPoints === 'string' ? JSON.parse(trip.pickupPoints) : trip.pickupPoints,
-    }));
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 
     res.json({
       trips: formattedTrips,
       pagination: {
         total,
-        page: parseInt(page as string),
-        pages: Math.ceil(total / parseInt(limit as string)),
+        page: currentPage,
+        pages: Math.ceil(total / pageSize),
       },
     });
   } catch (error) {
@@ -113,16 +136,9 @@ router.get('/:id', async (req, res) => {
       _avg: { rating: true },
     });
 
-    const formattedTrip = {
-      ...trip,
-      images: typeof trip.images === 'string' ? trip.images.split(',') : trip.images,
-      included: typeof trip.included === 'string' ? trip.included.split(',') : trip.included,
-      excluded: typeof trip.excluded === 'string' ? trip.excluded.split(',') : trip.excluded,
-      itinerary: typeof trip.itinerary === 'string' ? JSON.parse(trip.itinerary) : trip.itinerary,
-      pickupPoints: typeof trip.pickupPoints === 'string' ? JSON.parse(trip.pickupPoints) : trip.pickupPoints,
-      avgRating: avgRating._avg.rating || 0
-    };
+    const formattedTrip = formatTrip(trip, avgRating._avg.rating || 0);
 
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json(formattedTrip);
   } catch (error) {
     console.error('Get trip error:', error);
@@ -133,11 +149,22 @@ router.get('/:id', async (req, res) => {
 // CREATE trip (admin)
 router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const data = req.body;
+    const data = normalizeTripPayload(req.body);
     const slug = data.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+    if (data.partialPaymentEnabled) {
+      if (!data.partialPaymentAmount || data.partialPaymentAmount <= 0) {
+        res.status(400).json({ error: 'Partial payment amount must be greater than 0' });
+        return;
+      }
+      if (data.partialPaymentAmount >= data.price) {
+        res.status(400).json({ error: 'Partial payment amount must be less than the full seat price' });
+        return;
+      }
+    }
 
     const trip = await prisma.trip.create({
       data: {
@@ -161,6 +188,16 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
 // UPDATE trip (admin)
 const updateTripHandler = async (req: AuthRequest, res: any) => {
   try {
+    const incomingData = normalizeTripPayload(req.body);
+    const existingTrip = await prisma.trip.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, price: true, partialPaymentEnabled: true },
+    });
+
+    if (!existingTrip) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+
     const {
       id,
       createdAt,
@@ -170,7 +207,7 @@ const updateTripHandler = async (req: AuthRequest, res: any) => {
       _count,
       avgRating,
       ...allowedData
-    } = req.body;
+    } = incomingData;
 
     // Validate fields if provided
     if (allowedData.title !== undefined && (!allowedData.title || !allowedData.title.trim())) {
@@ -185,6 +222,22 @@ const updateTripHandler = async (req: AuthRequest, res: any) => {
         return res.status(400).json({ error: 'Price must be a valid number greater than 0' });
       }
       allowedData.price = priceNum;
+    }
+    const effectivePrice = allowedData.price !== undefined ? allowedData.price : existingTrip.price;
+    const partialEnabled = allowedData.partialPaymentEnabled ?? existingTrip.partialPaymentEnabled;
+    if (partialEnabled) {
+      const partialAmount = parseFloat(allowedData.partialPaymentAmount);
+      if (isNaN(partialAmount) || partialAmount <= 0) {
+        return res.status(400).json({ error: 'Partial payment amount must be a valid number greater than 0' });
+      }
+      if (partialAmount >= effectivePrice) {
+        return res.status(400).json({ error: 'Partial payment amount must be less than the full seat price' });
+      }
+      allowedData.partialPaymentAmount = partialAmount;
+      allowedData.partialPaymentEnabled = true;
+    } else {
+      allowedData.partialPaymentEnabled = false;
+      allowedData.partialPaymentAmount = null;
     }
     if (allowedData.totalSeats !== undefined) {
       const seatsNum = parseInt(allowedData.totalSeats);

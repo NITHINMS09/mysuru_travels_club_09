@@ -14,7 +14,7 @@ export default function FeaturedDestinations() {
   useEffect(() => {
     const fetchDestinations = async () => {
       try {
-        const data = await api.trips.getAll();
+        const data = await api.trips.getAll({ upcomingOnly: 'true' });
         // Extract unique destinations from real trips
         const tripsArray = Array.isArray(data?.trips) ? data.trips : [];
         const uniqueDests = tripsArray.reduce((acc: any[], trip: any) => {

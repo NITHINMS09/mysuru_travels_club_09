@@ -146,6 +146,16 @@ export const api = {
     incrementView: (id: string) => fetchAPI(`/updates/${id}/view`, { method: 'POST' }),
   },
 
+  instagram: {
+    getSettings: (token: string) => fetchAPI('/instagram/settings', { token }),
+    updateSettings: (data: any, token: string) => fetchAPI('/instagram/settings', { method: 'POST', body: JSON.stringify(data), token }),
+    connectDemo: (token: string) => fetchAPI('/instagram/connect-demo', { method: 'POST', token }),
+    connectReal: (code: string, redirectUri: string, token: string) => fetchAPI('/instagram/connect', { method: 'POST', body: JSON.stringify({ code, redirectUri }), token }),
+    disconnect: (token: string) => fetchAPI('/instagram/disconnect', { method: 'POST', token }),
+    sync: (token: string) => fetchAPI('/instagram/sync', { method: 'POST', token }),
+    getFeed: () => fetchAPI('/instagram/feed'),
+  },
+
   upload: {
     single: async (file: File) => {
       const formData = new FormData();

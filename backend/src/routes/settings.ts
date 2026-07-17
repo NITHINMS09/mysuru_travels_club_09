@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
       return acc;
     }, {});
     
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(settingsMap);
   } catch (error) {
     console.error('Get settings error:', error);

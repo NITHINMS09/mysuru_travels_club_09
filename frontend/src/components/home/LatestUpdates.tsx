@@ -46,7 +46,7 @@ export default function LatestUpdates() {
                 <video 
                   src={video.videoUrl}
                   poster={video.thumbnailUrl || undefined}
-                  preload="metadata"
+                  preload="none"
                   autoPlay 
                   muted 
                   loop 

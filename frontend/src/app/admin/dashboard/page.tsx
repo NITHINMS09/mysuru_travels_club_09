@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink, HiOutlineShare
 } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -200,6 +200,11 @@ export default function AdminDashboard() {
   const [adminPayAmount, setAdminPayAmount] = useState('');
   const [adminPayMethod, setAdminPayMethod] = useState('CASH');
   const [adminPayNotes, setAdminPayNotes] = useState('');
+  
+  // Instagram State
+  const [instagramSettings, setInstagramSettings] = useState<any>(null);
+  const [syncingInstagram, setSyncingInstagram] = useState(false);
+  const [connectingDemo, setConnectingDemo] = useState(false);
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
@@ -419,6 +424,10 @@ export default function AdminDashboard() {
         const blogsData = await api.blogs.getAll();
         setBlogs(blogsData.blogs || blogsData);
       }
+      else if (tabName === 'Social Integration') {
+        const res = await api.instagram.getSettings(token);
+        setInstagramSettings(res);
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch data for ' + tabName);
@@ -455,6 +464,82 @@ export default function AdminDashboard() {
     localStorage.removeItem('tripnova_admin_user');
     toast.success('Logged out successfully');
     router.push('/admin/login');
+  };
+
+  const handleConnectDemoInstagram = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    setConnectingDemo(true);
+    try {
+      const res = await api.instagram.connectDemo(token);
+      setInstagramSettings(res.settings);
+      toast.success('Connected simulated demo Instagram account!');
+    } catch (e: any) {
+      toast.error(e.message || 'Demo connection failed');
+    } finally {
+      setConnectingDemo(false);
+    }
+  };
+
+  const handleDisconnectInstagram = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    if (!confirm('Are you sure you want to disconnect your Instagram account? This will wipe the cached media feed.')) return;
+    try {
+      const res = await api.instagram.disconnect(token);
+      setInstagramSettings(res.settings);
+      toast.success('Disconnected Instagram account successfully.');
+    } catch (e: any) {
+      toast.error(e.message || 'Disconnection failed');
+    }
+  };
+
+  const handleSyncInstagram = async () => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token) return;
+    setSyncingInstagram(true);
+    try {
+      const res = await api.instagram.sync(token);
+      setInstagramSettings(res.settings);
+      toast.success('Instagram synchronization completed!');
+    } catch (e: any) {
+      toast.error(e.message || 'Synchronization failed');
+    } finally {
+      setSyncingInstagram(false);
+    }
+  };
+
+  const handleToggleSyncSetting = async (key: string) => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token || !instagramSettings) return;
+    const updatedValue = !instagramSettings[key];
+    try {
+      const res = await api.instagram.updateSettings({ [key]: updatedValue }, token);
+      setInstagramSettings(res);
+      toast.success('Sync setting updated');
+    } catch (e: any) {
+      toast.error('Failed to update sync setting');
+    }
+  };
+
+  const handleSyncLimitChange = async (val: number) => {
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token || !instagramSettings) return;
+    try {
+      const res = await api.instagram.updateSettings({ syncLimit: val }, token);
+      setInstagramSettings(res);
+      toast.success('Sync limit count updated');
+    } catch (e: any) {
+      toast.error('Failed to update sync limit');
+    }
+  };
+
+  const handleConnectRealInstagram = () => {
+    const clientId = 'YOUR_INSTAGRAM_CLIENT_ID';
+    const redirectUri = window.location.origin + '/admin/instagram-callback';
+    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`;
+    window.open(authUrl, '_blank');
+    toast.success('Opened Instagram Login Redirect. Configure client details in your server .env file.');
   };
 
   const deleteTrip = async (id: string) => {
@@ -844,6 +929,7 @@ export default function AdminDashboard() {
     { label: 'Blogs', icon: HiOutlineDocumentText, color: 'text-indigo-600' },
     { label: 'Updates', icon: HiOutlineVideoCamera, color: 'text-rose-500' },
     { label: 'Votes', icon: HiOutlineThumbUp, color: 'text-rose-500' },
+    { label: 'Social Integration', icon: HiOutlineShare, color: 'text-amber-500' },
     { label: 'Settings', icon: HiOutlineCog, color: 'text-cyan-600' },
     { label: 'WhatsApp Settings', icon: FaWhatsapp, color: 'text-green-500' },
   ];
@@ -2278,6 +2364,225 @@ export default function AdminDashboard() {
                           <div className="text-[10px] text-right text-slate-400 mt-1 absolute bottom-2 right-2 bg-black/40 text-white px-1 rounded">10:42 AM</div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'Social Integration' && (
+              <motion.div key="social" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black font-outfit text-slate-800">Social Media Integration</h3>
+                    <p className="text-slate-500 text-sm mt-1">Connect your Instagram account and customize sync behavior.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Account Status / Connect Section */}
+                  <div className="lg:col-span-1 space-y-6">
+                    <div className="glass-card bg-white p-6 border border-slate-200/80 shadow-md rounded-3xl">
+                      <h4 className="font-bold text-lg mb-6 font-outfit text-slate-800">Account Connection</h4>
+                      
+                      {instagramSettings?.connected ? (
+                        <div className="space-y-6 text-center">
+                          <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-amber-500 p-1 bg-slate-50">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img 
+                              src={instagramSettings.profilePicture} 
+                              alt={instagramSettings.username} 
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          </div>
+                          
+                          <div>
+                            <h5 className="font-black text-slate-800 text-lg">@{instagramSettings.username}</h5>
+                            <span className="inline-block px-2.5 py-0.5 mt-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-wider rounded-full border border-amber-200">
+                              {instagramSettings.accountType}
+                            </span>
+                          </div>
+
+                          <div className="divide-y divide-slate-100 border-t border-b border-slate-100 text-xs text-left py-2 space-y-2">
+                            <div className="flex justify-between py-2">
+                              <span className="text-slate-500">Status</span>
+                              <span className={`font-bold ${instagramSettings.connectionStatus === 'CONNECTED' ? 'text-green-600' : 'text-rose-600'}`}>
+                                {instagramSettings.connectionStatus}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2">
+                              <span className="text-slate-500">Source</span>
+                              <span className="font-semibold text-slate-700">
+                                {instagramSettings.isDemo ? 'Simulation (Demo)' : 'Live API'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2">
+                              <span className="text-slate-500">Last Sync</span>
+                              <span className="font-mono text-slate-700 font-bold">
+                                {instagramSettings.lastSyncTime ? new Date(instagramSettings.lastSyncTime).toLocaleString() : 'Never'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {instagramSettings.error && (
+                            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs text-left font-medium">
+                              <strong>Error:</strong> {instagramSettings.error}
+                            </div>
+                          )}
+
+                          <button 
+                            onClick={handleDisconnectInstagram}
+                            className="w-full py-3 bg-red-550 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-sm transition-colors border border-red-200 cursor-pointer"
+                          >
+                            Disconnect Account
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-6 text-center py-4">
+                          <div className="w-16 h-16 bg-slate-50 rounded-2xl border border-slate-200/60 flex items-center justify-center mx-auto text-slate-400">
+                            <HiOutlineShare className="w-8 h-8" />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm text-slate-600 font-medium">No Instagram account currently connected.</p>
+                            <p className="text-xs text-slate-400">Connect an account to automatically sync your reels, posts, and announcements onto the homepage feed.</p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <button 
+                              onClick={handleConnectRealInstagram}
+                              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+                            >
+                              Connect Live Account
+                            </button>
+                            <button 
+                              onClick={handleConnectDemoInstagram}
+                              disabled={connectingDemo}
+                              className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-2xl text-sm transition-colors border border-amber-200 cursor-pointer"
+                            >
+                              {connectingDemo ? 'Connecting...' : 'Connect Demo / Simulator'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sync Settings Section */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="glass-card bg-white p-6 border border-slate-200/80 shadow-md rounded-3xl space-y-6">
+                      <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                        <h4 className="font-bold text-lg font-outfit text-slate-800">Synchronization Settings</h4>
+                        {instagramSettings?.connected && (
+                          <button 
+                            onClick={handleSyncInstagram}
+                            disabled={syncingInstagram}
+                            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                          >
+                            {syncingInstagram ? 'Syncing...' : 'Sync Now'}
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Auto Sync Toggle */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-150">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Enable Auto Sync</p>
+                            <p className="text-[10px] text-slate-400">Fetch new posts periodically in background</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={!instagramSettings?.connected}
+                            onClick={() => handleToggleSyncSetting('autoSync')}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${
+                              !instagramSettings?.connected ? 'opacity-50 cursor-not-allowed' : ''
+                            } ${instagramSettings?.autoSync ? 'bg-amber-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${instagramSettings?.autoSync ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* Sync Reels */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-150">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Sync Reels</p>
+                            <p className="text-[10px] text-slate-400">Include short Instagram reels in sync list</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={!instagramSettings?.connected}
+                            onClick={() => handleToggleSyncSetting('syncReels')}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${instagramSettings?.syncReels ? 'bg-amber-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${instagramSettings?.syncReels ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* Sync Posts */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-150">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Sync Posts</p>
+                            <p className="text-[10px] text-slate-400">Include image carousels and static posts</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={!instagramSettings?.connected}
+                            onClick={() => handleToggleSyncSetting('syncPosts')}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${instagramSettings?.syncPosts ? 'bg-amber-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${instagramSettings?.syncPosts ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* Sync Images */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-150">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Sync Images Only</p>
+                            <p className="text-[10px] text-slate-400">Filter and save static photo content</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={!instagramSettings?.connected}
+                            onClick={() => handleToggleSyncSetting('syncImages')}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${instagramSettings?.syncImages ? 'bg-amber-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${instagramSettings?.syncImages ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* Sync Videos */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-150">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Sync Videos Only</p>
+                            <p className="text-[10px] text-slate-400">Filter and save regular video formats</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={!instagramSettings?.connected}
+                            onClick={() => handleToggleSyncSetting('syncVideos')}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${instagramSettings?.syncVideos ? 'bg-amber-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${instagramSettings?.syncVideos ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* Limit of media to show */}
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-2">
+                          <label className="text-xs font-bold text-slate-800 block">Recent Posts Count Limit</label>
+                          <select 
+                            disabled={!instagramSettings?.connected}
+                            value={instagramSettings?.syncLimit || 12}
+                            onChange={(e) => handleSyncLimitChange(parseInt(e.target.value))}
+                            className="w-full border border-slate-200 rounded-xl p-2 text-xs focus:outline-none focus:border-amber-400 bg-white font-semibold text-slate-700"
+                          >
+                            <option value={6}>6 items</option>
+                            <option value={12}>12 items</option>
+                            <option value={24}>24 items</option>
+                            <option value={48}>48 items</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

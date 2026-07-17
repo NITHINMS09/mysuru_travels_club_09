@@ -18,6 +18,23 @@ cloudinary.config({
 
 const router = Router();
 
+const getPendingPaymentAmount = (paymentHistory: Array<{ amount: number; status: string }> = []) =>
+  paymentHistory
+    .filter((payment) => payment.status === 'PENDING')
+    .reduce((sum, payment) => sum + payment.amount, 0);
+
+const attachBookingFinancials = (booking: any) => {
+  const pendingPaymentAmount = getPendingPaymentAmount(booking.paymentHistory || []);
+  const displayPaidAmount = (booking.paidAmount || 0) + pendingPaymentAmount;
+  const pendingAmount = Math.max(booking.totalAmount - displayPaidAmount, 0);
+
+  return {
+    ...booking,
+    displayPaidAmount,
+    pendingAmount,
+  };
+};
+
 // Configure Multer for screenshot uploads to memory
 const storage = multer.memoryStorage();
 
@@ -39,8 +56,9 @@ router.post('/', async (req, res) => {
     const {
       tripId, travelerName, email, phone, age, gender,
       emergencyName, emergencyPhone, idProofUrl, seatCount = 1, specialRequests,
-      totalAmount, isManualPayment = false, pickupPoint
+      paymentAmount, paymentType, isManualPayment = false, pickupPoint
     } = req.body;
+    const parsedSeatCount = Math.max(parseInt(seatCount, 10) || 1, 1);
 
     // Enforce email suspension check
     if (email) {
@@ -60,13 +78,31 @@ router.post('/', async (req, res) => {
       res.status(404).json({ error: 'Trip not found' });
       return;
     }
-    if (trip.availableSeats < seatCount) {
+    if (trip.availableSeats < parsedSeatCount) {
       res.status(400).json({ error: 'Not enough seats available' });
       return;
     }
 
     const bookingRef = `TN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
-    const finalAmount = totalAmount || (trip.price * seatCount);
+    const finalAmount = trip.price * parsedSeatCount;
+    const expectedPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
+      ? trip.partialPaymentAmount * parsedSeatCount
+      : null;
+    const requestedPaymentAmount = parseFloat(paymentAmount);
+
+    if (paymentType === 'PARTIAL') {
+      if (!trip.partialPaymentEnabled || !expectedPartialAmount) {
+        res.status(400).json({ error: 'Partial payment is not available for this trip' });
+        return;
+      }
+      if (Number.isNaN(requestedPaymentAmount) || Math.abs(requestedPaymentAmount - expectedPartialAmount) > 0.01) {
+        res.status(400).json({ error: 'Invalid partial payment amount for this trip' });
+        return;
+      }
+    } else if (!Number.isNaN(requestedPaymentAmount) && Math.abs(requestedPaymentAmount - finalAmount) > 0.01) {
+      res.status(400).json({ error: 'Invalid full payment amount for this trip' });
+      return;
+    }
 
     let user = await prisma.user.findUnique({ where: { mobileNumber: phone } });
     if (!user) {
@@ -93,13 +129,15 @@ router.post('/', async (req, res) => {
         emergencyName: emergencyName || null,
         emergencyPhone: emergencyPhone || null,
         idProofUrl: idProofUrl || null,
-        seatCount,
+        seatCount: parsedSeatCount,
         specialRequests: specialRequests || null,
         totalAmount: finalAmount,
         bookingRef,
         isManualPayment,
         pickupPoint,
-        status: 'PENDING_VERIFICATION'
+        status: 'PENDING',
+        paidAmount: 0,
+        paymentStatus: 'PENDING_PAYMENT',
       },
       include: { trip: { select: { title: true, destination: true, startDate: true } } },
     });
@@ -107,7 +145,7 @@ router.post('/', async (req, res) => {
     // Decrement available seats
     await prisma.trip.update({
       where: { id: tripId },
-      data: { availableSeats: { decrement: seatCount } },
+      data: { availableSeats: { decrement: parsedSeatCount } },
     });
 
     res.status(201).json({ booking });
@@ -143,7 +181,8 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       res.status(404).json({ error: 'Booking not found' });
       return;
     }
-    const amount = parseFloat(req.body.amount || bookingToUpdate.totalAmount.toString());
+    const fallbackAmount = Math.max(bookingToUpdate.totalAmount - bookingToUpdate.paidAmount, 0);
+    const amount = parseFloat(req.body.amount || fallbackAmount.toString());
 
     // Create a pending PaymentHistory entry
     await prisma.paymentHistory.create({
@@ -188,7 +227,7 @@ router.get('/', authenticateAdmin, async (req: AuthRequest, res) => {
         take: parseInt(limit as string),
         orderBy: { createdAt: 'desc' },
         include: {
-          trip: { select: { title: true, destination: true } },
+          trip: { select: { title: true, destination: true, startDate: true } },
           payment: true,
           paymentHistory: { orderBy: { createdAt: 'desc' } },
           notifications: { orderBy: { createdAt: 'desc' }, take: 1 }
@@ -198,7 +237,7 @@ router.get('/', authenticateAdmin, async (req: AuthRequest, res) => {
     ]);
 
     res.json({
-      bookings,
+      bookings: bookings.map((booking) => attachBookingFinancials(booking)),
       pagination: { total, page: parseInt(page as string), pages: Math.ceil(total / parseInt(limit as string)) },
     });
   } catch (error) {
@@ -222,7 +261,7 @@ router.get('/ref/:ref', async (req, res) => {
       res.status(404).json({ error: 'Booking not found' });
       return;
     }
-    res.json(booking);
+    res.json(attachBookingFinancials(booking));
   } catch (error) {
     console.error('Get booking error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -310,19 +349,25 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
     }
 
     if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
+      const verifiedAmount = updateData.paidAmount !== undefined
+        ? updateData.paidAmount - currentBooking.paidAmount
+        : 0;
+      const pendingAmount = Math.max(currentBooking.totalAmount - (updateData.paidAmount ?? currentBooking.paidAmount), 0);
+
       if (currentBooking.userId) {
         await prisma.user.update({
           where: { id: currentBooking.userId },
-          data: { totalTrips: { increment: 1 }, totalSpent: { increment: currentBooking.totalAmount } }
+          data: { totalTrips: { increment: 1 }, totalSpent: { increment: verifiedAmount } }
         });
       }
-      const message = `Hello ${currentBooking.travelerName},\n\nYour payment for ${currentBooking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location from the available pickup points mentioned in the trip details.\n\nFor assistance contact:\n9632463347`;
+      const pendingLine = pendingAmount > 0 ? `\n\nPending amount: Rs. ${pendingAmount.toLocaleString()}` : '';
+      const message = `Hello ${currentBooking.travelerName},\n\nYour payment for ${currentBooking.trip.title} has been successfully verified.${pendingLine}\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location from the available pickup points mentioned in the trip details.\n\nFor assistance contact:\n9632463347`;
       await sendNotification(currentBooking.id, currentBooking.phone, message);
     } else if (status === 'REJECTED' && currentBooking.status === 'CONFIRMED') {
       if (currentBooking.userId) {
         await prisma.user.update({
           where: { id: currentBooking.userId },
-          data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: currentBooking.totalAmount } }
+          data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: currentBooking.paidAmount } }
         });
       }
     }
@@ -365,7 +410,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
     if (booking.status === 'CONFIRMED' && booking.userId) {
       await prisma.user.update({
         where: { id: booking.userId },
-        data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.totalAmount } }
+        data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.paidAmount } }
       });
     }
 
@@ -412,6 +457,12 @@ router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => 
             data: { availableSeats: { increment: booking.seatCount } }
           });
         }
+        if (booking.status === 'CONFIRMED' && booking.userId) {
+          await prisma.user.update({
+            where: { id: booking.userId },
+            data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.paidAmount } }
+          });
+        }
       }
       await prisma.booking.deleteMany({
         where: { id: { in: bookingIds } }
@@ -429,6 +480,7 @@ router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => 
       for (const booking of bookings) {
         const isNowCancelled = newStatus === 'REJECTED';
         const wasCancelled = booking.status === 'REJECTED' || booking.status === 'CANCELLED';
+        const updateData: any = { status: newStatus };
 
         if (isNowCancelled && !wasCancelled) {
           await prisma.trip.update({
@@ -441,18 +493,68 @@ router.post('/bulk-update', authenticateAdmin, async (req: AuthRequest, res) => 
             data: { availableSeats: { decrement: booking.seatCount } },
           });
         }
-        
-        // Notify if confirmed
+
         if (newStatus === 'CONFIRMED' && booking.status !== 'CONFIRMED') {
-          const message = `Hello ${booking.travelerName},\n\nYour payment for ${booking.trip.title} has been successfully verified.\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location.\n\nFor assistance contact:\n9632463347`;
+          const pendingPayments = await prisma.paymentHistory.findMany({
+            where: { bookingId: booking.id, status: 'PENDING' }
+          });
+
+          let amountToVerify = 0;
+          if (pendingPayments.length > 0) {
+            await prisma.paymentHistory.updateMany({
+              where: { bookingId: booking.id, status: 'PENDING' },
+              data: { status: 'VERIFIED' }
+            });
+            amountToVerify = pendingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+          } else if (booking.paidAmount === 0) {
+            await prisma.paymentHistory.create({
+              data: {
+                bookingId: booking.id,
+                amount: booking.totalAmount,
+                method: booking.isManualPayment ? 'MANUAL' : 'RAZORPAY',
+                status: 'VERIFIED',
+                notes: 'Auto-verified in bulk confirmation'
+              }
+            });
+            amountToVerify = booking.totalAmount;
+          }
+
+          const newPaidAmount = booking.paidAmount + amountToVerify;
+          updateData.paidAmount = newPaidAmount;
+          updateData.paymentStatus = newPaidAmount >= booking.totalAmount ? 'FULLY_PAID' : (newPaidAmount > 0 ? 'PARTIALLY_PAID' : 'PENDING_PAYMENT');
+
+          if (booking.userId) {
+            await prisma.user.update({
+              where: { id: booking.userId },
+              data: { totalTrips: { increment: 1 }, totalSpent: { increment: amountToVerify } }
+            });
+          }
+        } else if (newStatus === 'REJECTED') {
+          await prisma.paymentHistory.updateMany({
+            where: { bookingId: booking.id, status: 'PENDING' },
+            data: { status: 'REJECTED', notes: 'Rejected in bulk action' }
+          });
+
+          if (booking.status === 'CONFIRMED' && booking.userId) {
+            await prisma.user.update({
+              where: { id: booking.userId },
+              data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.paidAmount } }
+            });
+          }
+        }
+
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: updateData
+        });
+        
+        if (newStatus === 'CONFIRMED' && booking.status !== 'CONFIRMED') {
+          const pendingAmount = Math.max(booking.totalAmount - (updateData.paidAmount ?? booking.paidAmount), 0);
+          const pendingLine = pendingAmount > 0 ? `\n\nPending amount: Rs. ${pendingAmount.toLocaleString()}` : '';
+          const message = `Hello ${booking.travelerName},\n\nYour payment for ${booking.trip.title} has been successfully verified.${pendingLine}\n\nThank you for booking with Mysuru Travel Club.\n\nPlease reply with your pickup location.\n\nFor assistance contact:\n9632463347`;
           await sendNotification(booking.id, booking.phone, message).catch(console.error);
         }
       }
-
-      await prisma.booking.updateMany({
-        where: { id: { in: bookingIds } },
-        data: { status: newStatus }
-      });
 
       await prisma.adminLog.create({
         data: {
@@ -529,6 +631,20 @@ router.post('/:id/payments', authenticateAdmin, async (req: AuthRequest, res) =>
       }
     });
 
+    if (booking.userId) {
+      if (booking.status === 'CONFIRMED') {
+        await prisma.user.update({
+          where: { id: booking.userId },
+          data: { totalSpent: { increment: paymentAmount } }
+        });
+      } else if (updatedBooking.status === 'CONFIRMED') {
+        await prisma.user.update({
+          where: { id: booking.userId },
+          data: { totalTrips: { increment: 1 }, totalSpent: { increment: paymentAmount } }
+        });
+      }
+    }
+
     await prisma.adminLog.create({
       data: {
         adminName: req.admin?.email || 'System',
@@ -591,6 +707,20 @@ router.patch('/payments/:paymentHistoryId/status', authenticateAdmin, async (req
           status: 'CONFIRMED'
         }
       });
+
+      if (payment.booking.userId) {
+        if (payment.booking.status === 'CONFIRMED') {
+          await prisma.user.update({
+            where: { id: payment.booking.userId },
+            data: { totalSpent: { increment: payment.amount } }
+          });
+        } else {
+          await prisma.user.update({
+            where: { id: payment.booking.userId },
+            data: { totalTrips: { increment: 1 }, totalSpent: { increment: payment.amount } }
+          });
+        }
+      }
     }
 
     await prisma.adminLog.create({

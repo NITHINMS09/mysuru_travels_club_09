@@ -20,7 +20,7 @@ export default function UpcomingTrips() {
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const data = await api.trips.getAll({ limit: '6' });
+        const data = await api.trips.getAll({ upcomingOnly: 'true', limit: '6' });
         setTrips(data.trips || []);
       } catch (error) {
         console.error('Failed to fetch trips:', error);

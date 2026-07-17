@@ -4,7 +4,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
 import SmoothScroller from "@/components/shared/SmoothScroller";
-import Preloader from "@/components/shared/Preloader";
 import FloatingWidgets from "@/components/shared/FloatingWidgets";
 import VisitorTracker from "@/components/VisitorTracker";
 import { Suspense } from "react";
@@ -35,7 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense>
           <VisitorTracker />
         </Suspense>
-        <Preloader />
         <FloatingWidgets />
         <div className="noise-overlay" />
         <Toaster

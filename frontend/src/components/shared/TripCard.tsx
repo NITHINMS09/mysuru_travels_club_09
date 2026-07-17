@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { HiOutlineCalendar, HiOutlineClock, HiOutlineUserGroup, HiOutlineLocationMarker, HiOutlineArrowRight } from 'react-icons/hi';
 
 interface TripCardProps {
@@ -24,34 +23,29 @@ interface TripCardProps {
 }
 
 export default function TripCard({ trip }: TripCardProps) {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-  });
+  const tripTiming = useMemo(() => {
+    const now = new Date();
+    const startDate = new Date(trip.startDate);
+    const diffMs = startDate.getTime() - now.getTime();
 
-  useEffect(() => {
-    const targetDate = new Date(trip.startDate).getTime();
+    if (diffMs <= 0) {
+      return {
+        values: ['Live', '-', '-'],
+        labels: ['Trip', '', ''],
+        statusLabel: 'Open Now',
+      };
+    }
 
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = targetDate - now;
+    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
 
-      if (distance < 0) {
-        clearInterval(interval);
-        return;
-      }
-
-      setTimeLeft({
-        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000),
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    return {
+      values: [days.toString(), hours.toString(), minutes.toString()],
+      labels: ['Days', 'Hrs', 'Min'],
+      statusLabel: 'Limited Seats',
+    };
   }, [trip.startDate]);
 
   return (
@@ -82,22 +76,22 @@ export default function TripCard({ trip }: TripCardProps) {
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
           <div className="flex gap-1.5">
             <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
-              <span className="text-[11px] font-black leading-none text-white">{timeLeft.days}</span>
-              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Days</span>
+              <span className="text-[11px] font-black leading-none text-white">{tripTiming.values[0]}</span>
+              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">{tripTiming.labels[0]}</span>
             </div>
             <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
-              <span className="text-[11px] font-black leading-none text-white">{timeLeft.hours}</span>
-              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Hrs</span>
+              <span className="text-[11px] font-black leading-none text-white">{tripTiming.values[1]}</span>
+              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">{tripTiming.labels[1]}</span>
             </div>
             <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-slate-950/60 backdrop-blur-md border border-white/[0.08]">
-              <span className="text-[11px] font-black leading-none text-white">{timeLeft.minutes}</span>
-              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">Min</span>
+              <span className="text-[11px] font-black leading-none text-white">{tripTiming.values[2]}</span>
+              <span className="text-[6.5px] font-bold uppercase text-white/50 tracking-wider">{tripTiming.labels[2]}</span>
             </div>
           </div>
           
           <div className="px-3 py-1.5 rounded-xl bg-accent-gold/15 backdrop-blur-md border border-accent-gold/30 text-accent-gold text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
             <HiOutlineClock className="w-3.5 h-3.5" />
-            Limited Seats
+            {tripTiming.statusLabel}
           </div>
         </div>
       </div>
