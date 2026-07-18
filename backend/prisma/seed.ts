@@ -4,6 +4,23 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Safeguard 1: Environment check
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('neon.tech');
+  if (isProduction) {
+    console.error('❌ SAFETY ABORT: Seeding is disabled in production to prevent data loss!');
+    process.exit(1);
+  }
+
+  // Safeguard 2: Exist check
+  const tripsCount = await prisma.trip.count();
+  const bookingsCount = await prisma.booking.count();
+  const adminsCount = await prisma.admin.count();
+  
+  if (tripsCount > 0 || bookingsCount > 0 || adminsCount > 0) {
+    console.log('⚠️ Database already contains data (Trips, Bookings, or Admins). Skipping seed to prevent overwriting existing data.');
+    return;
+  }
+
   console.log('🧹 Clearing existing data...\n');
   
   // Order matters for deletion (foreign keys)
