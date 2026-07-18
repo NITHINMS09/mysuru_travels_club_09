@@ -1,6 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+import fs from 'fs';
+
+const envPath = path.join(__dirname, '../../.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
 
 export const config = {
   port: parseInt(process.env.PORT || '5000'),

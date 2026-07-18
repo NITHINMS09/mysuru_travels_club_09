@@ -287,15 +287,15 @@ export default function TripChat() {
                     ) : (
                       <>
                         {msg.type === 'IMAGE' && msg.fileUrl && (
-                          <img src={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl} alt="Upload" className="max-w-[250px] rounded-lg mb-2" />
+                          <img src={msg.fileUrl.startsWith('http') ? msg.fileUrl : (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl)} alt="Upload" className="max-w-[250px] rounded-lg mb-2" />
                         )}
                         {msg.type === 'AUDIO' && msg.fileUrl && (
                           <audio controls className="h-10 max-w-[250px] mb-2">
-                            <source src={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl} type="audio/webm" />
+                            <source src={msg.fileUrl.startsWith('http') ? msg.fileUrl : (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl)} type="audio/webm" />
                           </audio>
                         )}
                         {msg.type === 'DOCUMENT' && msg.fileUrl && (
-                          <a href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl} target="_blank" rel="noreferrer" className={`flex items-center gap-2 p-3 rounded-lg mb-2 transition ${isMe ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-50 border border-slate-100 hover:bg-slate-100'}`}>
+                          <a href={msg.fileUrl.startsWith('http') ? msg.fileUrl : (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + msg.fileUrl)} target="_blank" rel="noreferrer" className={`flex items-center gap-2 p-3 rounded-lg mb-2 transition ${isMe ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-50 border border-slate-100 hover:bg-slate-100'}`}>
                             <HiOutlinePaperClip className={`w-5 h-5 ${isMe ? 'text-white' : 'text-violet-600'}`} />
                             <span className="truncate max-w-[150px] text-xs font-bold">{msg.fileName}</span>
                           </a>

@@ -5,9 +5,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: '../.env' });
 
 import { config } from './config';
 import prisma from './config/database';
