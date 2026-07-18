@@ -69,7 +69,7 @@ export default function TripDetails() {
     const total = trip.price * seatCount;
     const minimumPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
       ? trip.partialPaymentAmount * seatCount
-      : 0;
+      : Math.round(total * 0.3);
     const enteredPartialAmount = parseFloat(partialAmount);
     const selectedPartialAmount = Number.isNaN(enteredPartialAmount)
       ? minimumPartialAmount
@@ -127,16 +127,15 @@ export default function TripDetails() {
   }, [id]);
 
   useEffect(() => {
-    if (!trip?.partialPaymentEnabled || !trip?.partialPaymentAmount) {
-      setPaymentOption('full');
-      setPartialAmount('');
-      return;
-    }
-
     if (paymentOption === 'partial') {
-      setPartialAmount((trip.partialPaymentAmount * seatCount).toString());
+      const defaultAmount = trip?.partialPaymentAmount 
+        ? trip.partialPaymentAmount * seatCount 
+        : Math.round(pricing.total * 0.3);
+      setPartialAmount(defaultAmount.toString());
+    } else {
+      setPartialAmount('');
     }
-  }, [paymentOption, seatCount, trip?.partialPaymentAmount, trip?.partialPaymentEnabled]);
+  }, [paymentOption, seatCount, trip?.partialPaymentAmount, pricing.total]);
 
   const handleCreateBookingAndProceed = async (data: BookingFormData) => {
     setBookingLoading(true);
@@ -177,10 +176,6 @@ export default function TripDetails() {
       return;
     }
     const payAmount = paymentOption === 'full' ? pricing.total : pricing.selectedAmount;
-    if (paymentOption === 'partial' && !trip.partialPaymentEnabled) {
-      toast.error('Partial payment is not available for this trip');
-      return;
-    }
     if (
       isNaN(payAmount)
       || payAmount <= 0
@@ -353,18 +348,35 @@ export default function TripDetails() {
                         </div>
 
                         {paymentOption === 'partial' && (
-                          <div className="space-y-1.5 mb-6 text-left">
-                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Amount to Pay Now (₹)</label>
-                            <input 
-                              type="number"
-                              value={partialAmount}
-                              onChange={(e) => setPartialAmount(e.target.value)}
-                              max={pricing.total}
-                              min={1}
-                              className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-3.5 outline-none focus:border-slate-400 focus:bg-white transition-all text-sm animate-fade-in"
-                              placeholder={`Enter amount (max ₹${pricing.total})`}
-                            />
-                            <p className="text-[10px] text-slate-400">Minimum payment of ₹1 is required to secure booking.</p>
+                          <div className="space-y-4 mb-6">
+                            <div className="space-y-1.5 text-left">
+                              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Amount to Pay Now (₹)</label>
+                              <input 
+                                type="number"
+                                value={partialAmount}
+                                onChange={(e) => setPartialAmount(e.target.value)}
+                                max={pricing.total}
+                                min={1}
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-3.5 outline-none focus:border-slate-400 focus:bg-white transition-all text-sm animate-fade-in"
+                                placeholder={`Enter amount (max ₹${pricing.total})`}
+                              />
+                              <p className="text-[10px] text-slate-400">Minimum payment of ₹{pricing.minimumPartialAmount.toLocaleString()} is required for this trip.</p>
+                            </div>
+                            
+                            <div className="bg-slate-100/50 border border-slate-200/60 rounded-xl p-4 space-y-2.5 text-left text-sm">
+                              <div className="flex justify-between items-center text-slate-600">
+                                <span>Total Amount:</span>
+                                <span className="font-bold text-slate-800">₹{pricing.total.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-green-600 font-semibold">
+                                <span>Amount Paid (Now):</span>
+                                <span>₹{pricing.selectedAmount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-rose-500 font-semibold font-outfit">
+                                <span>Pending Amount / Balance:</span>
+                                <span>₹{pricing.pendingAmount.toLocaleString()}</span>
+                              </div>
+                            </div>
                           </div>
                         )}
 
@@ -376,7 +388,7 @@ export default function TripDetails() {
                           <div className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Pay via UPI / Mobile</div>
                           <div className="text-3xl font-black text-slate-900 mb-2">{settings.contactPhone || '9632463347'}</div>
                           <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">
-                            Amount: <b className="text-[#00C853]">₹{(paymentOption === 'full' ? pricing.total : (parseFloat(partialAmount) || 0)).toLocaleString()}</b>
+                            Amount: <b className="text-[#00C853]">₹{pricing.selectedAmount.toLocaleString()}</b>
                           </div>
                         </div>
 

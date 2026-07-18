@@ -116,10 +116,8 @@ router.post('/', async (req, res) => {
         const requestedPaymentAmount = parseFloat(paymentAmount);
 
         if (paymentType === 'PARTIAL') {
-          if (!trip.partialPaymentEnabled || !minimumPartialAmount) {
-            throw new Error('PARTIAL_PAYMENT_NOT_AVAILABLE');
-          }
-          if (!Number.isNaN(requestedPaymentAmount) && (requestedPaymentAmount < minimumPartialAmount || requestedPaymentAmount >= finalAmount)) {
+          const minPartial = minimumPartialAmount || Math.round(finalAmount * 0.3);
+          if (!Number.isNaN(requestedPaymentAmount) && (requestedPaymentAmount < minPartial || requestedPaymentAmount >= finalAmount)) {
             throw new Error('INVALID_PARTIAL_AMOUNT');
           }
         } else if (!Number.isNaN(requestedPaymentAmount) && Math.abs(requestedPaymentAmount - finalAmount) > 0.01) {
@@ -329,6 +327,46 @@ router.get('/ref/:ref', async (req, res) => {
     res.json(attachBookingFinancials(booking));
   } catch (error) {
     console.error('Get booking error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// UPDATE booking details (admin - general update)
+router.patch('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { travelerName, phone, seatCount, totalAmount, paidAmount, paymentStatus, status, adminNotes } = req.body;
+    const currentBooking = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!currentBooking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    const updateData: any = {};
+    if (travelerName !== undefined) updateData.travelerName = travelerName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (seatCount !== undefined) updateData.seatCount = isNaN(parseInt(seatCount)) ? undefined : parseInt(seatCount);
+    if (totalAmount !== undefined) updateData.totalAmount = isNaN(parseFloat(totalAmount)) ? undefined : parseFloat(totalAmount);
+    if (paidAmount !== undefined) updateData.paidAmount = isNaN(parseFloat(paidAmount)) ? undefined : parseFloat(paidAmount);
+    if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
+    if (status !== undefined) updateData.status = status;
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
+
+    await prisma.adminLog.create({
+      data: {
+        adminName: req.admin?.email || 'System',
+        action: `BOOKING_UPDATE`,
+        details: `Updated booking details for ${currentBooking.bookingRef}`,
+      }
+    });
+
+    res.json(attachBookingFinancials(updatedBooking));
+  } catch (error) {
+    console.error('Update booking details error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

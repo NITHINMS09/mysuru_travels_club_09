@@ -11,6 +11,9 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
   const { token, ...fetchOpts } = options;
   const method = (fetchOpts.method || 'GET').toUpperCase();
   const isGetRequest = method === 'GET';
+  if (!isGetRequest) {
+    responseCache.clear();
+  }
   const isPublicGetRequest = isGetRequest && !token;
   const cacheKey = `${method}:${token || 'public'}:${endpoint}`;
   const headers: Record<string, string> = {
@@ -103,6 +106,7 @@ export const api = {
       return fetchAPI(`/bookings${query}`, { token });
     },
     getByRef: (ref: string) => fetchAPI(`/bookings/ref/${ref}`),
+    update: (id: string, data: any, token: string) => fetchAPI(`/bookings/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
     updateStatus: (id: string, status: string, token: string, adminNotes?: string) => fetchAPI(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, adminNotes }), token }),
     delete: (id: string, token: string) => fetchAPI(`/bookings/${id}`, { method: 'DELETE', token }),
     bulkUpdate: (bookingIds: string[], action: 'CONFIRM' | 'REJECT' | 'DELETE', token: string) => fetchAPI('/bookings/bulk-update', { method: 'POST', body: JSON.stringify({ bookingIds, action }), token }),

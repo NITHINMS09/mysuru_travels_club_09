@@ -178,6 +178,8 @@ export default function AdminDashboard() {
   const [admin, setAdmin] = useState<any>(null);
   const [isAddingTrip, setIsAddingTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
+  const [editingBooking, setEditingBooking] = useState<any>(null);
+  const [bookingForm, setBookingForm] = useState({ travelerName: '', phone: '', seatCount: '1', totalAmount: '0', paidAmount: '0', paymentStatus: 'PENDING_PAYMENT', status: 'PENDING', adminNotes: '' });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Users & Admin details
@@ -357,6 +359,21 @@ export default function AdminDashboard() {
     }
   }, [editingAdmin]);
 
+  useEffect(() => {
+    if (editingBooking) {
+      setBookingForm({
+        travelerName: editingBooking.travelerName || '',
+        phone: editingBooking.phone || '',
+        seatCount: editingBooking.seatCount?.toString() || '1',
+        totalAmount: editingBooking.totalAmount?.toString() || '0',
+        paidAmount: editingBooking.paidAmount?.toString() || '0',
+        paymentStatus: editingBooking.paymentStatus || 'PENDING_PAYMENT',
+        status: editingBooking.status || 'PENDING',
+        adminNotes: editingBooking.adminNotes || ''
+      });
+    }
+  }, [editingBooking]);
+
   const fetchTabData = useCallback(async (tabName: string) => {
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
@@ -370,6 +387,7 @@ export default function AdminDashboard() {
       else if (tabName === 'Crew' && crew.length === 0) setLoading(true);
       else if (tabName === 'Settings' && Object.keys(settings).length === 0) setLoading(true);
       else if (tabName === 'Updates' && updates.length === 0) setLoading(true);
+      else if (tabName === 'WhatsApp Settings' && !whatsAppSettings.messageTemplate) setLoading(true);
       
       if (tabName === 'Overview') {
         const [statsData, visitorData] = await Promise.all([
@@ -425,6 +443,16 @@ export default function AdminDashboard() {
         } else {
           setBannedEmails([]);
         }
+        setWhatsAppSettings(whatsappSettingsData || {});
+        setWhatsAppForm({
+          messageTitle: whatsappSettingsData?.messageTitle || 'Booking Confirmation',
+          messageTemplate: whatsappSettingsData?.messageTemplate || '',
+          imageUrl: whatsappSettingsData?.imageUrl || '',
+          isActive: whatsappSettingsData?.isActive ?? true
+        });
+      }
+      else if (tabName === 'WhatsApp Settings') {
+        const whatsappSettingsData = await api.whatsappSettings.get();
         setWhatsAppSettings(whatsappSettingsData || {});
         setWhatsAppForm({
           messageTitle: whatsappSettingsData?.messageTitle || 'Booking Confirmation',
@@ -911,6 +939,12 @@ export default function AdminDashboard() {
       const toastId = toast.loading('Saving WhatsApp settings...');
       const res = await api.whatsappSettings.update(whatsAppForm, token);
       setWhatsAppSettings(res);
+      setWhatsAppForm({
+        messageTitle: res.messageTitle || 'Booking Confirmation',
+        messageTemplate: res.messageTemplate || '',
+        imageUrl: res.imageUrl || '',
+        isActive: res.isActive ?? true
+      });
       toast.success('WhatsApp Settings saved!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Failed to save settings');
@@ -934,6 +968,21 @@ export default function AdminDashboard() {
       toast.success('WhatsApp Template reset!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Failed to reset settings');
+    }
+  };
+
+  const handleUpdateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('tripnova_admin_token');
+    if (!token || !editingBooking) return;
+    try {
+      const toastId = toast.loading('Updating booking details...');
+      await api.bookings.update(editingBooking.id, bookingForm, token);
+      toast.success('Booking updated successfully!', { id: toastId });
+      setEditingBooking(null);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update booking');
     }
   };
 
@@ -1625,6 +1674,9 @@ export default function AdminDashboard() {
                                         </button>
                                       </>
                                     )}
+                                    <button onClick={() => setEditingBooking(booking)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-violet-600 transition-colors border border-slate-200" title="Edit Booking">
+                                      <HiOutlinePencil className="w-5 h-5" />
+                                    </button>
                                     <button onClick={() => deleteBooking(booking.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors border border-slate-200" title="Delete Booking">
                                       <HiOutlineTrash className="w-5 h-5" />
                                     </button>
@@ -3647,6 +3699,127 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Profile Settings</button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL: Edit Booking Details */}
+      {editingBooking && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-800 font-outfit">Edit Booking Details</h3>
+                <p className="text-xs text-slate-400">Ref: {editingBooking.bookingRef}</p>
+              </div>
+              <button 
+                onClick={() => setEditingBooking(null)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateBooking} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Customer Name</label>
+                <input 
+                  required
+                  value={bookingForm.travelerName}
+                  onChange={e => setBookingForm({...bookingForm, travelerName: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Mobile Number</label>
+                <input 
+                  required
+                  value={bookingForm.phone}
+                  onChange={e => setBookingForm({...bookingForm, phone: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Seat Count</label>
+                  <input 
+                    type="number"
+                    required
+                    value={bookingForm.seatCount}
+                    onChange={e => setBookingForm({...bookingForm, seatCount: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Total Amount (₹)</label>
+                  <input 
+                    type="number"
+                    required
+                    value={bookingForm.totalAmount}
+                    onChange={e => setBookingForm({...bookingForm, totalAmount: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Amount Paid (₹)</label>
+                  <input 
+                    type="number"
+                    required
+                    value={bookingForm.paidAmount}
+                    onChange={e => setBookingForm({...bookingForm, paidAmount: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Payment Status</label>
+                  <select 
+                    value={bookingForm.paymentStatus}
+                    onChange={e => setBookingForm({...bookingForm, paymentStatus: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  >
+                    <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
+                    <option value="PARTIALLY_PAID">PARTIALLY_PAID</option>
+                    <option value="FULLY_PAID">FULLY_PAID</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Booking Status</label>
+                  <select 
+                    value={bookingForm.status}
+                    onChange={e => setBookingForm({...bookingForm, status: e.target.value})}
+                    className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="PENDING_VERIFICATION">PENDING_VERIFICATION</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="REJECTED">REJECTED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block font-outfit">Admin Notes</label>
+                <textarea 
+                  rows={3}
+                  value={bookingForm.adminNotes}
+                  onChange={e => setBookingForm({...bookingForm, adminNotes: e.target.value})}
+                  className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 text-sm font-sans"
+                  placeholder="Internal notes..."
+                />
+              </div>
+
+              <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Booking Details</button>
             </form>
           </motion.div>
         </div>
