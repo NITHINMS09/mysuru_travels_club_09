@@ -13,10 +13,6 @@ export default function MarketplaceManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [coverImage, setCoverImage] = useState('');
 
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
   const fetchListings = async () => {
     try {
       const data = await api.marketplace.getAll();
@@ -27,6 +23,10 @@ export default function MarketplaceManager() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('tripnova_admin_token');
