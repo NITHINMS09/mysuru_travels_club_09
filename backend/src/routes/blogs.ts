@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
@@ -9,6 +10,13 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const { tag, page = '1', limit = '9' } = req.query;
+    const cacheKey = `blogs:list:${JSON.stringify(req.query)}`;
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+      return res.json(cachedData);
+    }
+
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const where: any = { published: true };
     if (tag) where.tags = { contains: tag as string };
@@ -21,8 +29,12 @@ router.get('/', async (req, res) => {
       ...blog,
       tags: typeof blog.tags === 'string' ? blog.tags.split(',') : blog.tags
     }));
+
+    const responseData = { blogs: formattedBlogs, pagination: { total, page: parseInt(page as string), pages: Math.ceil(total / parseInt(limit as string)) } };
+    setCache(cacheKey, responseData, 300000); // 5 minutes cache
+
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
-    res.json({ blogs: formattedBlogs, pagination: { total, page: parseInt(page as string), pages: Math.ceil(total / parseInt(limit as string)) } });
+    res.json(responseData);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -56,6 +68,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
         tags: Array.isArray(data.tags) ? data.tags.join(',') : data.tags
       } 
     });
+    clearCache('blogs:');
     res.status(201).json(blog);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -66,6 +79,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     const blog = await prisma.blog.update({ where: { id: req.params.id }, data: req.body });
+    clearCache('blogs:');
     res.json(blog);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -76,6 +90,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     await prisma.blog.delete({ where: { id: req.params.id } });
+    clearCache('blogs:');
     res.json({ message: 'Blog deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

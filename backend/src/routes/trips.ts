@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
@@ -60,6 +61,13 @@ router.get('/', async (req, res) => {
       where.startDate = { gt: now };
     }
 
+    const cacheKey = `trips:list:${JSON.stringify(req.query)}`;
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      return res.json(cachedData);
+    }
+
     const [trips, total] = await Promise.all([
       prisma.trip.findMany({
         where,
@@ -90,16 +98,20 @@ router.get('/', async (req, res) => {
 
     const formattedTrips = trips.map((trip) => formatTrip(trip, avgRatingsMap[trip.id] || 0));
 
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-
-    res.json({
+    const responseData = {
       trips: formattedTrips,
       pagination: {
         total,
         page: currentPage,
         pages: Math.ceil(total / pageSize),
+        limit: pageSize,
       },
-    });
+    };
+
+    setCache(cacheKey, responseData, 30000); // 30 seconds cache
+
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.json(responseData);
   } catch (error) {
     console.error('Get trips error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -109,6 +121,13 @@ router.get('/', async (req, res) => {
 // GET single trip (public)
 router.get('/:id', async (req, res) => {
   try {
+    const { id } = req.params;
+    const cacheKey = `trips:single:${id}`;
+    const cachedTrip = getCache<any>(cacheKey);
+    if (cachedTrip) {
+      return res.json(cachedTrip);
+    }
+
     const trip = await prisma.trip.findFirst({
       where: { OR: [{ id: req.params.id }, { slug: req.params.id }] },
       include: {
@@ -128,6 +147,8 @@ router.get('/:id', async (req, res) => {
     });
 
     const formattedTrip = formatTrip(trip, avgRating._avg.rating || 0);
+
+    setCache(cacheKey, formattedTrip, 60000); // 60 seconds cache
 
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json(formattedTrip);
@@ -169,6 +190,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       },
     });
 
+    clearCache('trips:');
     res.status(201).json(trip);
   } catch (error) {
     console.error('Create trip error:', error);
@@ -287,6 +309,7 @@ const updateTripHandler = async (req: AuthRequest, res: any) => {
       where: { id: req.params.id },
       data: allowedData,
     });
+    clearCache('trips:');
     res.json(trip);
   } catch (error: any) {
     console.error('Update trip error:', error);
@@ -304,6 +327,7 @@ router.patch('/:id', authenticateAdmin, updateTripHandler);
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     await prisma.trip.delete({ where: { id: req.params.id } });
+    clearCache('trips:');
     res.json({ message: 'Trip deleted' });
   } catch (error) {
     console.error('Delete trip error:', error);

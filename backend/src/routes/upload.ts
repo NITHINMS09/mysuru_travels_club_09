@@ -59,8 +59,14 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
     if (!isCloudinaryConfigured) {
-      return res.status(400).json({ 
-        error: 'Cloud storage is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in the .env file.' 
+      // Fallback to local storage for development/sandbox settings
+      const relativeUrl = await saveFileLocally(req.file, 'uploads');
+      const fullUrl = `${getBackendUrl(req)}${relativeUrl}`;
+      return res.status(200).json({
+        url: fullUrl,
+        fileName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
       });
     }
 
@@ -68,10 +74,13 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
     const b64 = Buffer.from(req.file.buffer).toString('base64');
     let dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    // Upload to cloudinary
+    // Upload to cloudinary with automatic optimization transformations
     const result = await cloudinary.uploader.upload(dataURI, {
       resource_type: 'auto',
       folder: 'tripnova_uploads',
+      transformation: [
+        { width: 1600, height: 1600, crop: 'limit', quality: 'auto', fetch_format: 'auto' }
+      ]
     });
 
     return res.status(200).json({
@@ -108,8 +117,16 @@ router.post('/video', videoUpload.single('file'), async (req: any, res: any) => 
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
     if (!isCloudinaryConfigured) {
-      return res.status(400).json({ 
-        error: 'Cloud storage is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in the .env file.' 
+      // Fallback to local storage for development/sandbox settings
+      const relativeUrl = await saveFileLocally(req.file, 'uploads');
+      const fullUrl = `${getBackendUrl(req)}${relativeUrl}`;
+      return res.status(200).json({
+        url: fullUrl,
+        thumbnailUrl: fullUrl,
+        fileName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        duration: 0
       });
     }
 

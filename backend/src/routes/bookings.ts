@@ -51,6 +51,28 @@ const upload = multer({
   }
 });
 
+// Helper to save file locally
+const saveFileLocally = async (file: any, subfolder = 'uploads') => {
+  const uploadDir = path.join(__dirname, `../../${subfolder}`);
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  const fileExt = path.extname(file.originalname) || `.${file.mimetype.split('/')[1]}` || '.bin';
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExt}`;
+  const filePath = path.join(uploadDir, filename);
+  
+  await fs.promises.writeFile(filePath, file.buffer);
+  return `/${subfolder}/${filename}`;
+};
+
+// Helper to get backend base URL
+const getBackendUrl = (req: any) => {
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${config.port}`;
+  return `${protocol}://${host}`;
+};
+
 // CREATE booking (public)
 router.post('/', async (req, res) => {
   try {
@@ -196,24 +218,27 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       config.cloudinary.apiSecret && 
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
+    let screenshotUrl = '';
+
     if (!isCloudinaryConfigured) {
-      res.status(400).json({ 
-        error: 'Cloud storage is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in the .env file.' 
+      // Fallback to local storage for development/sandbox settings
+      const relativeUrl = await saveFileLocally(req.file, 'uploads');
+      screenshotUrl = `${getBackendUrl(req)}${relativeUrl}`;
+    } else {
+      // Convert buffer to base64
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      // Upload to cloudinary with automatic optimization transformations
+      const result = await cloudinary.uploader.upload(dataURI, {
+        resource_type: 'auto',
+        folder: 'tripnova_payments',
+        transformation: [
+          { width: 1600, height: 1600, crop: 'limit', quality: 'auto', fetch_format: 'auto' }
+        ]
       });
-      return;
+      screenshotUrl = result.secure_url;
     }
-
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-    // Upload to cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      resource_type: 'auto',
-      folder: 'tripnova_payments',
-    });
-
-    const screenshotUrl = result.secure_url;
 
     // Fetch the booking details to fall back to its totalAmount if needed
     const bookingToUpdate = await prisma.booking.findUnique({ where: { id: req.params.id } });

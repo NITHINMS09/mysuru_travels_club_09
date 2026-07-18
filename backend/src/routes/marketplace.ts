@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
@@ -10,6 +11,13 @@ router.get('/', async (req, res) => {
   try {
     const { category, minPrice, maxPrice, query, isAvailable, limit = '50', page = '1' } = req.query;
     
+    const cacheKey = `marketplace:list:${JSON.stringify(req.query)}`;
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+      return res.json(cachedData);
+    }
+
     const where: any = {};
     if (category) where.category = category;
     if (isAvailable !== undefined) where.isAvailable = isAvailable === 'true';
@@ -41,15 +49,19 @@ router.get('/', async (req, res) => {
       amenities: JSON.parse(listing.amenities || '[]')
     }));
 
-    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
-    res.json({
+    const responseData = {
       listings: formattedListings,
       pagination: {
         total,
         page: parseInt(page as string),
         pages: Math.ceil(total / parseInt(limit as string))
       }
-    });
+    };
+
+    setCache(cacheKey, responseData, 120000); // 2 minutes cache
+
+    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+    res.json(responseData);
   } catch (error) {
     console.error('Fetch marketplace error:', error);
     res.status(500).json({ error: 'Server error fetching listings' });
@@ -98,6 +110,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('marketplace:');
     res.status(201).json(listing);
   } catch (error) {
     console.error('Create listing error:', error);
@@ -119,6 +132,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       data: updateData
     });
 
+    clearCache('marketplace:');
     res.json(listing);
   } catch (error) {
     res.status(500).json({ error: 'Server error updating listing' });
@@ -131,6 +145,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
     await prisma.marketplaceListing.delete({
       where: { id: req.params.id }
     });
+    clearCache('marketplace:');
     res.json({ message: 'Listing deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Server error deleting listing' });

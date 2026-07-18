@@ -2,12 +2,20 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
 // GET all settings (public, for the frontend to render dynamically)
 router.get('/', async (req, res) => {
   try {
+    const cacheKey = 'settings:all';
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+      return res.json(cachedData);
+    }
+
     const settings = await prisma.siteSetting.findMany();
     // Convert array of {key, value} to a flat object { key: value }
     const settingsMap = settings.reduce((acc: any, curr) => {
@@ -15,6 +23,8 @@ router.get('/', async (req, res) => {
       return acc;
     }, {});
     
+    setCache(cacheKey, settingsMap, 300000); // 5 minutes cache
+
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(settingsMap);
   } catch (error) {
@@ -41,6 +51,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       });
     }
     
+    clearCache('settings:');
     res.json({ message: 'Settings updated successfully' });
   } catch (error) {
     console.error('Update settings error:', error);

@@ -2,18 +2,29 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
 // GET all crew members (public)
 router.get('/', async (req, res) => {
   try {
+    const cacheKey = 'crew:list';
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+      return res.json(cachedData);
+    }
+
     const crew = await prisma.crewMember.findMany({
       orderBy: [
         { displayOrder: 'asc' },
         { createdAt: 'desc' }
       ]
     });
+
+    setCache(cacheKey, crew, 300000); // 5 minutes cache
+
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(crew);
   } catch (error) {
@@ -43,6 +54,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
     
+    clearCache('crew:');
     res.status(201).json(newMember);
   } catch (error) {
     console.error('Create crew error:', error);
@@ -72,6 +84,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('crew:');
     res.json(updatedMember);
   } catch (error: any) {
     console.error('Update crew error:', error);
@@ -101,6 +114,7 @@ router.patch('/reorder', authenticateAdmin, async (req: AuthRequest, res) => {
       )
     );
 
+    clearCache('crew:');
     res.json({ message: 'Order updated successfully' });
   } catch (error) {
     console.error('Reorder crew error:', error);
@@ -114,6 +128,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
     await prisma.crewMember.delete({
       where: { id: req.params.id }
     });
+    clearCache('crew:');
     res.json({ message: 'Crew member deleted' });
   } catch (error) {
     console.error('Delete crew error:', error);

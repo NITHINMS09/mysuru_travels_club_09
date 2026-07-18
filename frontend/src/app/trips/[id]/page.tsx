@@ -19,10 +19,7 @@ import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import ImageUploader from '@/components/shared/ImageUploader';
 
-const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false });
+const TripMap = dynamic(() => import('@/components/shared/TripMap'), { ssr: false });
 
 const bookingSchema = z.object({
   travelerName: z.string().min(2, 'Name is required'),
@@ -44,7 +41,6 @@ export default function TripDetails() {
   const [activeTab, setActiveTab] = useState('itinerary');
   const [openDay, setOpenDay] = useState<number | null>(0);
   const [liveLoc, setLiveLoc] = useState<{lat: number, lng: number} | null>(null);
-  const [L, setL] = useState<any>(null);
 
   // Booking State
   const [step, setStep] = useState(1);
@@ -71,8 +67,6 @@ export default function TripDetails() {
   }, [trip, seatCount]);
 
   useEffect(() => {
-    import('leaflet').then(mod => { setL(mod.default); });
-
     const fetchTrip = async () => {
       try {
         const data = await api.trips.getById(id as string);
@@ -113,25 +107,6 @@ export default function TripDetails() {
 
     return () => { socket.disconnect(); };
   }, [id]);
-
-  const customIcon = useMemo(() => {
-    if (!L) return null;
-    return new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41]
-    });
-  }, [L]);
-
-  const liveIcon = useMemo(() => {
-    if (!L) return null;
-    return new L.DivIcon({
-      className: 'live-marker',
-      html: '<div class="w-6 h-6 bg-primary-500 rounded-full border-4 border-white shadow-glow animate-pulse"></div>',
-      iconSize: [24, 24]
-    });
-  }, [L]);
 
   const handleCreateBookingAndProceed = async (data: BookingFormData) => {
     setBookingLoading(true);
@@ -210,7 +185,7 @@ export default function TripDetails() {
 
       {/* Hero Header */}
       <div className="relative h-[60vh] w-full">
-        <OptimizedImage src={trip.coverImage} alt={trip.title} fill className="object-cover" />
+        <OptimizedImage src={trip.coverImage} alt={trip.title} fill className="object-cover" priority={true} />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
           <div className="max-w-7xl mx-auto">
@@ -411,25 +386,14 @@ export default function TripDetails() {
                 {trip.isLiveTracking && <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-1"><HiOutlineStatusOnline /> Live GPS Active</span>}
               </div>
               <div className="h-[450px] relative">
-                {typeof window !== 'undefined' && (
-                  <MapContainer center={mapCenter} zoom={liveLoc ? 15 : 10} scrollWheelZoom={false}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
-                    
-                    {/* Destination Marker */}
-                    {trip.latitude && trip.longitude && !liveLoc && (
-                      <Marker position={[trip.latitude, trip.longitude]} icon={customIcon || undefined}>
-                        <Popup><div className="text-black font-bold">{trip.destination}</div></Popup>
-                      </Marker>
-                    )}
-
-                    {/* Live Vehicle Marker */}
-                    {liveLoc && (
-                      <Marker position={[liveLoc.lat, liveLoc.lng]} icon={liveIcon || undefined}>
-                        <Popup><div className="text-black font-black">Vehicle Live Location</div></Popup>
-                      </Marker>
-                    )}
-                  </MapContainer>
-                )}
+                <TripMap
+                  center={mapCenter}
+                  zoom={liveLoc ? 15 : 10}
+                  destination={trip.destination}
+                  latitude={trip.latitude}
+                  longitude={trip.longitude}
+                  liveLoc={liveLoc}
+                />
                 
                 {trip.isLiveTracking && (
                   <div className="absolute top-4 right-4 z-[1000] p-3 rounded-2xl bg-white border border-slate-200 shadow-md">

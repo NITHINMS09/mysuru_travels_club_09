@@ -6,6 +6,7 @@ import { HiOutlineArrowRight, HiOutlinePlay } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import { useRef, useState, useEffect } from 'react';
 import VideoModal from '@/components/shared/VideoModal';
+import Image from 'next/image';
 
 
 
@@ -44,10 +45,13 @@ export default function Hero() {
           className="absolute inset-0 z-0 origin-top"
         >
           <div className="absolute inset-0 bg-black/45 z-10" />
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&q=80&w=2560"
             alt="Cinematic Landscape"
+            fill
+            priority={true}
             className="h-[120%] w-full object-cover -translate-y-[10%] object-center"
+            sizes="100vw"
           />
         </motion.div>
 
