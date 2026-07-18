@@ -38,3 +38,32 @@ export const config = {
     password: process.env.ADMIN_PASSWORD || 'admin123456',
   },
 };
+
+// Validate environment variables and warn on console
+if (config.nodeEnv === 'development') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'fallback-secret-change-me') {
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: JWT_SECRET is not configured or using default fallback. Please secure it in production.');
+  }
+
+  const isCloudinarySet = 
+    config.cloudinary.cloudName && config.cloudinary.cloudName !== 'your_cloud_name_here' &&
+    config.cloudinary.apiKey && config.cloudinary.apiKey !== 'your_api_key_here' &&
+    config.cloudinary.apiSecret && config.cloudinary.apiSecret !== 'your_api_secret_here';
+
+  if (!isCloudinarySet) {
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: Cloudinary is not configured. File uploads will fall back to local disk storage (/uploads).');
+  }
+
+  const isRazorpaySet = 
+    config.razorpay.keyId && config.razorpay.keyId !== 'rzp_test_placeholder' &&
+    config.razorpay.keySecret && config.razorpay.keySecret !== 'placeholder_secret';
+
+  if (!isRazorpaySet) {
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: Razorpay credentials are missing. Payment orders and verification flows may fail.');
+  }
+
+  if (!config.gemini.apiKey) {
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: GEMINI_API_KEY is not defined. AI itinerary and planning searches will be disabled.');
+  }
+}
+
