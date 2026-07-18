@@ -93,6 +93,21 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString(), version: '1.0.0' });
 });
 
+// Diagnostic endpoint (Temporary for database recovery investigation)
+app.get('/api/v1/diagnose-db', async (_req, res) => {
+  try {
+    const rawUrl = process.env.DATABASE_URL || '';
+    const maskedUrl = rawUrl.replace(/:([^:@]+)@/, ':****@');
+    res.json({
+      dbUrl: maskedUrl,
+      nodeEnv: process.env.NODE_ENV,
+      envKeys: Object.keys(process.env).filter(k => k.includes('DB') || k.includes('POSTGRES') || k.includes('DATABASE'))
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API Routes
 app.use('/api/v1/auth/admin', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
