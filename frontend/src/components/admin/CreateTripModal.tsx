@@ -24,6 +24,8 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
     destination: trip?.destination || '',
     description: trip?.description || '',
     price: trip?.price?.toString() || '',
+    partialPaymentEnabled: trip?.partialPaymentEnabled ? 'true' : 'false',
+    partialPaymentAmount: trip?.partialPaymentAmount?.toString() || '',
     originalPrice: trip?.originalPrice?.toString() || '',
     startDate: trip?.startDate ? new Date(trip.startDate).toISOString().split('T')[0] : '',
     endDate: trip?.endDate ? new Date(trip.endDate).toISOString().split('T')[0] : '',
@@ -75,6 +77,17 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
       toast.error('Price must be a valid number greater than 0');
       return;
     }
+    if (formData.partialPaymentEnabled === 'true') {
+      const partialAmountNum = parseFloat(formData.partialPaymentAmount);
+      if (isNaN(partialAmountNum) || partialAmountNum <= 0) {
+        toast.error('Partial amount must be a valid number greater than 0');
+        return;
+      }
+      if (partialAmountNum >= priceNum) {
+        toast.error('Partial amount must be less than the full seat price');
+        return;
+      }
+    }
     const seatsNum = parseInt(formData.totalSeats);
     if (isNaN(seatsNum) || seatsNum <= 0) {
       toast.error('Seats must be a valid number greater than 0');
@@ -105,6 +118,10 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
         destination: formData.destination.trim(),
         description: formData.description.trim(),
         price: priceNum,
+        partialPaymentEnabled: formData.partialPaymentEnabled === 'true',
+        partialPaymentAmount: formData.partialPaymentEnabled === 'true'
+          ? parseFloat(formData.partialPaymentAmount)
+          : null,
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         totalSeats: seatsNum,
         startDate: new Date(formData.startDate),
@@ -195,6 +212,31 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
                 <option value="Difficult">Difficult</option>
                 <option value="Extreme">Extreme</option>
               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Accept Partial Amount</label>
+              <select
+                className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
+                value={formData.partialPaymentEnabled}
+                onChange={e => setFormData({...formData, partialPaymentEnabled: e.target.value})}
+              >
+                <option value="false">No, full payment only</option>
+                <option value="true">Yes, allow partial payment</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Minimum Partial Amount Per Seat (â‚¹)</label>
+              <input
+                type="number"
+                placeholder="Advance amount per seat"
+                disabled={formData.partialPaymentEnabled !== 'true'}
+                className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 disabled:opacity-50"
+                value={formData.partialPaymentAmount}
+                onChange={e => setFormData({...formData, partialPaymentAmount: e.target.value})}
+              />
             </div>
           </div>
 

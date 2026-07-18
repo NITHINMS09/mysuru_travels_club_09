@@ -110,16 +110,16 @@ router.post('/', async (req, res) => {
         }
 
         const finalAmount = trip.price * parsedSeatCount;
-        const expectedPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
+        const minimumPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
           ? trip.partialPaymentAmount * parsedSeatCount
           : null;
         const requestedPaymentAmount = parseFloat(paymentAmount);
 
         if (paymentType === 'PARTIAL') {
-          if (!trip.partialPaymentEnabled || !expectedPartialAmount) {
+          if (!trip.partialPaymentEnabled || !minimumPartialAmount) {
             throw new Error('PARTIAL_PAYMENT_NOT_AVAILABLE');
           }
-          if (Number.isNaN(requestedPaymentAmount) || Math.abs(requestedPaymentAmount - expectedPartialAmount) > 0.01) {
+          if (!Number.isNaN(requestedPaymentAmount) && (requestedPaymentAmount < minimumPartialAmount || requestedPaymentAmount >= finalAmount)) {
             throw new Error('INVALID_PARTIAL_AMOUNT');
           }
         } else if (!Number.isNaN(requestedPaymentAmount) && Math.abs(requestedPaymentAmount - finalAmount) > 0.01) {

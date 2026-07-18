@@ -79,9 +79,16 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    return Boolean(req.headers.authorization)
+      || req.path === '/health'
+      || req.path.startsWith('/v1/analytics/visit')
+      || req.path.startsWith('/v1/upload')
+      || req.path.endsWith('/view');
+  },
 });
 app.use('/api/', limiter);
 

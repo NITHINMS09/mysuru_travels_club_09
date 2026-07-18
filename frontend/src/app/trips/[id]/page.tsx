@@ -62,9 +62,27 @@ export default function TripDetails() {
   const seatCount = watch('seatCount') || 1;
 
   const pricing = useMemo(() => {
-    if (!trip) return { total: 0 };
-    return { total: trip.price * seatCount };
-  }, [trip, seatCount]);
+    if (!trip) {
+      return { total: 0, selectedAmount: 0, pendingAmount: 0, minimumPartialAmount: 0 };
+    }
+
+    const total = trip.price * seatCount;
+    const minimumPartialAmount = trip.partialPaymentEnabled && trip.partialPaymentAmount
+      ? trip.partialPaymentAmount * seatCount
+      : 0;
+    const enteredPartialAmount = parseFloat(partialAmount);
+    const selectedPartialAmount = Number.isNaN(enteredPartialAmount)
+      ? minimumPartialAmount
+      : Math.min(total, Math.max(minimumPartialAmount, enteredPartialAmount));
+    const selectedAmount = paymentOption === 'partial' ? selectedPartialAmount : total;
+
+    return {
+      total,
+      selectedAmount,
+      pendingAmount: Math.max(total - selectedAmount, 0),
+      minimumPartialAmount,
+    };
+  }, [partialAmount, paymentOption, seatCount, trip]);
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -108,6 +126,18 @@ export default function TripDetails() {
     return () => { socket.disconnect(); };
   }, [id]);
 
+  useEffect(() => {
+    if (!trip?.partialPaymentEnabled || !trip?.partialPaymentAmount) {
+      setPaymentOption('full');
+      setPartialAmount('');
+      return;
+    }
+
+    if (paymentOption === 'partial') {
+      setPartialAmount((trip.partialPaymentAmount * seatCount).toString());
+    }
+  }, [paymentOption, seatCount, trip?.partialPaymentAmount, trip?.partialPaymentEnabled]);
+
   const handleCreateBookingAndProceed = async (data: BookingFormData) => {
     setBookingLoading(true);
     try {
@@ -146,8 +176,17 @@ export default function TripDetails() {
       toast.error('Please upload a payment screenshot');
       return;
     }
-    const payAmount = paymentOption === 'full' ? pricing.total : (parseFloat(partialAmount) || 0);
-    if (isNaN(payAmount) || payAmount <= 0 || payAmount > pricing.total) {
+    const payAmount = paymentOption === 'full' ? pricing.total : pricing.selectedAmount;
+    if (paymentOption === 'partial' && !trip.partialPaymentEnabled) {
+      toast.error('Partial payment is not available for this trip');
+      return;
+    }
+    if (
+      isNaN(payAmount)
+      || payAmount <= 0
+      || payAmount > pricing.total
+      || (paymentOption === 'partial' && (payAmount < pricing.minimumPartialAmount || payAmount >= pricing.total))
+    ) {
       toast.error(`Please enter a valid payment amount between ₹1 and ₹${pricing.total}`);
       return;
     }

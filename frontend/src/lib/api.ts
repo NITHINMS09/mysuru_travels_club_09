@@ -1,4 +1,7 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const inflightRequests = new Map<string, Promise<any>>();
+const responseCache = new Map<string, { expiresAt: number; data: any }>();
+const PUBLIC_GET_CACHE_TTL_MS = 30_000;
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -6,34 +9,78 @@ interface FetchOptions extends RequestInit {
 
 export async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
   const { token, ...fetchOpts } = options;
+  const method = (fetchOpts.method || 'GET').toUpperCase();
+  const isGetRequest = method === 'GET';
+  const isPublicGetRequest = isGetRequest && !token;
+  const cacheKey = `${method}:${token || 'public'}:${endpoint}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((fetchOpts.headers as Record<string, string>) || {}),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...fetchOpts, headers });
-  
-  let data;
-  const contentType = res.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    try {
-      data = await res.json();
-    } catch (e) {
-      data = null;
+  if (isPublicGetRequest) {
+    const cachedEntry = responseCache.get(cacheKey);
+    if (cachedEntry && cachedEntry.expiresAt > Date.now()) {
+      return cachedEntry.data;
     }
-  } else {
-    const textData = await res.text();
-    data = { error: textData || `Unexpected response format (${res.status})` };
   }
 
-  if (!res.ok) {
-    if (res.status === 429) {
-      throw new Error("Too many requests. Please try again later.");
-    }
-    throw new Error(data?.error || `API request failed with status ${res.status}`);
+  if (isGetRequest && inflightRequests.has(cacheKey)) {
+    return inflightRequests.get(cacheKey);
   }
-  return data;
+
+  const requestPromise = (async () => {
+    const res = await fetch(`${API_BASE}${endpoint}`, { ...fetchOpts, headers });
+    
+    let data;
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = null;
+      }
+    } else {
+      const textData = await res.text();
+      data = { error: textData || `Unexpected response format (${res.status})` };
+    }
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tripnova_admin_token');
+          localStorage.removeItem('tripnova_admin_user');
+          if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+            window.location.href = '/admin/login?expired=true';
+          }
+        }
+        throw new Error("Session expired. Please log in again.");
+      }
+      if (res.status === 429) {
+        throw new Error("Too many requests. Please try again later.");
+      }
+      throw new Error(data?.error || `API request failed with status ${res.status}`);
+    }
+
+    if (isPublicGetRequest) {
+      responseCache.set(cacheKey, {
+        data,
+        expiresAt: Date.now() + PUBLIC_GET_CACHE_TTL_MS,
+      });
+    }
+
+    return data;
+  })();
+
+  if (isGetRequest) {
+    inflightRequests.set(cacheKey, requestPromise);
+    requestPromise.finally(() => {
+      inflightRequests.delete(cacheKey);
+    });
+  }
+
+  return requestPromise;
 }
 
 // Trips
