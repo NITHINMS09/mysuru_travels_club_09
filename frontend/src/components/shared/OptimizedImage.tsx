@@ -66,7 +66,7 @@ export default function OptimizedImage({
           } ${className}`}
           onLoad={() => setLoading(false)}
           onError={handleError}
-          loading="lazy"
+          loading={props.priority ? undefined : 'lazy'}
         />
       )}
     </div>
