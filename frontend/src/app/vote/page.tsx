@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineThumbUp, HiOutlineChatAlt, HiOutlinePlus, HiX } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import ImageUploader from '@/components/shared/ImageUploader';
 
 export default function VotePage() {
   const [destinations, setDestinations] = useState<any[]>([]);
@@ -14,7 +15,8 @@ export default function VotePage() {
   const [suggestForm, setSuggestForm] = useState({
     name: '',
     description: '',
-    suggestedBy: ''
+    suggestedBy: '',
+    imageUrl: ''
   });
 
   const fetchDestinations = async () => {
@@ -53,7 +55,7 @@ export default function VotePage() {
       await api.votes.suggest(suggestForm);
       toast.success('Destination suggested!');
       setIsSuggesting(false);
-      setSuggestForm({ name: '', description: '', suggestedBy: '' });
+      setSuggestForm({ name: '', description: '', suggestedBy: '', imageUrl: '' });
       fetchDestinations();
     } catch (err) {
       toast.error('Failed to suggest destination');
@@ -89,7 +91,7 @@ export default function VotePage() {
                     <input 
                       required
                       type="text" 
-                      className="input-field" 
+                      className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" 
                       value={suggestForm.suggestedBy}
                       onChange={e => setSuggestForm({...suggestForm, suggestedBy: e.target.value})}
                     />
@@ -99,7 +101,7 @@ export default function VotePage() {
                     <input 
                       required
                       type="text" 
-                      className="input-field" 
+                      className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" 
                       value={suggestForm.name}
                       onChange={e => setSuggestForm({...suggestForm, name: e.target.value})}
                     />
@@ -108,9 +110,16 @@ export default function VotePage() {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Description</label>
                     <textarea 
                       required
-                      className="input-field h-24 resize-none" 
+                      className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 h-24 resize-none" 
                       value={suggestForm.description}
                       onChange={e => setSuggestForm({...suggestForm, description: e.target.value})}
+                    />
+                  </div>
+                  <div className="py-2">
+                    <ImageUploader
+                      value={suggestForm.imageUrl}
+                      onChange={url => setSuggestForm({...suggestForm, imageUrl: url})}
+                      label="Upload Destination Photo (Optional)"
                     />
                   </div>
                   <button type="submit" className="btn-primary w-full py-4 mt-4 cursor-pointer">Submit Suggestion</button>
@@ -161,8 +170,15 @@ export default function VotePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-card bg-white border border-slate-100 shadow-md hover:shadow-xl hover:shadow-slate-200/50 p-5 sm:p-8 flex flex-col group"
+                className="glass-card bg-white border border-slate-100 shadow-md hover:shadow-xl hover:shadow-slate-200/50 p-5 sm:p-8 flex flex-col group rounded-3xl overflow-hidden"
               >
+                {dest.imageUrl && (
+                  <div className="relative aspect-video w-full mb-6 overflow-hidden rounded-2xl border border-slate-200/60">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={dest.imageUrl} alt={dest.name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-start mb-6">
                   <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 shadow-sm">
                     {i + 1}

@@ -58,43 +58,31 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
       config.cloudinary.apiSecret && 
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
-    if (isCloudinaryConfigured) {
-      try {
-        // Convert buffer to base64
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
-        let dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-        // Upload to cloudinary
-        const result = await cloudinary.uploader.upload(dataURI, {
-          resource_type: 'auto',
-          folder: 'tripnova_uploads',
-        });
-
-        return res.status(200).json({
-          url: result.secure_url,
-          fileName: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size
-        });
-      } catch (cloudinaryError) {
-        console.warn('Cloudinary upload failed, falling back to local storage:', cloudinaryError);
-      }
+    if (!isCloudinaryConfigured) {
+      return res.status(400).json({ 
+        error: 'Cloud storage is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in the .env file.' 
+      });
     }
 
-    // Local storage fallback
-    const localPath = await saveFileLocally(req.file, 'uploads');
-    const backendUrl = getBackendUrl(req);
-    const fullUrl = `${backendUrl}${localPath}`;
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    res.status(200).json({
-      url: fullUrl,
+    // Upload to cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      resource_type: 'auto',
+      folder: 'tripnova_uploads',
+    });
+
+    return res.status(200).json({
+      url: result.secure_url,
       fileName: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(500).json({ error: error.message || 'Upload failed' });
   }
 });
 
@@ -119,51 +107,37 @@ router.post('/video', videoUpload.single('file'), async (req: any, res: any) => 
       config.cloudinary.apiSecret && 
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
-    if (isCloudinaryConfigured) {
-      try {
-        // Convert buffer to base64
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
-        let dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-        // Upload to cloudinary as video
-        const result = await cloudinary.uploader.upload(dataURI, {
-          resource_type: 'video',
-          folder: 'tripnova_videos',
-          eager: [
-            { format: 'jpg', resource_type: 'video' } // Automatically generate thumbnail
-          ],
-          eager_async: false,
-        });
-
-        return res.status(200).json({
-          url: result.secure_url,
-          thumbnailUrl: result.eager?.[0]?.secure_url || result.secure_url.replace(/\.[^/.]+$/, '.jpg'),
-          fileName: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: result.bytes,
-          duration: Math.round(result.duration || 0)
-        });
-      } catch (cloudinaryError) {
-        console.warn('Cloudinary video upload failed, falling back to local storage:', cloudinaryError);
-      }
+    if (!isCloudinaryConfigured) {
+      return res.status(400).json({ 
+        error: 'Cloud storage is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in the .env file.' 
+      });
     }
 
-    // Local storage fallback for video
-    const localPath = await saveFileLocally(req.file, 'uploads');
-    const backendUrl = getBackendUrl(req);
-    const fullUrl = `${backendUrl}${localPath}`;
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    res.status(200).json({
-      url: fullUrl,
-      thumbnailUrl: fullUrl, // Fallback to same video file for preview
+    // Upload to cloudinary as video
+    const result = await cloudinary.uploader.upload(dataURI, {
+      resource_type: 'video',
+      folder: 'tripnova_videos',
+      eager: [
+        { format: 'jpg', resource_type: 'video' } // Automatically generate thumbnail
+      ],
+      eager_async: false,
+    });
+
+    return res.status(200).json({
+      url: result.secure_url,
+      thumbnailUrl: result.eager?.[0]?.secure_url || result.secure_url.replace(/\.[^/.]+$/, '.jpg'),
       fileName: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size,
-      duration: 0
+      size: result.bytes,
+      duration: Math.round(result.duration || 0)
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Video upload error:', error);
-    res.status(500).json({ error: 'Video upload failed' });
+    res.status(500).json({ error: error.message || 'Video upload failed' });
   }
 });
 

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { HiOutlineX, HiOutlinePlus, HiOutlineTrash, HiOutlineClock, HiOutlineLocationMarker } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import ImageUploader from '@/components/shared/ImageUploader';
 
 interface CreateTripModalProps {
   onClose: () => void;
@@ -14,6 +15,10 @@ interface CreateTripModalProps {
 
 export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTripModalProps) {
   const [loading, setLoading] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>(
+    trip?.images && Array.isArray(trip.images) ? trip.images : []
+  );
+  
   const [formData, setFormData] = useState({
     title: trip?.title || '',
     destination: trip?.destination || '',
@@ -88,7 +93,7 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
       return;
     }
     if (!formData.coverImage.trim()) {
-      toast.error('Cover image URL is required');
+      toast.error('Cover image is required');
       return;
     }
 
@@ -107,6 +112,7 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
         category: formData.category,
         difficulty: formData.difficulty,
         coverImage: formData.coverImage.trim(),
+        images: galleryImages,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         pickupPoints: pickupPoints.filter(p => p.location.trim() && p.time.trim()),
@@ -115,7 +121,6 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
       if (trip) {
         // Keep existing fields on update so they don't get cleared
         submissionData.itinerary = trip.itinerary || [];
-        submissionData.images = trip.images || [];
         submissionData.included = trip.included || [];
         submissionData.excluded = trip.excluded || [];
         
@@ -125,7 +130,6 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
         // Initialize fields for new trip
         submissionData.availableSeats = seatsNum;
         submissionData.itinerary = [];
-        submissionData.images = [];
         submissionData.included = [];
         submissionData.excluded = [];
 
@@ -201,8 +205,51 @@ export default function CreateTripModal({ onClose, onSuccess, trip }: CreateTrip
               <input type="text" placeholder="Category" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Cover Image URL</label>
-              <input required placeholder="Cover Image URL" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={formData.coverImage} onChange={e => setFormData({...formData, coverImage: e.target.value})} />
+              <ImageUploader 
+                value={formData.coverImage} 
+                onChange={url => setFormData({...formData, coverImage: url})} 
+                label="Cover Image" 
+              />
+            </div>
+          </div>
+
+          {/* Trip Gallery Images */}
+          <div className="space-y-4">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Trip Gallery Images</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {galleryImages.map((img, index) => (
+                <div key={index} className="relative">
+                  <ImageUploader 
+                    value={img} 
+                    onChange={(url) => {
+                      if (url) {
+                        const newImages = [...galleryImages];
+                        newImages[index] = url;
+                        setGalleryImages(newImages);
+                      } else {
+                        // Remove image if deleted
+                        setGalleryImages(galleryImages.filter((_, i) => i !== index));
+                      }
+                    }} 
+                    label={`Photo ${index + 1}`}
+                    aspectRatio="aspect-square"
+                  />
+                </div>
+              ))}
+              {galleryImages.length < 8 && (
+                <div className="relative">
+                  <ImageUploader 
+                    value="" 
+                    onChange={(url) => {
+                      if (url) {
+                        setGalleryImages([...galleryImages, url]);
+                      }
+                    }} 
+                    label="Add Gallery Photo"
+                    aspectRatio="aspect-square"
+                  />
+                </div>
+              )}
             </div>
           </div>
 

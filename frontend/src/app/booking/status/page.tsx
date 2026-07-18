@@ -10,6 +10,7 @@ import {
 } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import ImageUploader from '@/components/shared/ImageUploader';
 
 function StatusContent() {
   const searchParams = useSearchParams();
@@ -23,7 +24,9 @@ function StatusContent() {
   // Partial Payment State
   const [payAmount, setPayAmount] = useState<string>('');
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState('');
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [settings, setSettings] = useState<any>({});
 
   useEffect(() => {
     if (!ref) {
@@ -43,7 +46,17 @@ function StatusContent() {
       }
     };
 
+    const fetchSettings = async () => {
+      try {
+        const data = await api.settings.getAll();
+        setSettings(data || {});
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      }
+    };
+
     fetchBooking();
+    fetchSettings();
   }, [ref]);
 
   const handlePayPending = async () => {
@@ -71,6 +84,7 @@ function StatusContent() {
       setBooking(updatedData);
       setPayAmount('');
       setScreenshotFile(null);
+      setScreenshotPreview('');
     } catch (err: any) {
       toast.error(err.message || 'Payment submission failed');
     } finally {
@@ -288,9 +302,10 @@ function StatusContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 shadow-inner">
                       <div className="text-center">
                         <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 w-36 h-36 mx-auto relative overflow-hidden mb-2">
-                          <img src="/qr-payment.jpeg" alt="UPI QR Code" className="w-full h-full object-contain" />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={settings.paymentQrCode || '/qr-payment.jpeg'} alt="UPI QR Code" className="w-full h-full object-contain" />
                         </div>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Pay via UPI: <b>9632463347</b></p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Pay via UPI: <b>{settings.contactPhone || '9632463347'}</b></p>
                       </div>
 
                       <div className="space-y-4">
@@ -308,15 +323,12 @@ function StatusContent() {
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Upload Screenshot</label>
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) setScreenshotFile(file);
-                            }}
-                            className="w-full text-[11px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer shadow-sm"
+                          <ImageUploader
+                            value={screenshotPreview}
+                            onChange={setScreenshotPreview}
+                            onFileSelect={setScreenshotFile}
+                            label="Upload Payment Screenshot"
+                            aspectRatio="aspect-auto"
                           />
                         </div>
 

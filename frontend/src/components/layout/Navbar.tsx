@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineMenuAlt3, HiX, HiOutlineUser, HiOutlineChatAlt2, HiOutlineMap, HiOutlineThumbUp, HiOutlineNewspaper } from 'react-icons/hi';
 import { RiSparklingLine } from 'react-icons/ri';
+import api from '@/lib/api';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: HiOutlineMap },
@@ -20,10 +21,22 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const [settings, setSettings] = useState<any>({});
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
+
+    const fetchSettings = async () => {
+      try {
+        const data = await api.settings.getAll();
+        setSettings(data || {});
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      }
+    };
+    fetchSettings();
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -53,13 +66,13 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-4 group">
             <div className="relative flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
               <img 
-                src="/logo.png" 
-                alt="Mysuru Travel Club Logo" 
+                src={settings.siteLogo || "/logo.png"} 
+                alt={`${settings.siteName || "Mysuru Travel Club"} Logo`} 
                 className="h-10 md:h-12 w-auto object-contain drop-shadow-md"
               />
             </div>
             <span className="text-lg md:text-xl font-outfit font-black tracking-tight text-slate-900 group-hover:text-primary-600 transition-colors duration-300 drop-shadow-sm">
-              MYSURU TRAVEL CLUB
+              {settings.siteName || "MYSURU TRAVEL CLUB"}
             </span>
           </Link>
 

@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencil, HiOutlineLocationMarker, HiOutlineStar } from 'react-icons/hi';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import ImageUploader from '@/components/shared/ImageUploader';
 
 export default function MarketplaceManager() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [coverImage, setCoverImage] = useState('');
 
   useEffect(() => {
     fetchListings();
@@ -42,6 +44,12 @@ export default function MarketplaceManager() {
     e.preventDefault();
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
+
+    if (!coverImage) {
+      toast.error('Cover image is required');
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     const data = {
       category: formData.get('category'),
@@ -50,13 +58,14 @@ export default function MarketplaceManager() {
       price: parseFloat(formData.get('price') as string),
       priceUnit: formData.get('priceUnit'),
       location: formData.get('location'),
-      coverImage: formData.get('coverImage'),
+      coverImage: coverImage,
       isAvailable: formData.get('isAvailable') === 'on'
     };
     try {
       const newListing = await api.marketplace.create(data, token);
       setListings([newListing, ...listings]);
       setIsModalOpen(false);
+      setCoverImage('');
       toast.success('Marketplace listing created');
     } catch (err) {
       toast.error('Failed to create listing');
@@ -72,7 +81,7 @@ export default function MarketplaceManager() {
           <h2 className="text-2xl font-bold text-slate-800">Premium Marketplace</h2>
           <p className="text-slate-500">Manage dynamic categories like Resorts, Car Rentals, Villas, and more.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center gap-2">
+        <button onClick={() => { setCoverImage(''); setIsModalOpen(true); }} className="btn-primary flex items-center gap-2">
           <HiOutlinePlus /> Add Listing
         </button>
       </div>
@@ -151,7 +160,15 @@ export default function MarketplaceManager() {
                 </div>
                 <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Location</label><input name="location" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" required /></div>
                 <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Description</label><textarea name="description" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" rows={3} required /></div>
-                <div className="col-span-2"><label className="block text-sm text-slate-500 mb-2">Cover Image URL</label><input name="coverImage" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://..." required /></div>
+                
+                <div className="col-span-2">
+                  <ImageUploader 
+                    value={coverImage} 
+                    onChange={setCoverImage} 
+                    label="Cover Image" 
+                  />
+                </div>
+
                 <div className="col-span-2 flex items-center gap-2">
                   <input type="checkbox" name="isAvailable" id="isAvailable" defaultChecked className="w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
                   <label htmlFor="isAvailable" className="text-sm text-slate-700">Available for Booking</label>

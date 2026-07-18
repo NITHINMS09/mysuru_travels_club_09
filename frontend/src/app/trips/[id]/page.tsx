@@ -17,6 +17,7 @@ import api from '@/lib/api';
 import { io } from 'socket.io-client';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+import ImageUploader from '@/components/shared/ImageUploader';
 
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
@@ -56,6 +57,7 @@ export default function TripDetails() {
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [paymentOption, setPaymentOption] = useState<'full' | 'partial'>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
+  const [settings, setSettings] = useState<any>({});
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -78,13 +80,24 @@ export default function TripDetails() {
         if (data.isLiveTracking) {
           setLiveLoc({ lat: data.currentLat, lng: data.currentLng });
         }
-      } catch (error) {
-        console.error('Failed to fetch trip:', error);
+      } catch (err) {
+        toast.error('Failed to load trip details');
       } finally {
         setLoading(false);
       }
     };
+
+    const fetchSettings = async () => {
+      try {
+        const data = await api.settings.getAll();
+        setSettings(data || {});
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      }
+    };
+
     fetchTrip();
+    fetchSettings();
 
     const socket = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000');
     socket.emit('join_trip_location', id);
@@ -343,41 +356,24 @@ export default function TripDetails() {
 
                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
                           <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 w-48 h-48 mx-auto relative overflow-hidden mb-4">
-                            <img src="/qr-payment.jpeg" alt="UPI QR Code" className="w-full h-full object-contain" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={settings.paymentQrCode || '/qr-payment.jpeg'} alt="UPI QR Code" className="w-full h-full object-contain" />
                           </div>
                           <div className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Pay via UPI / Mobile</div>
-                          <div className="text-3xl font-black text-slate-900 mb-2">9632463347</div>
+                          <div className="text-3xl font-black text-slate-900 mb-2">{settings.contactPhone || '9632463347'}</div>
                           <div className="text-sm text-slate-600 font-medium bg-slate-200/50 rounded-lg py-1.5 px-3 inline-block">
                             Amount: <b className="text-[#00C853]">₹{(paymentOption === 'full' ? pricing.total : (parseFloat(partialAmount) || 0)).toLocaleString()}</b>
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Upload Screenshot</h3>
-                          <div 
-                            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                            onDragLeave={() => setDragActive(false)}
-                            onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFileChange(e); }}
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                              dragActive ? 'border-slate-800 bg-slate-50' : 'border-slate-300 hover:border-slate-400 bg-white'
-                            }`}
-                          >
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" />
-                            
-                            {previewUrl ? (
-                              <div className="relative">
-                                <img src={previewUrl} alt="Preview" className="max-h-40 mx-auto rounded-lg shadow-sm border border-slate-200" />
-                                <div className="absolute -top-3 -right-3 bg-white text-red-500 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold shadow-md cursor-pointer hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setScreenshot(null); setPreviewUrl(null); }}>Remove</div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center space-y-3">
-                                <HiOutlineUpload className="w-8 h-8 text-slate-400" />
-                                <p className="text-sm font-bold text-slate-700">Tap to upload image</p>
-                                <p className="text-[11px] text-slate-400">JPG, PNG, WEBP (Max 5MB)</p>
-                              </div>
-                            )}
-                          </div>
+                          <ImageUploader
+                            value={previewUrl || ''}
+                            onChange={(url) => setPreviewUrl(url || null)}
+                            onFileSelect={setScreenshot}
+                            label="Upload Screenshot"
+                            aspectRatio="aspect-auto"
+                          />
                         </div>
 
                         <button type="button" onClick={submitPayment} disabled={bookingLoading || !screenshot} className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md ${

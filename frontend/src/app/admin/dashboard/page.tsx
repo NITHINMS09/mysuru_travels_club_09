@@ -18,6 +18,7 @@ import api, { fetchAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import CreateTripModal from '@/components/admin/CreateTripModal';
 import MarketplaceManager from '@/components/admin/MarketplaceManager';
+import ImageUploader from '@/components/shared/ImageUploader';
 import dynamic from 'next/dynamic';
 import { io } from 'socket.io-client';
 
@@ -230,7 +231,7 @@ export default function AdminDashboard() {
 
   // Modals state
   const [editingVote, setEditingVote] = useState<any>(null);
-  const [voteForm, setVoteForm] = useState({ name: '', description: '', voteCount: 0 });
+  const [voteForm, setVoteForm] = useState({ name: '', description: '', voteCount: 0, imageUrl: '' });
   const [editingUser, setEditingUser] = useState<any>(null);
   const [userForm, setUserForm] = useState({
     name: '',
@@ -293,7 +294,8 @@ export default function AdminDashboard() {
       setVoteForm({
         name: editingVote.name || '',
         description: editingVote.description || '',
-        voteCount: editingVote.voteCount || 0
+        voteCount: editingVote.voteCount || 0,
+        imageUrl: editingVote.imageUrl || ''
       });
     }
   }, [editingVote]);
@@ -1083,7 +1085,7 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('tripnova_admin_token');
     if (!token) return;
     const formData = new FormData(e.currentTarget);
-    const newSettings: any = {};
+    const newSettings: any = { ...settings };
     formData.forEach((value, key) => { newSettings[key] = value; });
     try {
       await api.settings.update(newSettings, token);
@@ -1882,8 +1884,11 @@ export default function AdminDashboard() {
                           <input name="role" required placeholder="Role (e.g. Lead Guide)" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={crewForm.role} onChange={e => setCrewForm({...crewForm, role: e.target.value})} />
                         </div>
                         <div>
-                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Image URL</label>
-                          <input name="image" required placeholder="Image URL" className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" value={crewForm.image} onChange={e => setCrewForm({...crewForm, image: e.target.value})} />
+                          <ImageUploader 
+                            value={crewForm.image} 
+                            onChange={url => setCrewForm({...crewForm, image: url})} 
+                            label="Crew Member Photo" 
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -2392,6 +2397,33 @@ export default function AdminDashboard() {
                         <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block font-outfit">Contact Address</label>
                         <input name="contactAddress" defaultValue={settings.contactAddress || 'Mysuru, Karnataka, India'} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" />
                       </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <ImageUploader
+                            value={settings.siteLogo || ''}
+                            onChange={(url) => setSettings({ ...settings, siteLogo: url })}
+                            label="Site Logo (Dynamic)"
+                            aspectRatio="aspect-video"
+                          />
+                        </div>
+                        <div>
+                          <ImageUploader
+                            value={settings.heroBannerUrl || ''}
+                            onChange={(url) => setSettings({ ...settings, heroBannerUrl: url })}
+                            label="Hero Banner Image (Fallback)"
+                            aspectRatio="aspect-video"
+                          />
+                        </div>
+                        <div>
+                          <ImageUploader
+                            value={settings.paymentQrCode || ''}
+                            onChange={(url) => setSettings({ ...settings, paymentQrCode: url })}
+                            label="Payment QR Code (QR Scanner)"
+                            aspectRatio="aspect-square"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 gap-6">
                       <div>
@@ -2533,23 +2565,11 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="glass-card bg-white p-6 border-slate-200/80 shadow-md">
-                      <h4 className="font-bold text-lg mb-6 flex items-center gap-2 font-outfit text-slate-800"><HiOutlineDocumentText className="w-5.5 h-5.5 text-violet-600"/> Upload Image</h4>
-                      <p className="text-xs text-slate-500 mb-4 font-medium">Upload a promotional or confirmation poster (JPG, PNG). The image URL will be appended to the WhatsApp message text to generate a preview.</p>
-                      
-                      {whatsAppForm.imageUrl && (
-                        <div className="mb-4 relative rounded-lg overflow-hidden border border-slate-200" style={{ height: '200px' }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={whatsAppForm.imageUrl} alt="WhatsApp Poster" className="object-cover w-full h-full" />
-                          <button 
-                            onClick={() => setWhatsAppForm({...whatsAppForm, imageUrl: ''})}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                          >
-                            <HiOutlineTrash />
-                          </button>
-                        </div>
-                      )}
-
-                      <input type="file" accept="image/*" onChange={handleWhatsAppImageUpload} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+                      <ImageUploader
+                        value={whatsAppForm.imageUrl}
+                        onChange={url => setWhatsAppForm({...whatsAppForm, imageUrl: url})}
+                        label="WhatsApp Poster Image"
+                      />
                     </div>
 
                     <div className="flex gap-4">
@@ -3150,13 +3170,10 @@ export default function AdminDashboard() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Custom Thumbnail URL (Optional)</label>
-                      <input 
-                        type="text"
-                        value={socialForm.thumbnailUrl}
-                        onChange={(e) => setSocialForm({ ...socialForm, thumbnailUrl: e.target.value })}
-                        placeholder="https://..."
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold rounded-xl p-2.5 outline-none focus:border-amber-400 focus:bg-white transition-all text-xs"
+                      <ImageUploader 
+                        value={socialForm.thumbnailUrl} 
+                        onChange={url => setSocialForm({ ...socialForm, thumbnailUrl: url })} 
+                        label="Custom Thumbnail" 
                       />
                     </div>
 
@@ -3686,6 +3703,13 @@ export default function AdminDashboard() {
                   className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900"
                 />
               </div>
+              <div className="py-2">
+                <ImageUploader 
+                  value={voteForm.imageUrl} 
+                  onChange={url => setVoteForm({...voteForm, imageUrl: url})} 
+                  label="Destination Image" 
+                />
+              </div>
               <button type="submit" className="btn-primary w-full py-3.5 mt-4">Save Changes</button>
             </form>
           </motion.div>
@@ -3878,8 +3902,15 @@ export default function AdminDashboard() {
                   />
                   {isUploadingVideo && <p className="text-xs font-bold text-violet-600 mt-2 animate-pulse">Uploading and compressing video... please wait (up to 100MB)</p>}
                   {updateForm.videoUrl && !isUploadingVideo && (
-                    <div className="mt-3 w-full rounded-xl overflow-hidden aspect-video bg-black">
-                      <video src={updateForm.videoUrl} controls className="w-full h-full object-cover" />
+                    <div className="space-y-4 mt-3">
+                      <div className="w-full rounded-xl overflow-hidden aspect-video bg-black">
+                        <video src={updateForm.videoUrl} controls className="w-full h-full object-cover" />
+                      </div>
+                      <ImageUploader 
+                        value={updateForm.thumbnailUrl} 
+                        onChange={url => setUpdateForm({...updateForm, thumbnailUrl: url})} 
+                        label="Custom Video Thumbnail (Optional)" 
+                      />
                     </div>
                   )}
                 </div>
@@ -3965,8 +3996,11 @@ export default function AdminDashboard() {
                   <input value={blogForm.tags} onChange={e => setBlogForm({...blogForm, tags: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="Trekking, Nature, Mountains" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Cover Image URL</label>
-                  <input value={blogForm.coverImage} onChange={e => setBlogForm({...blogForm, coverImage: e.target.value})} className="input-field border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900" placeholder="https://..." />
+                  <ImageUploader 
+                    value={blogForm.coverImage} 
+                    onChange={url => setBlogForm({...blogForm, coverImage: url})} 
+                    label="Cover Image" 
+                  />
                 </div>
               </div>
               <div>
