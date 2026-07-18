@@ -1,12 +1,20 @@
 import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
 // GET all destinations (public, sorted by votes)
 router.get('/destinations', async (_req, res) => {
   try {
+    const cacheKey = 'votes:destinations';
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      return res.json(cachedData);
+    }
+
     const destinations = await prisma.voteDestination.findMany({
       orderBy: { voteCount: 'desc' },
       include: {
@@ -14,6 +22,9 @@ router.get('/destinations', async (_req, res) => {
         comments: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
+
+    setCache(cacheKey, destinations, 60000); // 1 minute cache
+
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json(destinations);
   } catch (error) {
@@ -28,6 +39,7 @@ router.post('/destinations', async (req, res) => {
     const dest = await prisma.voteDestination.create({
       data: { name, description, imageUrl, suggestedBy },
     });
+    clearCache('votes:');
     res.status(201).json(dest);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -48,6 +60,7 @@ router.post('/:id/vote', async (req, res) => {
         where: { id: req.params.id },
         data: { voteCount: { decrement: 1 } },
       });
+      clearCache('votes:');
       res.json({ voted: false });
       return;
     }
@@ -56,6 +69,7 @@ router.post('/:id/vote', async (req, res) => {
       where: { id: req.params.id },
       data: { voteCount: { increment: 1 } },
     });
+    clearCache('votes:');
     res.json({ voted: true });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -69,6 +83,7 @@ router.post('/:id/comments', async (req, res) => {
     const c = await prisma.voteComment.create({
       data: { destinationId: req.params.id, userName, userEmail, comment },
     });
+    clearCache('votes:');
     res.status(201).json(c);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -83,6 +98,7 @@ router.put('/destinations/:id', authenticateAdmin, async (req, res) => {
       where: { id: req.params.id },
       data: { name, description, voteCount: voteCount ? parseInt(voteCount) : undefined },
     });
+    clearCache('votes:');
     res.json(dest);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -95,6 +111,7 @@ router.delete('/destinations/:id', authenticateAdmin, async (req, res) => {
     await prisma.voteDestination.delete({
       where: { id: req.params.id },
     });
+    clearCache('votes:');
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

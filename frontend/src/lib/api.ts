@@ -64,11 +64,11 @@ export const api = {
         method: 'PATCH',
         body: formData,
       });
+      const text = await res.text();
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch (e) {
-        const text = await res.text();
         data = { error: text || 'Screenshot upload failed' };
       }
       if (!res.ok) throw new Error(data.error || 'Screenshot upload failed');
@@ -180,11 +180,11 @@ export const api = {
         method: 'POST',
         body: formData,
       });
+      const text = await res.text();
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch (e) {
-        const text = await res.text();
         data = { error: text || 'Upload failed' };
       }
       if (!res.ok) throw new Error(data.error || 'Upload failed');
@@ -197,11 +197,11 @@ export const api = {
         method: 'POST',
         body: formData,
       });
+      const text = await res.text();
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch (e) {
-        const text = await res.text();
         data = { error: text || 'Video upload failed' };
       }
       if (!res.ok) throw new Error(data.error || 'Video upload failed');

@@ -2,16 +2,28 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
 // GET all update videos (public - published only)
 router.get('/', async (req, res) => {
   try {
+    const cacheKey = 'updates:list';
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+      return res.json(cachedData);
+    }
+
     const updates = await prisma.updateVideo.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' }
     });
+
+    setCache(cacheKey, updates, 300000); // 5 minutes cache
+
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(updates);
   } catch (error) {
     console.error('Fetch updates error:', error);
@@ -75,6 +87,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('updates:');
     res.status(201).json(update);
   } catch (error) {
     console.error('Create update error:', error);
@@ -101,6 +114,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('updates:');
     res.json(update);
   } catch (error) {
     console.error('Edit update error:', error);
@@ -114,6 +128,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
     await prisma.updateVideo.delete({
       where: { id: req.params.id }
     });
+    clearCache('updates:');
     res.json({ success: true });
   } catch (error) {
     console.error('Delete update error:', error);

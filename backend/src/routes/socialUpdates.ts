@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
+import { getCache, setCache, clearCache } from '../utils/cache';
 
 const router = Router();
 
@@ -26,6 +27,13 @@ router.get('/', async (req, res) => {
   const skip = (pageNum - 1) * limitNum;
 
   try {
+    const cacheKey = `social-updates:list:${JSON.stringify(req.query)}`;
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+      return res.json(cachedData);
+    }
+
     const where: any = {};
 
     if (category && category !== 'all') {
@@ -57,7 +65,7 @@ router.get('/', async (req, res) => {
       prisma.socialUpdate.count({ where })
     ]);
 
-    res.json({
+    const responseData = {
       updates,
       pagination: {
         total,
@@ -65,7 +73,12 @@ router.get('/', async (req, res) => {
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum)
       }
-    });
+    };
+
+    setCache(cacheKey, responseData, 300000); // 5 minutes cache
+
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+    res.json(responseData);
   } catch (error) {
     console.error('Fetch social updates error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -135,6 +148,7 @@ router.post('/', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('social-updates:');
     res.status(201).json(newUpdate);
   } catch (error) {
     console.error('Create social update error:', error);
@@ -188,6 +202,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
       }
     });
 
+    clearCache('social-updates:');
     res.json(updated);
   } catch (error) {
     console.error('Update social update error:', error);
@@ -201,6 +216,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
     await prisma.socialUpdate.delete({
       where: { id: req.params.id }
     });
+    clearCache('social-updates:');
     res.json({ success: true, message: 'Update deleted successfully' });
   } catch (error) {
     console.error('Delete social update error:', error);
@@ -226,6 +242,7 @@ router.post('/reorder', authenticateAdmin, async (req: AuthRequest, res) => {
       )
     );
 
+    clearCache('social-updates:');
     res.json({ success: true, message: 'Reordered successfully' });
   } catch (error) {
     console.error('Reorder updates error:', error);
