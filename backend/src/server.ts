@@ -98,7 +98,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // API Routes
-app.use('/api/v1/auth/admin', authRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/reviews', reviewRoutes);

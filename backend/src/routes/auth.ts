@@ -9,7 +9,7 @@ import type { AuthRequest } from '../middleware/auth';
 const router = Router();
 
 // Admin Login
-router.post('/login', async (req, res) => {
+router.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -46,12 +46,12 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify token
-router.get('/verify', authenticateAdmin, (req: AuthRequest, res) => {
+router.get('/admin/verify', authenticateAdmin, (req: AuthRequest, res) => {
   res.json({ admin: req.admin });
 });
 
 // Dashboard analytics
-router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
+router.get('/admin/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
     const [totalTrips, totalBookings, totalRevenue, upcomingTrips, recentBookings, totalBlogs, totalVideos, pendingPayments, confirmedPayments, rejectedPayments, notificationsSent] = await Promise.all([
       prisma.trip.count(),
@@ -106,7 +106,7 @@ router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
 });
 
 // GET all users (travelers)
-router.get('/users', authenticateAdmin, async (req, res) => {
+router.get('/admin/users', authenticateAdmin, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
       select: {
@@ -187,7 +187,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
 });
 
 // UPDATE user details (across all their bookings)
-router.put('/users/:email', authenticateAdmin, async (req, res) => {
+router.put('/admin/users/:email', authenticateAdmin, async (req, res) => {
   try {
     const { email } = req.params;
     const { name, phone, age, gender, emergencyName, emergencyPhone } = req.body;
@@ -212,7 +212,7 @@ router.put('/users/:email', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE user (and all bookings)
-router.delete('/users/:email', authenticateAdmin, async (req, res) => {
+router.delete('/admin/users/:email', authenticateAdmin, async (req, res) => {
   try {
     const { email } = req.params;
     await prisma.booking.deleteMany({
@@ -226,7 +226,7 @@ router.delete('/users/:email', authenticateAdmin, async (req, res) => {
 });
 
 // GET all administrators (Super admin only)
-router.get('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+router.get('/admin/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   try {
     const admins = await prisma.admin.findMany({
       select: {
@@ -245,7 +245,7 @@ router.get('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => 
 });
 
 // CREATE administrator (Super admin only)
-router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+router.post('/admin/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   try {
     const { name, email, password, role = 'MODERATOR' } = req.body;
     if (!name || !email || !password) {
@@ -282,7 +282,7 @@ router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) =>
 });
 
 // UPDATE administrator (Super admin only)
-router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+router.put('/admin/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, role, password } = req.body;
@@ -314,7 +314,7 @@ router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res)
 });
 
 // DELETE administrator (Super admin only)
-router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
+router.delete('/admin/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -331,8 +331,8 @@ router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, r
   }
 });
 
-// GET /auth/admin/google (Initiates Google OAuth flow)
-router.get('/google', (req, res) => {
+// GET & POST /auth/admin/google (Initiates Google OAuth flow)
+const initiateGoogleAuth = (req: any, res: any) => {
   const clientId = config.google.clientId;
   const callbackUrl = config.google.callbackUrl;
   
@@ -348,11 +348,18 @@ router.get('/google', (req, res) => {
     `&scope=${encodeURIComponent('openid email profile')}` + 
     `&prompt=select_account`;
 
+  if (req.method === 'POST') {
+    return res.json({ url: authUrl });
+  }
+  
   res.redirect(authUrl);
-});
+};
+
+router.get('/admin/google', initiateGoogleAuth);
+router.post('/admin/google', initiateGoogleAuth);
 
 // GET /auth/admin/google/callback (Callback for Google OAuth)
-router.get('/google/callback', async (req: any, res) => {
+router.get('/admin/google/callback', async (req: any, res) => {
   try {
     const { code } = req.query;
     if (!code) {
