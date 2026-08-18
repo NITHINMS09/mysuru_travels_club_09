@@ -9,6 +9,8 @@ import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config';
 import { sendNotification } from '../utils/notifier';
+import { uploadBufferToCloudinary, deleteAssetFromUrl } from '../utils/cloudinary';
+import { sendEmailByType } from '../services/emailService';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -193,6 +195,12 @@ router.post('/', async (req, res) => {
       throw err;
     }
 
+    if (booking.email) {
+      sendEmailByType(booking.id, 'BOOKING_RECEIVED').catch((err) => 
+        console.error('Failed to dispatch booking received email:', err.message)
+      );
+    }
+
     res.status(201).json({ booking });
   } catch (error) {
     console.error('Create booking error:', error);
@@ -223,18 +231,13 @@ router.patch('/:id/screenshot', upload.single('screenshot'), async (req: any, re
       const relativeUrl = await saveFileLocally(req.file, 'uploads');
       screenshotUrl = `${getBackendUrl(req)}${relativeUrl}`;
     } else {
-      // Convert buffer to base64
-      const b64 = Buffer.from(req.file.buffer).toString('base64');
-      let dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-      // Upload to cloudinary with automatic optimization transformations
-      const result = await cloudinary.uploader.upload(dataURI, {
-        resource_type: 'auto',
-        folder: 'tripnova_payments',
-        transformation: [
-          { width: 1600, height: 1600, crop: 'limit', quality: 'auto', fetch_format: 'auto' }
-        ]
-      });
+      // Upload to Cloudinary using unified utility
+      const result = await uploadBufferToCloudinary(
+        req.file.buffer,
+        req.file.mimetype,
+        req.file.originalname,
+        'screenshot'
+      );
       screenshotUrl = result.secure_url;
     }
 
@@ -293,7 +296,8 @@ router.get('/', authenticateAdmin, async (req: AuthRequest, res) => {
           trip: { select: { title: true, destination: true, startDate: true } },
           payment: true,
           paymentHistory: { orderBy: { createdAt: 'desc' } },
-          notifications: { orderBy: { createdAt: 'desc' }, take: 1 }
+          notifications: { orderBy: { createdAt: 'desc' }, take: 1 },
+          emailLogs: { orderBy: { createdAt: 'desc' } }
         },
       }),
       prisma.booking.count({ where }),
@@ -318,6 +322,7 @@ router.get('/ref/:ref', async (req, res) => {
         trip: { select: { title: true, destination: true, startDate: true, endDate: true, coverImage: true } },
         payment: true,
         paymentHistory: { orderBy: { createdAt: 'desc' } },
+        emailLogs: { orderBy: { createdAt: 'desc' } }
       },
     });
     if (!booking) {
@@ -483,6 +488,18 @@ router.patch('/:id/status', authenticateAdmin, async (req: AuthRequest, res) => 
       }
     });
 
+    // Dispatch transactional non-blocking email notifications
+    if (booking.email || currentBooking.email) {
+      if (status === 'CONFIRMED' && currentBooking.status !== 'CONFIRMED') {
+        sendEmailByType(booking.id, 'PAYMENT_CONFIRMED').catch(console.error);
+        sendEmailByType(booking.id, 'BOOKING_CONFIRMED').catch(console.error);
+      } else if (status === 'REJECTED') {
+        sendEmailByType(booking.id, 'PAYMENT_REJECTED').catch(console.error);
+      } else if (status === 'CANCELLED') {
+        sendEmailByType(booking.id, 'BOOKING_CANCELLED').catch(console.error);
+      }
+    }
+
     res.json(booking);
   } catch (error) {
     console.error('Update booking error:', error);
@@ -515,6 +532,24 @@ router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
         where: { id: booking.userId },
         data: { totalTrips: { decrement: 1 }, totalSpent: { decrement: booking.paidAmount } }
       });
+    }
+
+    // Cleanup associated Cloudinary files
+    if (booking.idProofUrl) {
+      await deleteAssetFromUrl(booking.idProofUrl);
+    }
+    if (booking.paymentScreenshot) {
+      await deleteAssetFromUrl(booking.paymentScreenshot);
+    }
+
+    // Cleanup related payment history screenshots
+    const histories = await prisma.paymentHistory.findMany({
+      where: { bookingId: booking.id }
+    });
+    for (const history of histories) {
+      if (history.screenshot) {
+        await deleteAssetFromUrl(history.screenshot);
+      }
     }
 
     await prisma.booking.delete({
@@ -838,6 +873,48 @@ router.patch('/payments/:paymentHistoryId/status', authenticateAdmin, async (req
   } catch (error) {
     console.error('Process payment status error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST manual email send (admin only)
+router.post('/:id/email/send', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { emailType } = req.body;
+
+    if (!emailType) {
+      return res.status(400).json({ error: 'emailType parameter is required' });
+    }
+
+    const booking = await prisma.booking.findUnique({ where: { id } });
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Trigger manual email send (non-blocking)
+    sendEmailByType(id, emailType).catch(console.error);
+    res.json({ message: `Manual email notification [${emailType}] initiated successfully.` });
+  } catch (error: any) {
+    console.error('Manual email error:', error);
+    res.status(500).json({ error: error.message || 'Failed to dispatch email' });
+  }
+});
+
+// POST retry failed email log (admin only)
+router.post('/:id/email/retry/:logId', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id, logId } = req.params;
+    const log = await prisma.emailLog.findUnique({ where: { id: logId } });
+    if (!log) {
+      return res.status(404).json({ error: 'Email log not found' });
+    }
+
+    // Trigger retry (non-blocking)
+    sendEmailByType(id, log.emailType as any, log.id).catch(console.error);
+    res.json({ message: 'Email retry initiated successfully.' });
+  } catch (error: any) {
+    console.error('Email retry error:', error);
+    res.status(500).json({ error: error.message || 'Failed to retry email' });
   }
 });
 

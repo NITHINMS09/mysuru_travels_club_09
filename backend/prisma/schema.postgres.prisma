@@ -1,14 +1,15 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "./postgres-client"
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("MONGODB_URI")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Admin {
-  id           String    @id @default(cuid()) @map("_id")
+  id           String    @id @default(cuid())
   email        String    @unique
   passwordHash String
   name         String
@@ -19,11 +20,9 @@ model Admin {
 }
 
 model User {
-  id           String    @id @default(cuid()) @map("_id")
+  id           String    @id @default(cuid())
   fullName     String
   mobileNumber String    @unique
-  email        String?
-  googleId     String?
   totalTrips   Int       @default(0)
   totalSpent   Float     @default(0)
   createdAt    DateTime  @default(now())
@@ -33,7 +32,7 @@ model User {
 }
 
 model Trip {
-  id            String     @id @default(cuid()) @map("_id")
+  id            String     @id @default(cuid())
   title         String
   slug          String     @unique
   description   String
@@ -80,7 +79,7 @@ model Trip {
 }
 
 model Booking {
-  id               String        @id @default(cuid()) @map("_id")
+  id               String        @id @default(cuid())
   tripId           String
   trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   travelerName     String
@@ -110,10 +109,10 @@ model Booking {
   payment Payment?
   paymentHistory PaymentHistory[]
   notifications NotificationLog[]
-  emailLogs     EmailLog[]
 
   @@index([tripId])
   @@index([email])
+  @@index([bookingRef])
   @@index([userId])
   @@index([status])
   @@index([createdAt])
@@ -121,7 +120,7 @@ model Booking {
 }
 
 model Payment {
-  id                 String        @id @default(cuid()) @map("_id")
+  id                 String        @id @default(cuid())
   bookingId          String        @unique
   booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   razorpayOrderId    String        @unique
@@ -134,11 +133,12 @@ model Payment {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  @@index([razorpayOrderId])
   @@index([status])
 }
 
 model PaymentHistory {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   bookingId   String
   booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   amount      Float
@@ -154,7 +154,7 @@ model PaymentHistory {
 }
 
 model Review {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   tripId    String
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   userName  String
@@ -169,7 +169,7 @@ model Review {
 }
 
 model ChatMessage {
-  id          String      @id @default(cuid()) @map("_id")
+  id          String      @id @default(cuid())
   tripId      String
   trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
   senderName  String
@@ -190,7 +190,7 @@ model ChatMessage {
 }
 
 model Blog {
-  id         String   @id @default(cuid()) @map("_id")
+  id         String   @id @default(cuid())
   title      String
   slug       String   @unique
   content    String
@@ -207,7 +207,7 @@ model Blog {
 }
 
 model VoteDestination {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   name        String
   description String
   imageUrl    String?
@@ -220,7 +220,7 @@ model VoteDestination {
 }
 
 model Vote {
-  id            String          @id @default(cuid()) @map("_id")
+  id            String          @id @default(cuid())
   destinationId String
   destination   VoteDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   voterEmail    String
@@ -230,7 +230,7 @@ model Vote {
 }
 
 model VoteComment {
-  id            String          @id @default(cuid()) @map("_id")
+  id            String          @id @default(cuid())
   destinationId String
   destination   VoteDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   userName      String
@@ -242,7 +242,7 @@ model VoteComment {
 }
 
 model Notification {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   email     String
   title     String
   message   String
@@ -256,7 +256,7 @@ model Notification {
 }
 
 model CrewMember {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   name        String
   role        String
   image       String
@@ -269,7 +269,7 @@ model CrewMember {
 }
 
 model SiteSetting {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   key       String   @unique
   value     String   // Can store JSON string for complex objects
   category  String   @default("general") // e.g., 'hero', 'theme', 'seo'
@@ -277,7 +277,7 @@ model SiteSetting {
 }
 
 model MarketplaceListing {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   category    String   // 'RESORT', 'CAR_RENTAL', 'VILLA', 'HOTEL', 'ROOM', 'ADVENTURE', 'TOUR_GUIDE', 'BIKE_RENTAL', 'HOMESTAY', 'LUXURY_STAY', 'TRAVEL_PACKAGE', 'CRUISE', 'EVENT'
   title       String
   description String
@@ -297,14 +297,14 @@ model MarketplaceListing {
 }
 
 model Visitor {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   visitorId String   @unique
   createdAt DateTime @default(now())
   sessions  VisitorSession[]
 }
 
 model VisitorSession {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   sessionId String   @unique
   visitorId String
   visitor   Visitor  @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
@@ -326,7 +326,7 @@ model VisitorSession {
 }
 
 model PageView {
-  id        String         @id @default(cuid()) @map("_id")
+  id        String         @id @default(cuid())
   sessionId String
   session   VisitorSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
   page      String
@@ -337,7 +337,7 @@ model PageView {
 }
 
 model NotificationLog {
-  id        String   @id @default(cuid()) @map("_id")
+  id        String   @id @default(cuid())
   bookingId String?
   booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   recipient String   // Phone number or email
@@ -353,7 +353,7 @@ model NotificationLog {
 }
 
 model UpdateVideo {
-  id           String   @id @default(cuid()) @map("_id")
+  id           String   @id @default(cuid())
   title        String
   description  String?
   videoUrl     String
@@ -370,9 +370,9 @@ model UpdateVideo {
 }
 
 model WhatsAppSettings {
-  id              String   @id @default(cuid()) @map("_id")
+  id              String   @id @default(cuid())
   messageTitle    String   @default("Booking Confirmation")
-  messageTemplate String
+  messageTemplate String   @db.Text
   imageUrl        String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -380,7 +380,7 @@ model WhatsAppSettings {
 }
 
 model AdminLog {
-  id          String   @id @default(cuid()) @map("_id")
+  id          String   @id @default(cuid())
   adminName   String
   action      String
   details     String?
@@ -388,13 +388,13 @@ model AdminLog {
 }
 
 model InstagramMedia {
-  id           String   @id @default(cuid()) @map("_id")
+  id           String   @id @default(cuid())
   instagramId  String   @unique
   mediaType    String   // 'IMAGE', 'VIDEO', 'CAROUSEL_ALBUM'
-  mediaUrl     String
-  permalink    String
-  thumbnailUrl String?
-  caption      String?
+  mediaUrl     String   @db.Text
+  permalink    String   @db.Text
+  thumbnailUrl String?  @db.Text
+  caption      String?  @db.Text
   timestamp    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -403,13 +403,13 @@ model InstagramMedia {
 }
 
 model SocialUpdate {
-  id           String   @id @default(cuid()) @map("_id")
-  url          String
+  id           String   @id @default(cuid())
+  url          String   @db.Text
   type         String   // 'REEL', 'POST', 'VIDEO', 'ANNOUNCEMENT', 'REVIEW'
   title        String
-  description  String
+  description  String   @db.Text
   category     String   // 'reels', 'videos', 'announcements', 'reviews', 'trips'
-  thumbnailUrl String?
+  thumbnailUrl String?  @db.Text
   isFeatured   Boolean  @default(false)
   orderIndex   Int      @default(0)
   createdAt    DateTime @default(now())
@@ -417,30 +417,3 @@ model SocialUpdate {
 
   @@map("SocialUpdate")
 }
-
-model CloudinaryAsset {
-  id               String   @id @default(cuid()) @map("_id")
-  publicId         String   @unique
-  secureUrl        String
-  resourceType     String
-  originalFilename String
-  folder           String
-  createdAt        DateTime @default(now())
-}
-
-model EmailLog {
-  id           String    @id @default(cuid()) @map("_id")
-  bookingId    String
-  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  emailType    String    // 'BOOKING_RECEIVED', 'PAYMENT_CONFIRMED', 'PAYMENT_PENDING', 'BOOKING_CONFIRMED', 'BOOKING_CANCELLED', 'PAYMENT_REJECTED'
-  recipient    String
-  status       String    // 'pending', 'sent', 'failed'
-  errorMessage String?
-  sentAt       DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([bookingId])
-  @@index([status])
-}
-

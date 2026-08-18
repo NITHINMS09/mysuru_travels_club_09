@@ -5,7 +5,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Safeguard 1: Environment check
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('neon.tech');
+  const isProduction = 
+    process.env.NODE_ENV === 'production' || 
+    process.env.DATABASE_URL?.includes('neon.tech') ||
+    process.env.MONGODB_URI?.includes('mongodb.net');
   if (isProduction) {
     console.error('❌ SAFETY ABORT: Seeding is disabled in production to prevent data loss!');
     process.exit(1);

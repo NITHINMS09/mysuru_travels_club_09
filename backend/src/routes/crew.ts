@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -125,6 +126,11 @@ router.patch('/reorder', authenticateAdmin, async (req: AuthRequest, res) => {
 // DELETE crew member (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const crew = await prisma.crewMember.findUnique({ where: { id: req.params.id } });
+    if (crew && crew.image) {
+      await deleteAssetFromUrl(crew.image);
+    }
+
     await prisma.crewMember.delete({
       where: { id: req.params.id }
     });

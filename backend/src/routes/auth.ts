@@ -331,4 +331,138 @@ router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, async (req, r
   }
 });
 
+// GET /auth/admin/google (Initiates Google OAuth flow)
+router.get('/google', (req, res) => {
+  const clientId = config.google.clientId;
+  const callbackUrl = config.google.callbackUrl;
+  
+  if (!clientId || !callbackUrl) {
+    console.error('Google OAuth Client ID or Callback URL is missing');
+    return res.status(500).json({ error: 'Google OAuth is not configured on the server.' });
+  }
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=${clientId}` + 
+    `&redirect_uri=${encodeURIComponent(callbackUrl)}` + 
+    `&response_type=code` + 
+    `&scope=${encodeURIComponent('openid email profile')}` + 
+    `&prompt=select_account`;
+
+  res.redirect(authUrl);
+});
+
+// GET /auth/admin/google/callback (Callback for Google OAuth)
+router.get('/google/callback', async (req: any, res) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.redirect(`${config.frontendUrl}/admin/login?error=Authorization+code+is+missing`);
+    }
+
+    // 1. Exchange auth code for access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: config.google.clientId,
+        client_secret: config.google.clientSecret,
+        redirect_uri: config.google.callbackUrl,
+        grant_type: 'authorization_code',
+      }).toString()
+    });
+
+    if (!tokenResponse.ok) {
+      const errText = await tokenResponse.text();
+      throw new Error(`Failed to exchange code: ${errText}`);
+    }
+
+    const tokenData: any = await tokenResponse.json();
+
+    // 2. Fetch user profile info
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` }
+    });
+
+    if (!profileResponse.ok) {
+      throw new Error('Failed to retrieve user info from Google');
+    }
+
+    const userData: any = await profileResponse.json();
+    const email = userData.email;
+    const name = userData.name;
+    const googleId = userData.sub;
+
+    if (!email) {
+      return res.redirect(`${config.frontendUrl}/admin/login?error=No+email+returned+from+Google`);
+    }
+
+    // 3. Find if user is an administrator
+    const admin = await prisma.admin.findUnique({ where: { email } });
+    if (admin) {
+      const token = jwt.sign(
+        { id: admin.id, email: admin.email, role: admin.role },
+        config.jwt.secret,
+        { expiresIn: config.jwt.expiresIn as SignOptions['expiresIn'] }
+      );
+      const redirectUrl = `${config.frontendUrl}/admin/login?token=${token}&adminUser=${encodeURIComponent(JSON.stringify({
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        avatar: admin.avatar || userData.picture
+      }))}`;
+      return res.redirect(redirectUrl);
+    }
+
+    // 4. Find or create a regular customer (User model)
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email, mode: 'insensitive' } },
+          { googleId }
+        ]
+      }
+    });
+
+    if (!user) {
+      // Create user with a unique placeholder phone number
+      const placeholderPhone = `GOOGLE_${googleId}`;
+      user = await prisma.user.create({
+        data: {
+          fullName: name,
+          email,
+          googleId,
+          mobileNumber: placeholderPhone
+        }
+      });
+    } else if (!user.email || !user.googleId) {
+      // Bind email and googleId to existing user record
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { email, googleId }
+      });
+    }
+
+    // Sign User JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email || '', role: 'USER' },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn as SignOptions['expiresIn'] }
+    );
+
+    const redirectUrl = `${config.frontendUrl}/admin/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
+      id: user.id,
+      name: user.fullName,
+      email: user.email,
+      mobileNumber: user.mobileNumber
+    }))}`;
+    return res.redirect(redirectUrl);
+
+  } catch (error: any) {
+    console.error('Google OAuth error:', error);
+    res.redirect(`${config.frontendUrl}/admin/login?error=${encodeURIComponent(error.message || 'Google OAuth failed')}`);
+  }
+});
+
 export default router;

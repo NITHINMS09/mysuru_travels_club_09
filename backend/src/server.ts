@@ -132,7 +132,7 @@ const PORT = config.port;
 
 prisma.$connect()
   .then(() => {
-    console.log(`🔌 Successfully connected to PostgreSQL database`);
+    console.log(`🔌 Successfully connected to MongoDB database`);
     InstagramService.startAutoSyncScheduler();
     httpServer.listen(PORT, () => {
       console.log(`\n🚀 TripNova Backend Server running on port ${PORT}`);
@@ -142,7 +142,7 @@ prisma.$connect()
     });
   })
   .catch((error) => {
-    console.error('❌ Failed to connect to PostgreSQL database:', error);
+    console.error('❌ Failed to connect to MongoDB database:', error);
     process.exit(1);
   });
 

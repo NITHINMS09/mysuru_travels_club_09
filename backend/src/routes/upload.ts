@@ -1,27 +1,27 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
+import prisma from '../config/database';
+import { uploadBufferToCloudinary, getCloudinaryFolder } from '../utils/cloudinary';
 import { config } from '../config';
 import fs from 'fs';
 import path from 'path';
 
 const router = Router();
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: config.cloudinary.cloudName,
-  api_key: config.cloudinary.apiKey,
-  api_secret: config.cloudinary.apiSecret,
-});
-
-// Configure multer with memory storage
+// Configure multer with memory storage for single uploads
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for general/profile uploads
 });
 
-// Helper to save file locally
+// Configure multer for large video uploads
+const videoUpload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
+});
+
+// Helper to save file locally as fallback
 const saveFileLocally = async (file: any, subfolder = 'uploads') => {
   const uploadDir = path.join(__dirname, `../../${subfolder}`);
   if (!fs.existsSync(uploadDir)) {
@@ -36,18 +36,37 @@ const saveFileLocally = async (file: any, subfolder = 'uploads') => {
   return `/${subfolder}/${filename}`;
 };
 
-// Helper to get backend base URL
+// Helper to get backend base URL for local fallback
 const getBackendUrl = (req: any) => {
   const protocol = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${config.port}`;
   return `${protocol}://${host}`;
 };
 
-// Single file upload endpoint
+// Single file upload endpoint (images/documents)
 router.post('/single', upload.single('file'), async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const uploadType = (req.query.type as string) || 'upload';
+
+    // MIME type validation based on upload type
+    const isImage = req.file.mimetype.startsWith('image/');
+    const isDoc = req.file.mimetype === 'application/pdf' || 
+                  req.file.mimetype === 'application/msword' || 
+                  req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                  req.file.mimetype === 'text/plain';
+
+    // Restrict profile/selfie/logo/trip to image only
+    const imageOnlyTypes = ['profile', 'avatar', 'selfie', 'logo', 'trip', 'blog', 'marketplace'];
+    if (imageOnlyTypes.includes(uploadType) && !isImage) {
+      return res.status(400).json({ error: 'Only image files are allowed for this upload category.' });
+    }
+
+    if (!isImage && !isDoc) {
+      return res.status(400).json({ error: 'File format not supported. Only images and documents are allowed.' });
     }
 
     const isCloudinaryConfigured = 
@@ -59,7 +78,7 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
     if (!isCloudinaryConfigured) {
-      // Fallback to local storage for development/sandbox settings
+      // Fallback to local storage
       const relativeUrl = await saveFileLocally(req.file, 'uploads');
       const fullUrl = `${getBackendUrl(req)}${relativeUrl}`;
       return res.status(200).json({
@@ -70,24 +89,31 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
       });
     }
 
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    // Upload via the central Cloudinary utility
+    const result = await uploadBufferToCloudinary(
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname,
+      uploadType
+    );
 
-    // Upload to cloudinary with automatic optimization transformations
-    const result = await cloudinary.uploader.upload(dataURI, {
-      resource_type: 'auto',
-      folder: 'tripnova_uploads',
-      transformation: [
-        { width: 1600, height: 1600, crop: 'limit', quality: 'auto', fetch_format: 'auto' }
-      ]
+    // Save metadata in MongoDB Atlas
+    const asset = await prisma.cloudinaryAsset.create({
+      data: {
+        publicId: result.public_id,
+        secureUrl: result.secure_url,
+        resourceType: result.resource_type,
+        originalFilename: result.original_filename,
+        folder: getCloudinaryFolder(uploadType),
+      }
     });
 
     return res.status(200).json({
       url: result.secure_url,
       fileName: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
+      assetId: asset.id
     });
   } catch (error: any) {
     console.error('Upload error:', error);
@@ -95,17 +121,16 @@ router.post('/single', upload.single('file'), async (req: any, res: any) => {
   }
 });
 
-// Configure multer for large video uploads
-const videoUpload = multer({
-  storage,
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
-});
-
 // Video file upload endpoint
 router.post('/video', videoUpload.single('file'), async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No video file uploaded' });
+    }
+
+    // Validate video MIME type
+    if (!req.file.mimetype.startsWith('video/')) {
+      return res.status(400).json({ error: 'Only video files are supported at this endpoint.' });
     }
 
     const isCloudinaryConfigured = 
@@ -117,7 +142,7 @@ router.post('/video', videoUpload.single('file'), async (req: any, res: any) => 
       config.cloudinary.apiSecret !== 'your_api_secret_here';
 
     if (!isCloudinaryConfigured) {
-      // Fallback to local storage for development/sandbox settings
+      // Fallback to local storage
       const relativeUrl = await saveFileLocally(req.file, 'uploads');
       const fullUrl = `${getBackendUrl(req)}${relativeUrl}`;
       return res.status(200).json({
@@ -130,27 +155,33 @@ router.post('/video', videoUpload.single('file'), async (req: any, res: any) => 
       });
     }
 
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    // Upload via the central Cloudinary utility
+    const result = await uploadBufferToCloudinary(
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname,
+      'video'
+    );
 
-    // Upload to cloudinary as video
-    const result = await cloudinary.uploader.upload(dataURI, {
-      resource_type: 'video',
-      folder: 'tripnova_videos',
-      eager: [
-        { format: 'jpg', resource_type: 'video' } // Automatically generate thumbnail
-      ],
-      eager_async: false,
+    // Save metadata in MongoDB Atlas
+    const asset = await prisma.cloudinaryAsset.create({
+      data: {
+        publicId: result.public_id,
+        secureUrl: result.secure_url,
+        resourceType: result.resource_type,
+        originalFilename: result.original_filename,
+        folder: getCloudinaryFolder('video'),
+      }
     });
 
     return res.status(200).json({
       url: result.secure_url,
-      thumbnailUrl: result.eager?.[0]?.secure_url || result.secure_url.replace(/\.[^/.]+$/, '.jpg'),
+      thumbnailUrl: result.thumbnailUrl || result.secure_url,
       fileName: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: result.bytes,
-      duration: Math.round(result.duration || 0)
+      size: result.bytes || req.file.size,
+      duration: Math.round(result.duration || 0),
+      assetId: asset.id
     });
   } catch (error: any) {
     console.error('Video upload error:', error);

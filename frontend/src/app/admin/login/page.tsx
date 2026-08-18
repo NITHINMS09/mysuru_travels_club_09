@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineArrowRight } from 'react-icons/hi';
-import api from '@/lib/api';
+import { FcGoogle } from 'react-icons/fc';
+import api, { API_BASE } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function AdminLogin() {
@@ -14,12 +15,34 @@ export default function AdminLogin() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('expired=true')) {
-      toast.error('Session expired. Please log in again.');
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get('token');
+      const adminUser = searchParams.get('adminUser');
+      const user = searchParams.get('user');
+      const error = searchParams.get('error');
+
+      if (error) {
+        toast.error(decodeURIComponent(error));
+        router.replace('/admin/login');
+      } else if (token) {
+        if (adminUser) {
+          localStorage.setItem('tripnova_admin_token', token);
+          localStorage.setItem('tripnova_admin_user', decodeURIComponent(adminUser));
+          toast.success('Welcome back, Admin!');
+          router.replace('/admin/dashboard');
+        } else if (user) {
+          localStorage.setItem('tripnova_token', token);
+          localStorage.setItem('tripnova_user', decodeURIComponent(user));
+          toast.success('Welcome to TripNova!');
+          router.replace('/');
+        }
+      } else if (searchParams.get('expired') === 'true') {
+        toast.error('Session expired. Please log in again.');
+        router.replace('/admin/login');
+      }
     }
-  }, []);
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +117,26 @@ export default function AdminLogin() {
             >
               {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
               <HiOutlineArrowRight className="h-5 w-5" />
+            </button>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-slate-50 px-2 text-slate-400 font-extrabold tracking-widest">Or</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = `${API_BASE}/auth/admin/google`;
+              }}
+              className="w-full py-3.5 px-4 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all"
+            >
+              <FcGoogle className="w-5 h-5" />
+              Continue with Google
             </button>
           </form>
         </div>

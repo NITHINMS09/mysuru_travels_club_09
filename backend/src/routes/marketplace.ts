@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -142,6 +143,27 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
 // DELETE listing (Admin only)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const listing = await prisma.marketplaceListing.findUnique({ where: { id: req.params.id } });
+    if (listing) {
+      if (listing.coverImage) {
+        await deleteAssetFromUrl(listing.coverImage);
+      }
+      if (listing.gallery) {
+        try {
+          const imageUrls = JSON.parse(listing.gallery);
+          if (Array.isArray(imageUrls)) {
+            for (const url of imageUrls) {
+              if (url) {
+                await deleteAssetFromUrl(url.trim());
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse marketplace gallery URLs:', e);
+        }
+      }
+    }
+
     await prisma.marketplaceListing.delete({
       where: { id: req.params.id }
     });

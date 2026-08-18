@@ -10,7 +10,7 @@ import {
   HiOutlineXCircle, HiOutlineLocationMarker, HiOutlineUsers, 
   HiOutlineCog, HiOutlineDocumentText, HiOutlineSearch, 
   HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineEye, HiOutlineBell,
-  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink, HiOutlineShare, HiOutlinePhone
+  HiOutlineMenuAlt3, HiX, HiOutlineThumbUp, HiOutlineDownload, HiOutlineVideoCamera, HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineX, HiOutlineExternalLink, HiOutlineShare, HiOutlinePhone, HiOutlineMail
 } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -203,6 +203,11 @@ export default function AdminDashboard() {
   const [adminPayAmount, setAdminPayAmount] = useState('');
   const [adminPayMethod, setAdminPayMethod] = useState('CASH');
   const [adminPayNotes, setAdminPayNotes] = useState('');
+  
+  // Email Logs State
+  const [viewingEmailLogs, setViewingEmailLogs] = useState<any>(null);
+  const [selectedEmailType, setSelectedEmailType] = useState<string>('BOOKING_RECEIVED');
+  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
   
   // Instagram State
   const [instagramSettings, setInstagramSettings] = useState<any>(null);
@@ -1676,6 +1681,9 @@ export default function AdminDashboard() {
                                     )}
                                     <button onClick={() => setEditingBooking(booking)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-violet-600 transition-colors border border-slate-200" title="Edit Booking">
                                       <HiOutlinePencil className="w-5 h-5" />
+                                    </button>
+                                    <button onClick={() => setViewingEmailLogs(booking)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-blue-600 transition-colors border border-slate-200" title="Email Logs">
+                                      <HiOutlineMail className="w-5 h-5" />
                                     </button>
                                     <button onClick={() => deleteBooking(booking.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors border border-slate-200" title="Delete Booking">
                                       <HiOutlineTrash className="w-5 h-5" />
@@ -3611,6 +3619,158 @@ export default function AdminDashboard() {
                 >
                   Record
                 </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL: Email Delivery Log & Manual Email Triggers */}
+      {viewingEmailLogs && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-800 font-outfit">Email Dispatch Control</h3>
+                <p className="text-xs text-slate-400">
+                  Recipient: <span className="font-semibold text-slate-650">{viewingEmailLogs.email || viewingEmailLogs.travelerName}</span> • Ref: <span className="font-mono font-bold text-cyan-600">#{viewingEmailLogs.bookingRef}</span>
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setViewingEmailLogs(null);
+                }}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Email send form (manual dispatch) */}
+            <div className="bg-slate-50 border border-slate-200/85 rounded-2xl p-5 mb-6">
+              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-3 font-outfit">Send Manual / Custom Email Notice</h4>
+              <div className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] text-slate-450 font-bold block mb-1">Select Notification Type</label>
+                  <select 
+                    value={selectedEmailType} 
+                    onChange={e => setSelectedEmailType(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-violet-400 bg-white font-semibold text-slate-700"
+                  >
+                    <option value="BOOKING_RECEIVED">Booking Received Receipt</option>
+                    <option value="PAYMENT_PENDING">Payment Pending Reminder</option>
+                    <option value="PAYMENT_CONFIRMED">Payment Confirmed Receipt</option>
+                    <option value="BOOKING_CONFIRMED">Booking Confirmed Ticket</option>
+                    <option value="PAYMENT_REJECTED">Payment Verification Failed</option>
+                    <option value="BOOKING_CANCELLED">Booking Cancelled Alert</option>
+                  </select>
+                </div>
+                <button 
+                  disabled={isSendingEmail}
+                  onClick={async () => {
+                    const token = localStorage.getItem('tripnova_admin_token');
+                    if (!token) return;
+                    setIsSendingEmail(true);
+                    try {
+                      const res = await fetchAPI(`/bookings/${viewingEmailLogs.id}/email/send`, {
+                        method: 'POST',
+                        body: JSON.stringify({ emailType: selectedEmailType }),
+                        token
+                      });
+                      toast.success(res.message || 'Notification triggered!');
+                      // Refresh logs
+                      const bookingsData = await api.bookings.getAll(token);
+                      const updatedBooking = bookingsData.bookings?.find((b: any) => b.id === viewingEmailLogs.id);
+                      if (updatedBooking) {
+                        setViewingEmailLogs(updatedBooking);
+                      }
+                      setBookings(bookingsData.bookings || []);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to dispatch email');
+                    } finally {
+                      setIsSendingEmail(false);
+                    }
+                  }}
+                  className="px-5 py-3 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-700 transition-all cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {isSendingEmail ? 'Dispatching...' : 'Dispatch Email'}
+                </button>
+              </div>
+            </div>
+
+            {/* Email logs history list */}
+            <div>
+              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-3 font-outfit">Email Logs History</h4>
+              <div className="space-y-3.5 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {viewingEmailLogs.emailLogs && viewingEmailLogs.emailLogs.length > 0 ? (
+                  viewingEmailLogs.emailLogs.map((log: any) => (
+                    <div key={log.id} className="bg-white border border-slate-150 rounded-xl p-4 flex items-center justify-between text-xs shadow-sm hover:shadow transition-shadow">
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                          <span className="font-extrabold text-slate-700 uppercase text-[9px] tracking-wider bg-slate-100 px-2 py-0.5 rounded font-mono">
+                            {log.emailType.replace(/_/g, ' ')}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                            log.status === 'sent' 
+                              ? 'bg-green-50 text-green-700 border border-green-200/60' 
+                              : log.status === 'failed'
+                              ? 'bg-red-50 text-red-700 border border-red-200/60'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                          }`}>
+                            {log.status}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 font-medium">Recipient: <span className="font-semibold text-slate-700">{log.recipient}</span></p>
+                        {log.sentAt && (
+                          <p className="text-slate-400 text-[10px] mt-0.5">Sent at: {new Date(log.sentAt).toLocaleString()}</p>
+                        )}
+                        {log.errorMessage && (
+                          <p className="text-red-500 text-[10px] font-bold mt-2 bg-red-50/50 p-2 rounded-lg border border-red-100 font-mono break-words">
+                            Error: {log.errorMessage}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {log.status === 'failed' && (
+                        <button 
+                          disabled={isSendingEmail}
+                          onClick={async () => {
+                            const token = localStorage.getItem('tripnova_admin_token');
+                            if (!token) return;
+                            setIsSendingEmail(true);
+                            try {
+                              await fetchAPI(`/bookings/${viewingEmailLogs.id}/email/retry/${log.id}`, {
+                                method: 'POST',
+                                token
+                              });
+                              toast.success('Retry initiated!');
+                              // Refresh logs
+                              const bookingsData = await api.bookings.getAll(token);
+                              const updatedBooking = bookingsData.bookings?.find((b: any) => b.id === viewingEmailLogs.id);
+                              if (updatedBooking) {
+                                setViewingEmailLogs(updatedBooking);
+                              }
+                              setBookings(bookingsData.bookings || []);
+                            } catch (e: any) {
+                              toast.error(e.message || 'Retry failed');
+                            } finally {
+                              setIsSendingEmail(false);
+                            }
+                          }}
+                          className="px-3.5 py-2 border border-red-250 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-bold text-xs transition-colors cursor-pointer shrink-0"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-400 font-medium">No emails have been dispatched for this booking.</div>
+                )}
               </div>
             </div>
           </motion.div>

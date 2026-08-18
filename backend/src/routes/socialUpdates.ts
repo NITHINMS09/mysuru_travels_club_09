@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -213,6 +214,16 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
 // DELETE update (admin only)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const update = await prisma.socialUpdate.findUnique({ where: { id: req.params.id } });
+    if (update) {
+      if (update.url) {
+        await deleteAssetFromUrl(update.url);
+      }
+      if (update.thumbnailUrl) {
+        await deleteAssetFromUrl(update.thumbnailUrl);
+      }
+    }
+
     await prisma.socialUpdate.delete({
       where: { id: req.params.id }
     });

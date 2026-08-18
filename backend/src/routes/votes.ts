@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -108,6 +109,11 @@ router.put('/destinations/:id', authenticateAdmin, async (req, res) => {
 // Delete destination (admin only)
 router.delete('/destinations/:id', authenticateAdmin, async (req, res) => {
   try {
+    const dest = await prisma.voteDestination.findUnique({ where: { id: req.params.id } });
+    if (dest && dest.imageUrl) {
+      await deleteAssetFromUrl(dest.imageUrl);
+    }
+
     await prisma.voteDestination.delete({
       where: { id: req.params.id },
     });

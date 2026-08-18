@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -326,6 +327,23 @@ router.patch('/:id', authenticateAdmin, updateTripHandler);
 // DELETE trip (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const trip = await prisma.trip.findUnique({ where: { id: req.params.id } });
+    if (trip) {
+      if (trip.coverImage) {
+        await deleteAssetFromUrl(trip.coverImage);
+      }
+      if (trip.images) {
+        const imageUrls = typeof trip.images === 'string' 
+          ? trip.images.split(',') 
+          : (Array.isArray(trip.images) ? trip.images : []);
+        for (const url of imageUrls) {
+          if (url) {
+            await deleteAssetFromUrl(url.trim());
+          }
+        }
+      }
+    }
+
     await prisma.trip.delete({ where: { id: req.params.id } });
     clearCache('trips:');
     res.json({ message: 'Trip deleted' });

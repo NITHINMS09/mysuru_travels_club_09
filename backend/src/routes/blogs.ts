@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -89,6 +90,11 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
 // DELETE blog (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const blog = await prisma.blog.findUnique({ where: { id: req.params.id } });
+    if (blog && blog.coverImage) {
+      await deleteAssetFromUrl(blog.coverImage);
+    }
+
     await prisma.blog.delete({ where: { id: req.params.id } });
     clearCache('blogs:');
     res.json({ message: 'Blog deleted' });

@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { authenticateAdmin } from '../middleware/auth';
 import type { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, clearCache } from '../utils/cache';
+import { deleteAssetFromUrl } from '../utils/cloudinary';
 
 const router = Router();
 
@@ -125,6 +126,16 @@ router.put('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
 // DELETE update video (admin)
 router.delete('/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    const video = await prisma.updateVideo.findUnique({ where: { id: req.params.id } });
+    if (video) {
+      if (video.videoUrl) {
+        await deleteAssetFromUrl(video.videoUrl);
+      }
+      if (video.thumbnailUrl) {
+        await deleteAssetFromUrl(video.thumbnailUrl);
+      }
+    }
+
     await prisma.updateVideo.delete({
       where: { id: req.params.id }
     });
