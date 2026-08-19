@@ -76,15 +76,15 @@ export default function LatestUpdatesFeed() {
           </p>
 
           {/* Filters */}
-          <div className="flex flex-wrap justify-center gap-2 pt-6">
+          <div className="flex flex-wrap justify-center gap-3 pt-6">
             {(['all', 'reels', 'videos', 'announcements', 'reviews'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${
                   filter === type
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-gradient-to-r from-primary-600 to-purple-600 border-transparent text-white shadow-lg shadow-primary-500/20'
+                    : 'bg-white/40 border-slate-200/60 text-slate-600 hover:bg-white hover:text-slate-900 shadow-sm'
                 }`}
               >
                 {type === 'all' ? 'All Updates' : type}
@@ -111,7 +111,7 @@ export default function LatestUpdatesFeed() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
-                  className="group relative bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="glass-card group flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 border border-slate-200/50 transition-all duration-300"
                   onClick={() => setActiveItem(item)}
                 >
                   <div className="relative aspect-video bg-slate-100 overflow-hidden cursor-pointer">
@@ -142,13 +142,13 @@ export default function LatestUpdatesFeed() {
                       <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-100 inline-block">
                         {item.category}
                       </span>
-                      <h3 className="font-extrabold text-base text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-1">{item.title}</h3>
-                      <p className="text-slate-400 text-xs line-clamp-3 leading-relaxed">{item.description}</p>
+                      <h3 className="font-extrabold text-base text-slate-800 group-hover:text-primary-600 transition-colors line-clamp-1">{item.title}</h3>
+                      <p className="text-slate-500 text-xs line-clamp-3 leading-relaxed font-outfit">{item.description}</p>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider pt-3 border-t border-slate-100">
+                    <div className="flex justify-between items-center text-[10px] text-slate-450 font-bold uppercase tracking-wider pt-3 border-t border-slate-100">
                       <span>{new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
-                      <button className="flex items-center gap-1.5 text-slate-800 hover:text-amber-600 transition-all font-black">
+                      <button className="flex items-center gap-1.5 text-slate-800 hover:text-primary-600 transition-all font-black cursor-pointer">
                         {item.type === 'VIDEO' ? 'Watch Video' : item.type === 'REEL' ? 'Watch Reel' : 'View Update'}
                         <HiOutlineExternalLink className="w-3.5 h-3.5" />
                       </button>

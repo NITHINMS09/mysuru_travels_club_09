@@ -80,19 +80,21 @@ export default function VotingSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="glass-card p-8 bg-slate-50/50 border border-slate-100 hover:border-primary-500/30 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all"
+              className="glass-card p-8 hover:border-primary-500/35 hover:shadow-2xl hover:shadow-slate-200/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
             >
-              <div className="flex justify-between items-start mb-6">
-                <div className="text-3xl font-black gradient-text">{dest.voteCount}</div>
-                <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Votes</div>
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="text-3xl font-black gradient-text">{dest.voteCount}</div>
+                  <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Votes</div>
+                </div>
+                
+                <h3 className="text-2xl font-bold text-slate-900 mb-3 font-outfit">{dest.name}</h3>
+                <p className="text-slate-500 text-sm mb-8 line-clamp-3 leading-relaxed font-outfit">{dest.description}</p>
               </div>
-              
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">{dest.name}</h3>
-              <p className="text-slate-500 text-sm mb-8 line-clamp-2">{dest.description}</p>
               
               <button 
                 onClick={() => handleVote(dest.id)}
-                className="w-full py-4 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center gap-2 font-bold hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all group shadow-sm hover:shadow-md"
+                className="w-full py-3.5 px-4 rounded-xl bg-white/40 border border-slate-200/50 text-slate-700 flex items-center justify-center gap-2 font-bold hover:bg-gradient-to-r hover:from-primary-600 hover:to-purple-600 hover:text-white hover:border-transparent transition-all duration-300 group shadow-sm hover:shadow-md cursor-pointer"
               >
                 <HiOutlineThumbUp className="w-5 h-5 text-primary-500 group-hover:text-white group-hover:scale-110 transition-all" />
                 Vote Now

@@ -40,7 +40,7 @@ export default function LatestUpdates() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group"
+              className="glass-card overflow-hidden hover:shadow-xl hover:-translate-y-1.5 border border-slate-200/50 transition-all duration-300 group"
             >
               <div className="relative aspect-[9/16] w-full bg-slate-900 overflow-hidden">
                 <video 

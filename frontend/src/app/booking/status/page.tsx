@@ -158,12 +158,12 @@ function StatusContent() {
   };
 
   return (
-    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-[#f8fafc] min-h-screen px-4 text-slate-900">
+    <div className="pt-20 sm:pt-24 pb-12 sm:pb-20 bg-slate-50/40 min-h-screen px-4 text-slate-900">
       <div className="max-w-3xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card bg-white border border-slate-200/60 shadow-xl p-5 sm:p-8 rounded-3xl"
+          className="glass-card bg-white/70 backdrop-blur-md border border-slate-200/50 shadow-xl p-5 sm:p-8 rounded-3xl animate-fade-in"
         >
           <div className="flex flex-col-reverse md:flex-row gap-6 sm:gap-8 items-start">
             <div className="flex-1 space-y-6">
@@ -204,8 +204,8 @@ function StatusContent() {
                       <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-primary-500/30 font-bold text-xs">
                         <HiOutlineCheckCircle className="w-5 h-5" />
                       </div>
-                      <div className="pt-1.5 bg-white px-2">
-                        <p className="text-sm font-bold text-slate-900">Booking Created</p>
+                      <div className="pt-1.5 bg-transparent px-2">
+                        <p className="text-sm font-bold text-slate-900 font-outfit">Booking Created</p>
                         <p className="text-xs text-slate-500">Traveler details saved.</p>
                       </div>
                     </div>
@@ -217,8 +217,8 @@ function StatusContent() {
                       }`}>
                         {(booking.paidAmount || 0) === 0 ? '2' : <HiOutlineCheckCircle className="w-5 h-5" />}
                       </div>
-                      <div className="pt-1.5 bg-white px-2">
-                        <p className={`text-sm font-bold ${(booking.paidAmount || 0) === 0 ? 'text-slate-500' : 'text-slate-900'}`}>Payment Submitted</p>
+                      <div className="pt-1.5 bg-transparent px-2">
+                        <p className={`text-sm font-bold font-outfit ${(booking.paidAmount || 0) === 0 ? 'text-slate-500' : 'text-slate-900'}`}>Payment Submitted</p>
                       </div>
                     </div>
 
@@ -234,8 +234,8 @@ function StatusContent() {
                          (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? <HiOutlineXCircle className="w-5 h-5" /> :
                          booking.status === 'PENDING_VERIFICATION' ? <HiOutlineClock className="w-5 h-5" /> : '3'}
                       </div>
-                      <div className="pt-1.5 bg-white px-2">
-                        <p className={`text-sm font-bold ${
+                      <div className="pt-1.5 bg-transparent px-2">
+                        <p className={`text-sm font-bold font-outfit ${
                           booking.status === 'CONFIRMED' ? 'text-slate-900' : 
                           (booking.status === 'CANCELLED' || booking.status === 'REJECTED') ? 'text-red-600' :
                           booking.status === 'PENDING_VERIFICATION' ? 'text-amber-600' :
@@ -352,33 +352,33 @@ function StatusContent() {
               </div>
             </div>
 
-            <div className="w-full md:w-64 shrink-0 bg-slate-50 rounded-2xl border border-slate-200/60 p-3 sm:p-4">
-              <div className="relative h-32 rounded-xl overflow-hidden mb-4 border border-slate-200/60">
+            <div className="w-full md:w-64 shrink-0 bg-[#0c0a1f] text-white rounded-2xl border border-white/10 p-3 sm:p-4 shadow-lg shadow-black/20">
+              <div className="relative h-32 rounded-xl overflow-hidden mb-4 border border-white/10">
                 <OptimizedImage src={booking.trip?.coverImage} alt={booking.trip?.title} fill className="object-cover" />
               </div>
-              <h3 className="font-bold text-[#FFFFFF] text-sm mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{booking.trip?.title}</h3>
-              <p className="text-xs text-slate-500 mb-4">{booking.trip?.destination}</p>
+              <h3 className="font-bold text-white text-sm mb-1 font-outfit">{booking.trip?.title}</h3>
+              <p className="text-xs text-slate-400 mb-4">{booking.trip?.destination}</p>
               
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Traveler:</span>
-                  <span className="font-bold text-slate-800">{booking.travelerName}</span>
+                  <span className="text-slate-400">Traveler:</span>
+                  <span className="font-bold text-slate-200">{booking.travelerName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Seats:</span>
-                  <span className="font-bold text-slate-800">{booking.seatCount}</span>
+                  <span className="text-slate-400">Seats:</span>
+                  <span className="font-bold text-slate-200">{booking.seatCount}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-slate-200">
-                  <span className="text-slate-500 font-semibold">Total Price:</span>
-                  <span className="font-bold text-slate-800">₹{booking.totalAmount?.toLocaleString()}</span>
+                <div className="flex justify-between pt-2 border-t border-white/10">
+                  <span className="text-slate-400 font-semibold">Total Price:</span>
+                  <span className="font-bold text-slate-200">₹{booking.totalAmount?.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-semibold">Paid Amount:</span>
-                  <span className="font-bold text-[#00C853]">₹{(booking.paidAmount || 0).toLocaleString()}</span>
+                  <span className="text-slate-400 font-semibold">Paid Amount:</span>
+                  <span className="font-bold text-[#00E676]">₹{(booking.paidAmount || 0).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between pt-1.5 border-t border-slate-200">
-                  <span className="text-slate-500 font-black">Pending Balance:</span>
-                  <span className="font-black text-rose-600">₹{(booking.totalAmount - (booking.paidAmount || 0)).toLocaleString()}</span>
+                <div className="flex justify-between pt-1.5 border-t border-white/10">
+                  <span className="text-slate-400 font-black">Pending Balance:</span>
+                  <span className="font-black text-rose-450">₹{(booking.totalAmount - (booking.paidAmount || 0)).toLocaleString()}</span>
                 </div>
               </div>
             </div>

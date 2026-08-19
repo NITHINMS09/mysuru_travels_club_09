@@ -58,7 +58,7 @@ export default function Navbar() {
         <div 
           className={`max-w-7xl mx-auto px-4 md:px-8 transition-all duration-500 ${
             scrolled
-              ? 'bg-white/80 backdrop-blur-2xl border border-slate-900/10 rounded-2xl shadow-xl shadow-slate-200/50 h-[4.5rem] flex items-center justify-between'
+              ? 'bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-2xl border border-slate-900/10 dark:border-white/10 rounded-2xl shadow-xl h-[4.5rem] flex items-center justify-between'
               : 'bg-transparent border-b border-transparent h-24 flex items-center justify-between'
           }`}
         >
@@ -71,27 +71,41 @@ export default function Navbar() {
                 className="h-10 md:h-12 w-auto object-contain drop-shadow-md"
               />
             </div>
-            <span className="text-lg md:text-xl font-outfit font-black tracking-tight text-slate-900 group-hover:text-primary-600 transition-colors duration-300 drop-shadow-sm">
+            <span className={`text-lg md:text-xl font-outfit font-black tracking-tight transition-colors duration-500 drop-shadow-sm ${
+              scrolled ? 'text-slate-900 dark:text-white' : 'text-white'
+            } group-hover:text-primary-500`}>
               {settings.siteName || "MYSURU TRAVEL CLUB"}
             </span>
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-1.5 bg-slate-100/50 border border-slate-200/50 p-1.5 rounded-2xl backdrop-blur-md shadow-inner">
+          <div className={`hidden md:flex items-center gap-1.5 p-1.5 rounded-2xl backdrop-blur-md transition-all duration-500 border ${
+            scrolled 
+              ? 'bg-slate-100/50 dark:bg-white/5 border-slate-200/50 dark:border-white/5 shadow-inner' 
+              : 'bg-black/35 border-white/10 shadow-lg'
+          }`}>
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`relative px-5 py-2 text-sm font-semibold tracking-wide transition-all duration-300 rounded-xl group overflow-hidden ${
+                  className={`relative px-5 py-2 text-sm font-bold tracking-wide transition-all duration-300 rounded-xl group overflow-hidden ${
                     isActive 
-                      ? 'text-primary-700 bg-white shadow-sm border border-slate-200/60' 
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      ? (scrolled 
+                          ? 'text-primary-700 dark:text-primary-400 bg-white dark:bg-white/10 shadow-sm border border-slate-200/60 dark:border-white/10' 
+                          : 'text-white bg-white/20 shadow-md border border-white/20')
+                      : (scrolled 
+                          ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5' 
+                          : 'text-white/80 hover:text-white hover:bg-white/10')
                   }`}
                 >
                   <span className="flex items-center gap-2 relative z-10">
-                    <link.icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-primary-500 transition-colors'}`} />
+                    <link.icon className={`w-4 h-4 transition-colors ${
+                      isActive 
+                        ? (scrolled ? 'text-primary-600 dark:text-primary-400' : 'text-white') 
+                        : (scrolled ? 'text-slate-400 dark:text-slate-500 group-hover:text-primary-500' : 'text-white/60 group-hover:text-white')
+                    }`} />
                     {link.label}
                   </span>
                   
@@ -108,16 +122,24 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/login"
-              className="hidden sm:flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/30 transition-all duration-300 group"
+              className={`hidden sm:flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-500 group ${
+                scrolled
+                  ? 'text-white bg-slate-900 hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/30'
+                  : 'text-white bg-white/10 border border-white/10 hover:bg-white/20 hover:shadow-lg'
+              }`}
             >
-              <HiOutlineUser className="w-4 h-4 text-slate-300 group-hover:text-white transition-colors" />
+              <HiOutlineUser className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
               Admin Portal
             </Link>
 
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2.5 text-slate-600 hover:text-slate-900 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors shadow-sm"
+              className={`md:hidden p-2.5 rounded-xl border transition-all shadow-sm ${
+                scrolled
+                  ? 'text-slate-650 bg-slate-50 hover:bg-slate-100 border-slate-200'
+                  : 'text-white bg-black/35 hover:bg-black/55 border-white/10'
+              }`}
             >
               {mobileOpen ? <HiX className="w-6 h-6" /> : <HiOutlineMenuAlt3 className="w-6 h-6" />}
             </button>
@@ -129,16 +151,18 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 md:hidden"
           >
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+            <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="relative pt-24 px-6 pb-8 space-y-3 border-b border-slate-200 bg-white/95 backdrop-blur-2xl shadow-2xl"
+              initial={{ y: -30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative pt-24 px-6 pb-8 space-y-3 border-b border-white/10 bg-slate-950/95 backdrop-blur-2xl shadow-2xl"
             >
               {navLinks.map((link, i) => {
                 const isActive = pathname === link.href;
@@ -147,28 +171,28 @@ export default function Navbar() {
                     key={link.label}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08 }}
+                    transition={{ delay: i * 0.05 }}
                   >
                     <Link
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-4 px-6 py-4 text-base font-bold rounded-2xl border transition-all ${
                         isActive 
-                          ? 'text-primary-700 bg-primary-50 border-primary-200 shadow-sm' 
-                          : 'text-slate-600 hover:text-slate-900 bg-slate-50 border-slate-100 hover:bg-slate-100'
+                          ? 'text-white bg-primary-600/80 border-primary-500/50 shadow-md shadow-primary-500/10' 
+                          : 'text-slate-300 hover:text-white bg-white/5 border-white/[0.03] hover:bg-white/10'
                       }`}
                     >
-                      <link.icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : 'text-slate-400'}`} />
+                      <link.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                       {link.label}
                     </Link>
                   </motion.div>
                 );
               })}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
                 <Link
                   href="/admin/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center gap-2 mt-8 px-6 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-primary-600 transition-colors"
+                  className="flex items-center justify-center gap-2 mt-8 px-6 py-4 bg-white text-slate-950 font-bold rounded-2xl shadow-xl hover:bg-slate-100 transition-colors"
                 >
                   <HiOutlineUser className="w-5 h-5" />
                   Admin Portal Login

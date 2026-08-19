@@ -341,11 +341,19 @@ const initiateGoogleAuth = (req: any, res: any) => {
     return res.status(500).json({ error: 'Google OAuth is not configured on the server.' });
   }
 
+  // Generate a cryptographically signed state token to prevent CSRF
+  const state = jwt.sign(
+    { purpose: 'google-oauth-state', timestamp: Date.now() },
+    config.jwt.secret,
+    { expiresIn: '10m' }
+  );
+
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
     `client_id=${clientId}` + 
     `&redirect_uri=${encodeURIComponent(callbackUrl)}` + 
     `&response_type=code` + 
     `&scope=${encodeURIComponent('openid email profile')}` + 
+    `&state=${state}` +
     `&prompt=select_account`;
 
   if (req.method === 'POST') {
@@ -361,9 +369,24 @@ router.post('/admin/google', initiateGoogleAuth);
 // GET /auth/admin/google/callback (Callback for Google OAuth)
 router.get('/admin/google/callback', async (req: any, res) => {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code) {
       return res.redirect(`${config.frontendUrl}/admin/login?error=Authorization+code+is+missing`);
+    }
+
+    // Validate state parameter to protect against CSRF
+    if (!state) {
+      return res.redirect(`${config.frontendUrl}/admin/login?error=OAuth+state+parameter+is+missing`);
+    }
+
+    try {
+      const decodedState = jwt.verify(state as string, config.jwt.secret) as any;
+      if (decodedState.purpose !== 'google-oauth-state') {
+        throw new Error('Invalid OAuth state purpose');
+      }
+    } catch (err) {
+      console.error('State validation failed:', err);
+      return res.redirect(`${config.frontendUrl}/admin/login?error=OAuth+state+validation+failed+or+session+expired`);
     }
 
     // 1. Exchange auth code for access token
@@ -422,7 +445,7 @@ router.get('/admin/google/callback', async (req: any, res) => {
       return res.redirect(redirectUrl);
     }
 
-    // 4. Find or create a regular customer (User model)
+    // 4. Find if user is an existing regular customer (User model)
     let user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -433,18 +456,13 @@ router.get('/admin/google/callback', async (req: any, res) => {
     });
 
     if (!user) {
-      // Create user with a unique placeholder phone number
-      const placeholderPhone = `GOOGLE_${googleId}`;
-      user = await prisma.user.create({
-        data: {
-          fullName: name,
-          email,
-          googleId,
-          mobileNumber: placeholderPhone
-        }
-      });
-    } else if (!user.email || !user.googleId) {
-      // Bind email and googleId to existing user record
+      // Access Denied: User/Admin does not exist in our system. Do NOT auto-create.
+      const errorMsg = encodeURIComponent('Your Google account is not authorized for this portal.');
+      return res.redirect(`${config.frontendUrl}/admin/login?error=${errorMsg}`);
+    }
+
+    // Bind email and googleId to existing user record if missing
+    if (!user.email || !user.googleId) {
       user = await prisma.user.update({
         where: { id: user.id },
         data: { email, googleId }

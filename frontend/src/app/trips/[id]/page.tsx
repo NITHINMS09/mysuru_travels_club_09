@@ -8,7 +8,8 @@ import {
   HiOutlineCalendar, HiOutlineClock,
   HiOutlineLocationMarker, HiOutlineMap, HiOutlineCheckCircle,
   HiOutlineChevronDown, HiOutlineChatAlt, HiOutlineStatusOnline,
-  HiOutlineCreditCard, HiOutlineUser, HiOutlineUpload, HiOutlineArrowRight
+  HiOutlineCreditCard, HiOutlineUser, HiOutlineUpload, HiOutlineArrowRight,
+  HiOutlineXCircle
 } from 'react-icons/hi';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +42,17 @@ export default function TripDetails() {
   const [activeTab, setActiveTab] = useState('itinerary');
   const [openDay, setOpenDay] = useState<number | null>(0);
   const [liveLoc, setLiveLoc] = useState<{lat: number, lng: number} | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (activeTab === 'reviews') {
+      api.reviews.getByTrip(id as string)
+        .then((data: any) => {
+          setReviews(Array.isArray(data) ? data : data.reviews || []);
+        })
+        .catch(console.error);
+    }
+  }, [activeTab, id]);
 
   // Booking State
   const [step, setStep] = useState(1);
@@ -251,7 +263,7 @@ export default function TripDetails() {
             
             {/* Inline Booking Form (Placed above the map) */}
             <div className="mb-12" id="booking-section">
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 lg:p-10">
+              <div className="glass-card border border-slate-200/50 shadow-lg p-6 lg:p-10 bg-white">
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Book Your Adventure</h2>
                   <p className="text-slate-500 mt-2 font-medium">Complete your reservation in a few simple steps</p>
@@ -488,7 +500,7 @@ export default function TripDetails() {
               )}
 
               {activeTab === 'pickups' && (
-                <div className="space-y-4">
+                <div className="space-y-4 animate-fade-in">
                   {trip.pickupPoints?.map((pt: any, i: number) => (
                     <div key={i} className="glass-card bg-white border border-slate-100 p-6 flex items-center justify-between group hover:border-primary-500/20 hover:bg-primary-500/[0.01] shadow-sm transition-all rounded-2xl">
                       <div className="flex items-center gap-4">
@@ -503,13 +515,76 @@ export default function TripDetails() {
                   ))}
                 </div>
               )}
+
+              {activeTab === 'inclusions' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+                  <div className="glass-card bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-lg text-green-600 flex items-center gap-2 mb-4">
+                      <HiOutlineCheckCircle className="w-5 h-5 text-green-500" /> What's Included
+                    </h4>
+                    <ul className="space-y-3">
+                      {trip.included ? trip.included.split(',').map((inc: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-slate-600 text-sm font-outfit leading-relaxed">
+                          <span className="text-green-500 font-bold">✓</span> {inc.trim()}
+                        </li>
+                      )) : <li className="text-slate-400 text-sm italic">Contact us for inclusions</li>}
+                    </ul>
+                  </div>
+                  <div className="glass-card bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-lg text-red-500 flex items-center gap-2 mb-4">
+                      <HiOutlineXCircle className="w-5 h-5 text-red-500" /> What's Excluded
+                    </h4>
+                    <ul className="space-y-3">
+                      {trip.excluded ? trip.excluded.split(',').map((exc: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-slate-600 text-sm font-outfit leading-relaxed">
+                          <span className="text-red-500 font-bold">✗</span> {exc.trim()}
+                        </li>
+                      )) : <li className="text-slate-400 text-sm italic">Contact us for exclusions</li>}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div className="space-y-6 animate-fade-in">
+                  {reviews.length === 0 ? (
+                    <div className="text-center py-12 bg-slate-50 border border-slate-200 border-dashed rounded-2xl">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No reviews for this trip yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((rev, idx) => (
+                        <div key={idx} className="glass-card bg-white border border-slate-100 p-6 rounded-2xl shadow-sm space-y-4">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
+                                {rev.userName?.charAt(0)}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-slate-800 text-sm">{rev.userName}</h4>
+                                <p className="text-slate-400 text-xs">{new Date(rev.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-0.5 text-amber-500 text-xs font-bold">
+                              {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                                <span key={i}>★</span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-slate-600 text-sm leading-relaxed">{rev.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:w-1/3">
             <div className="sticky top-28 space-y-6">
-              <div className="glass-card p-8 bg-white border border-slate-200/60 shadow-lg rounded-3xl">
+              <div className="glass-card p-8 bg-white border border-slate-200/50 shadow-lg rounded-3xl">
                 <div className="mb-8">
                   <div className="text-slate-400 text-sm mb-1 font-bold tracking-widest uppercase">Starting from</div>
                   <div className="text-5xl font-black text-[#00C853] font-outfit tracking-tighter">₹{trip.price}</div>

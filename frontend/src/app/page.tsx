@@ -18,13 +18,13 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <Hero />
+      <UpcomingTrips />
       <LatestUpdates />
       <LatestUpdatesFeed />
-      <OurCrew />
       <MarketplaceCategories />
-      <UpcomingTrips />
-      <Stats />
       <FeaturedDestinations />
+      <Stats />
+      <OurCrew />
       <Testimonials />
       <BlogPreview />
       <VotingSection />

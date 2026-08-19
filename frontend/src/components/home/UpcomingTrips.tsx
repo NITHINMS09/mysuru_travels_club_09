@@ -54,7 +54,7 @@ export default function UpcomingTrips() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-4xl md:text-5xl lg:text-6xl font-black mb-0 font-outfit"
+              className="text-4xl md:text-5xl lg:text-6xl font-black mb-0 font-outfit text-white"
             >
               Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-purple-400 to-pink-500">Adventures</span>
             </motion.h2>
